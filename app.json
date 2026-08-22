@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Жди",
+    "slug": "zhdi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0b"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.zhdi.app",
+      "deploymentTarget": "15.0"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundColor": "#0a0a0b"
+      },
+      "package": "com.zhdi.app",
+      "minSdkVersion": 26
+    },
+    "plugins": [
+      "expo-dev-client",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          },
+          "ios": {
+            "deploymentTarget": "15.0"
+          }
+        }
+      ],
+      "expo-local-authentication"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}
