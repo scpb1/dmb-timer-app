@@ -3,18 +3,17 @@ import { useFonts } from 'expo-font';
 
 import { logger } from '@/utils/logger';
 
-/** Загружает шрифт Spell. Положите Spell.ttf в assets/fonts/ */
+/** Загружает шрифты из assets/fonts/ */
 export function useAppFonts(): boolean {
   const [loaded, error] = useFonts({
-    Spell: require('../../assets/fonts/Spell.ttf'),
+    'dmb-timer-sans': require('../../assets/fonts/dmb-timer-sans.ttf'),
+    'dmb-timer-sans-Light': require('../../assets/fonts/dmb-timer-sans-Light.ttf'),
+    'BlackOpsOne-Regular': require('../../assets/fonts/BlackOpsOne-Regular.otf'),
   });
 
   useEffect(() => {
     if (error) {
-      logger.error(
-        'Не удалось загрузить шрифт Spell. Скопируйте Spell.ttf в assets/fonts/',
-        error,
-      );
+      logger.error('Не удалось загрузить шрифты из assets/fonts/', error);
     }
   }, [error]);
 

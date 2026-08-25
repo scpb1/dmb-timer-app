@@ -1,8 +1,8 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import type { MainTabParamList } from '@/types/navigation';
-import { HomeScreen } from '@/screens/home/HomeScreen';
 import { PlaceholderScreen } from '@/screens/common/PlaceholderScreen';
+import { HomeStackNavigator } from './HomeStackNavigator';
 import { CustomTabBar } from './CustomTabBar';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -27,7 +27,7 @@ export function MainTabNavigator({ onResetToOnboarding }: MainTabNavigatorProps)
         {() => <PlaceholderScreen title="События" />}
       </Tab.Screen>
       <Tab.Screen name="Home">
-        {() => <HomeScreen onResetToOnboarding={onResetToOnboarding} />}
+        {() => <HomeStackNavigator onResetToOnboarding={onResetToOnboarding} />}
       </Tab.Screen>
       <Tab.Screen name="Diary">
         {() => <PlaceholderScreen title="Дневник" />}

@@ -1,6 +1,10 @@
 export const typography = {
   fontFamily: {
-    primary: 'Spell',
+    sans: 'dmb-timer-sans',
+    sansLight: 'dmb-timer-sans-Light',
+    display: 'BlackOpsOne-Regular',
+    /** @deprecated используй sans */
+    primary: 'dmb-timer-sans',
   },
   animation: {
     textAppearMs: 600,

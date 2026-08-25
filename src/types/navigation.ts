@@ -3,6 +3,11 @@ export type RootStackParamList = {
   Main: undefined;
 };
 
+export type HomeStackParamList = {
+  HomeMain: undefined;
+  TimerSettings: undefined;
+};
+
 export type MainTabParamList = {
   Shop: undefined;
   Events: undefined;
