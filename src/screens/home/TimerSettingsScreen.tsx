@@ -7,9 +7,12 @@ import { SettingsDropdown } from '@/components/common/SettingsDropdown';
 import { ScreenBackground } from '@/components/common/ScreenBackground';
 import type { HomeStackParamList } from '@/types/navigation';
 import {
-  PROGRESS_BAR_MODE_LABELS,
+  DEFAULT_TIMER_SETTINGS,
+  STAT_CARD_MODE_LABELS,
   TIMER_TYPE_LABELS,
-  type ProgressBarMode,
+  getProgressBarModeOptions,
+  normalizeProgressBarMode,
+  type StatCardMode,
   type TimerType,
 } from '@/types/timer';
 import { useServiceTimer } from '@/hooks/useServiceTimer';
@@ -22,8 +25,8 @@ const TIMER_TYPE_OPTIONS = (Object.entries(TIMER_TYPE_LABELS) as [TimerType, str
   ([value, label]) => ({ value, label }),
 );
 
-const PROGRESS_MODE_OPTIONS = (
-  Object.entries(PROGRESS_BAR_MODE_LABELS) as [ProgressBarMode, string][]
+const STAT_CARD_MODE_OPTIONS = (
+  Object.entries(STAT_CARD_MODE_LABELS) as [StatCardMode, string][]
 ).map(([value, label]) => ({ value, label }));
 
 const DECIMAL_OPTIONS = [0, 1, 2, 3, 4, 5, 6].map((value) => ({
@@ -34,6 +37,20 @@ const DECIMAL_OPTIONS = [0, 1, 2, 3, 4, 5, 6].map((value) => ({
 export function TimerSettingsScreen({ navigation }: Props) {
   const { settings, updateSettings } = useServiceTimer();
   const theme = colors.light;
+
+  const statCardMode = settings.statCardMode ?? DEFAULT_TIMER_SETTINGS.statCardMode;
+  const progressModeOptions = getProgressBarModeOptions(settings.timerType);
+  const safeProgressBarMode = normalizeProgressBarMode(
+    settings.timerType,
+    settings.progressBarMode,
+  );
+
+  const handleTimerTypeChange = (timerType: TimerType) => {
+    updateSettings({
+      timerType,
+      progressBarMode: normalizeProgressBarMode(timerType, settings.progressBarMode),
+    });
+  };
 
   return (
     <View style={styles.root}>
@@ -61,17 +78,17 @@ export function TimerSettingsScreen({ navigation }: Props) {
             label="Тип таймера"
             value={settings.timerType}
             options={TIMER_TYPE_OPTIONS}
-            onChange={(timerType) => updateSettings({ timerType })}
+            onChange={handleTimerTypeChange}
           />
 
           <SettingsDropdown
             label="Режим прогресс-бара"
-            value={settings.progressBarMode}
-            options={PROGRESS_MODE_OPTIONS}
+            value={safeProgressBarMode}
+            options={progressModeOptions}
             onChange={(progressBarMode) => updateSettings({ progressBarMode })}
           />
 
-          {settings.progressBarMode === 'percent' ? (
+          {safeProgressBarMode === 'percent' ? (
             <SettingsDropdown
               label="Знаков после запятой"
               value={settings.percentDecimalPlaces}
@@ -79,6 +96,13 @@ export function TimerSettingsScreen({ navigation }: Props) {
               onChange={(percentDecimalPlaces) => updateSettings({ percentDecimalPlaces })}
             />
           ) : null}
+
+          <SettingsDropdown
+            label="Режим плашек"
+            value={statCardMode}
+            options={STAT_CARD_MODE_OPTIONS}
+            onChange={(statCardMode) => updateSettings({ statCardMode })}
+          />
         </ScrollView>
       </SafeAreaView>
     </View>

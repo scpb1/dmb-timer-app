@@ -11,6 +11,8 @@ export const CONFIG_KEYS = {
   PROGRESS_BAR_MODE: 'progress_bar_mode',
   PERCENT_DECIMAL_PLACES: 'percent_decimal_places',
   TIMER_CENTER_DISPLAY: 'timer_center_display',
+  STAT_CARD_MODE: 'stat_card_mode',
+  EVENTS_DATA: 'events_data',
 } as const;
 
 export type ConfigKey = (typeof CONFIG_KEYS)[keyof typeof CONFIG_KEYS];

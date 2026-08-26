@@ -2,6 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import type { MainTabParamList } from '@/types/navigation';
 import { PlaceholderScreen } from '@/screens/common/PlaceholderScreen';
+import { EventsScreen } from '@/screens/events/EventsScreen';
 import { HomeStackNavigator } from './HomeStackNavigator';
 import { CustomTabBar } from './CustomTabBar';
 
@@ -23,9 +24,7 @@ export function MainTabNavigator({ onResetToOnboarding }: MainTabNavigatorProps)
       <Tab.Screen name="Shop">
         {() => <PlaceholderScreen title="Магазин" />}
       </Tab.Screen>
-      <Tab.Screen name="Events">
-        {() => <PlaceholderScreen title="События" />}
-      </Tab.Screen>
+      <Tab.Screen name="Events" component={EventsScreen} />
       <Tab.Screen name="Home">
         {() => <HomeStackNavigator onResetToOnboarding={onResetToOnboarding} />}
       </Tab.Screen>

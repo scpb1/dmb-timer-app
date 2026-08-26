@@ -2,7 +2,7 @@ import { pluralize } from '@/utils/pluralize';
 
 import { differenceInCalendarDays, startOfDay } from 'date-fns';
 
-import type { ProgressBarMode, TimerCenterDisplay } from '@/types/timer';
+import type { ProgressBarMode, StatCardMode, TimerCenterDisplay } from '@/types/timer';
 import { PROGRESS_BAR_SEGMENT_COUNT } from '@/types/timer';
 
 export interface TimeBreakdown {
@@ -91,6 +91,8 @@ function getCompletedUnits(
   switch (mode) {
     case 'percent':
       return Math.min(max, Math.floor(progressPercent));
+    case 'days':
+      return Math.min(max, daysPassed);
     case 'weeks':
       return Math.min(max, Math.floor(daysPassed / 7));
     case 'months':
@@ -128,6 +130,12 @@ export function getCenterDisplayValues(
         secondaryValue: formatProgressPercent(progress.progressPercent, decimalPlaces),
         unitLabel: 'ддд',
       };
+    case 'days':
+      return {
+        primaryValue: String(useRemaining ? progress.daysLeft : progress.daysPassed),
+        secondaryValue: null,
+        unitLabel: 'ддд',
+      };
     case 'weeks':
       return {
         primaryValue: String(useRemaining ? progress.weeksLeft : progress.weeksPassed),
@@ -149,4 +157,87 @@ export function formatTimeBreakdownLines(breakdown: TimeBreakdown): string[] {
     `${breakdown.minutes} ${pluralize(breakdown.minutes, 'минута', 'минуты', 'минут')}`,
     `${breakdown.seconds} ${pluralize(breakdown.seconds, 'секунда', 'секунды', 'секунд')}`,
   ];
+}
+
+export interface StatCardDisplay {
+  primaryValue: number;
+  unitLabel: string;
+  detailLines: string[];
+}
+
+/** Формирует содержимое плашки в зависимости от выбранного режима */
+export function getStatCardDisplay(
+  breakdown: TimeBreakdown,
+  mode: StatCardMode | undefined,
+): StatCardDisplay {
+  const safeMode = mode ?? 'days';
+
+  switch (safeMode) {
+    case 'days':
+      return {
+        primaryValue: breakdown.days,
+        unitLabel: pluralize(breakdown.days, 'день', 'дня', 'дней'),
+        detailLines: formatTimeBreakdownLines(breakdown),
+      };
+    case 'weeks': {
+      const weeks = Math.floor(breakdown.days / 7);
+      const remainderDays = breakdown.days % 7;
+      return {
+        primaryValue: weeks,
+        unitLabel: pluralize(weeks, 'неделя', 'недели', 'недель'),
+        detailLines: [
+          `${remainderDays} ${pluralize(remainderDays, 'день', 'дня', 'дней')}`,
+        ],
+      };
+    }
+    case 'months': {
+      const months = Math.floor(breakdown.days / 30);
+      const remainderDays = breakdown.days % 30;
+      return {
+        primaryValue: months,
+        unitLabel: pluralize(months, 'месяц', 'месяца', 'месяцев'),
+        detailLines: [
+          `${remainderDays} ${pluralize(remainderDays, 'день', 'дня', 'дней')}`,
+        ],
+      };
+    }
+    default:
+      return {
+        primaryValue: breakdown.days,
+        unitLabel: pluralize(breakdown.days, 'день', 'дня', 'дней'),
+        detailLines: formatTimeBreakdownLines(breakdown),
+      };
+  }
+}
+
+export interface LinearDisplayValues {
+  mode: 'percent' | 'value';
+  percentText?: string;
+  primaryValue?: string;
+  unitLabel?: string;
+}
+
+/** Подпись под линейным прогресс-баром */
+export function getLinearDisplayValues(
+  mode: ProgressBarMode,
+  progress: ServiceProgress,
+  decimalPlaces: number,
+  centerDisplay: TimerCenterDisplay = 'remaining',
+): LinearDisplayValues {
+  const useRemaining = centerDisplay === 'remaining';
+
+  if (mode === 'percent') {
+    return {
+      mode: 'percent',
+      percentText: `${formatProgressPercent(progress.progressPercent, decimalPlaces)}%`,
+    };
+  }
+
+  const center = getCenterDisplayValues(mode, progress, decimalPlaces, centerDisplay);
+
+  return {
+    mode: 'value',
+    primaryValue: center.primaryValue,
+    unitLabel: center.unitLabel,
+  };
 }

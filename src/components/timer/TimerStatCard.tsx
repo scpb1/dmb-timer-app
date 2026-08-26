@@ -1,30 +1,31 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import type { TimeBreakdown } from '@/utils/timerCalculations';
-import { formatTimeBreakdownLines } from '@/utils/timerCalculations';
+import type { StatCardDisplay } from '@/utils/timerCalculations';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 
 interface TimerStatCardProps {
-  title: 'ПРОШЛО' | 'ОСТАЛОСЬ';
-  breakdown: TimeBreakdown;
+  title: 'Прошло' | 'Осталось';
+  display: StatCardDisplay | undefined;
 }
 
-export function TimerStatCard({ title, breakdown }: TimerStatCardProps) {
-  const timeLines = formatTimeBreakdownLines(breakdown);
+export function TimerStatCard({ title, display }: TimerStatCardProps) {
+  if (!display) {
+    return null;
+  }
 
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{title}</Text>
 
-      <View style={styles.daysBlock}>
-        <Text style={styles.daysNumber}>{breakdown.days}</Text>
-        <Text style={styles.daysLabel}>дней</Text>
+      <View style={styles.primaryBlock}>
+        <Text style={styles.primaryValue}>{display.primaryValue}</Text>
+        <Text style={styles.unitLabel}>{display.unitLabel}</Text>
       </View>
 
-      <View style={styles.timeBlock}>
-        {timeLines.map((line, index) => (
-          <Text key={index} style={styles.timeLine}>
+      <View style={styles.detailBlock}>
+        {display.detailLines.map((line, index) => (
+          <Text key={index} style={styles.detailLine}>
             {line}
           </Text>
         ))}
@@ -46,33 +47,32 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fontFamily.sans,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700',
-    letterSpacing: 1.5,
     color: colors.light.text.secondary,
     marginBottom: 16,
   },
-  daysBlock: {
+  primaryBlock: {
     alignItems: 'center',
   },
-  daysNumber: {
+  primaryValue: {
     fontFamily: typography.fontFamily.display,
     fontSize: 36,
     color: colors.light.text.primary,
     lineHeight: 40,
   },
-  daysLabel: {
+  unitLabel: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
     color: colors.light.text.secondary,
     marginTop: 2,
   },
-  timeBlock: {
+  detailBlock: {
     marginTop: 16,
     alignItems: 'center',
     gap: 2,
   },
-  timeLine: {
+  detailLine: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 13,
     color: colors.light.text.secondary,

@@ -4,7 +4,9 @@ import { parseISO } from 'date-fns';
 import { CONFIG_KEYS } from '@/types/config';
 import {
   DEFAULT_TIMER_SETTINGS,
+  normalizeProgressBarMode,
   type ProgressBarMode,
+  type StatCardMode,
   type TimerCenterDisplay,
   type TimerSettings,
   type TimerType,
@@ -41,9 +43,11 @@ function parseTimerSettings(
   progressBarMode: string | null,
   decimalPlaces: string | null,
   centerDisplay: string | null,
+  statCardMode: string | null,
 ): TimerSettings {
-  const validModes: ProgressBarMode[] = ['percent', 'weeks', 'months'];
-  const validTypes: TimerType[] = ['circular'];
+  const validModes: ProgressBarMode[] = ['percent', 'days', 'weeks', 'months'];
+  const validStatCardModes: StatCardMode[] = ['days', 'weeks', 'months'];
+  const validTypes: TimerType[] = ['circular', 'linear'];
   const validCenterDisplays: TimerCenterDisplay[] = ['remaining', 'elapsed'];
 
   const mode =
@@ -51,10 +55,17 @@ function parseTimerSettings(
       ? (progressBarMode as ProgressBarMode)
       : DEFAULT_TIMER_SETTINGS.progressBarMode;
 
+  const cardMode =
+    statCardMode && validStatCardModes.includes(statCardMode as StatCardMode)
+      ? (statCardMode as StatCardMode)
+      : DEFAULT_TIMER_SETTINGS.statCardMode;
+
   const type =
     timerType && validTypes.includes(timerType as TimerType)
       ? (timerType as TimerType)
       : DEFAULT_TIMER_SETTINGS.timerType;
+
+  const normalizedMode = normalizeProgressBarMode(type, mode);
 
   const parsedDecimals = decimalPlaces ? Number(decimalPlaces) : NaN;
   const percentDecimalPlaces =
@@ -69,21 +80,30 @@ function parseTimerSettings(
 
   return {
     timerType: type,
-    progressBarMode: mode,
+    progressBarMode: normalizedMode,
     percentDecimalPlaces,
     centerDisplay: display,
+    statCardMode: cardMode,
   };
 }
 
 async function loadTimerSettings(): Promise<TimerSettings> {
-  const [timerType, progressBarMode, decimalPlaces, centerDisplay] = await Promise.all([
-    getConfig(CONFIG_KEYS.TIMER_TYPE),
-    getConfig(CONFIG_KEYS.PROGRESS_BAR_MODE),
-    getConfig(CONFIG_KEYS.PERCENT_DECIMAL_PLACES),
-    getConfig(CONFIG_KEYS.TIMER_CENTER_DISPLAY),
-  ]);
+  const [timerType, progressBarMode, decimalPlaces, centerDisplay, statCardMode] =
+    await Promise.all([
+      getConfig(CONFIG_KEYS.TIMER_TYPE),
+      getConfig(CONFIG_KEYS.PROGRESS_BAR_MODE),
+      getConfig(CONFIG_KEYS.PERCENT_DECIMAL_PLACES),
+      getConfig(CONFIG_KEYS.TIMER_CENTER_DISPLAY),
+      getConfig(CONFIG_KEYS.STAT_CARD_MODE),
+    ]);
 
-  return parseTimerSettings(timerType, progressBarMode, decimalPlaces, centerDisplay);
+  return parseTimerSettings(
+    timerType,
+    progressBarMode,
+    decimalPlaces,
+    centerDisplay,
+    statCardMode,
+  );
 }
 
 function computeTimerState(
@@ -194,9 +214,18 @@ export function useServiceTimer(): UseServiceTimerResult {
   }, [state.enlistmentDate, state.demobilizationDate, state.settings]);
 
   const updateSettings = useCallback(async (partial: Partial<TimerSettings>) => {
-    const nextSettings: TimerSettings = {
+    const merged: TimerSettings = {
+      ...DEFAULT_TIMER_SETTINGS,
       ...state.settings,
       ...partial,
+    };
+
+    const nextSettings: TimerSettings = {
+      ...merged,
+      progressBarMode: normalizeProgressBarMode(
+        merged.timerType,
+        merged.progressBarMode,
+      ),
     };
 
     await Promise.all([
@@ -204,6 +233,7 @@ export function useServiceTimer(): UseServiceTimerResult {
       setConfig(CONFIG_KEYS.PROGRESS_BAR_MODE, nextSettings.progressBarMode),
       setConfig(CONFIG_KEYS.PERCENT_DECIMAL_PLACES, String(nextSettings.percentDecimalPlaces)),
       setConfig(CONFIG_KEYS.TIMER_CENTER_DISPLAY, nextSettings.centerDisplay),
+      setConfig(CONFIG_KEYS.STAT_CARD_MODE, nextSettings.statCardMode),
     ]);
 
     setState((prev) => {

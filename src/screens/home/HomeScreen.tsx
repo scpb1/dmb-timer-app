@@ -6,10 +6,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { StackScreenProps } from '@react-navigation/stack';
 
 import { SegmentedCircularProgress } from '@/components/timer/SegmentedCircularProgress';
+import { SegmentedLinearProgress } from '@/components/timer/SegmentedLinearProgress';
 import { TimerStatCard } from '@/components/timer/TimerStatCard';
 import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { useServiceTimer } from '@/hooks/useServiceTimer';
 import type { HomeStackParamList } from '@/types/navigation';
+import { DEFAULT_TIMER_SETTINGS } from '@/types/timer';
+import { getLinearDisplayValues, getStatCardDisplay } from '@/utils/timerCalculations';
 import { resetAllData } from '@/services/database';
 import { colors } from '@/theme/colors';
 import { logger } from '@/utils/logger';
@@ -38,6 +41,7 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
   const [showStats, setShowStats] = useState(true);
 
   const theme = colors.light;
+  const statCardMode = settings.statCardMode ?? DEFAULT_TIMER_SETTINGS.statCardMode;
 
   const handleResetData = () => {
     Alert.alert(
@@ -74,6 +78,15 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
   }
 
   const filledCount = progress?.filledSegments[settings.progressBarMode] ?? 0;
+  const linearDisplay =
+    progress && settings.timerType === 'linear'
+      ? getLinearDisplayValues(
+          settings.progressBarMode,
+          progress,
+          settings.percentDecimalPlaces,
+          settings.centerDisplay,
+        )
+      : null;
 
   return (
     <View style={styles.root}>
@@ -117,7 +130,7 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {centerDisplay && progress ? (
+          {settings.timerType === 'circular' && centerDisplay && progress ? (
             <SegmentedCircularProgress
               mode={settings.progressBarMode}
               filledCount={filledCount}
@@ -127,10 +140,24 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
             />
           ) : null}
 
+          {settings.timerType === 'linear' && linearDisplay && progress ? (
+            <SegmentedLinearProgress
+              mode={settings.progressBarMode}
+              filledCount={filledCount}
+              display={linearDisplay}
+            />
+          ) : null}
+
           {showStats && passedBreakdown && remainingBreakdown ? (
             <View style={styles.statsRow}>
-              <TimerStatCard title="ПРОШЛО" breakdown={passedBreakdown} />
-              <TimerStatCard title="ОСТАЛОСЬ" breakdown={remainingBreakdown} />
+              <TimerStatCard
+                title="Прошло"
+                display={getStatCardDisplay(passedBreakdown, statCardMode)}
+              />
+              <TimerStatCard
+                title="Осталось"
+                display={getStatCardDisplay(remainingBreakdown, statCardMode)}
+              />
             </View>
           ) : null}
         </ScrollView>
