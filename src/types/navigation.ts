@@ -15,3 +15,14 @@ export type MainTabParamList = {
   Diary: undefined;
   Trackers: undefined;
 };
+
+export type DiaryStackParamList = {
+  DiaryHome: undefined;
+  PersonalDiary: { date?: string };
+  LetterTheme: { date?: string };
+  LetterEditor: {
+    date: string;
+    themeId: string;
+    startFresh?: boolean;
+  };
+};

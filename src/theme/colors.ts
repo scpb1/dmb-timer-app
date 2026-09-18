@@ -28,6 +28,10 @@ export const colors = {
       border: '#3E3630',
       placeholder: 'rgba(62, 54, 48, 0.4)',
     },
+    holiday: {
+      cardBackground: 'rgba(232, 168, 152, 0.46)',
+      cardBorder: 'rgba(176, 96, 82, 0.38)',
+    },
   },
 } as const;
 

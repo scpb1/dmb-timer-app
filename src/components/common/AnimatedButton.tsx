@@ -64,7 +64,7 @@ export function AnimatedButton({
 const styles = StyleSheet.create({
   button: {
     backgroundColor: colors.light.background.end,
-    borderRadius: 14,
+    borderRadius: 7,
     paddingVertical: 16,
     marginHorizontal: 24,
     marginTop: 16,

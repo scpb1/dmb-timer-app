@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 14,
+    borderRadius: 7,
     paddingVertical: 16,
     paddingHorizontal: 18,
     borderWidth: 1,
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   },
   menu: {
     marginTop: 4,
-    borderRadius: 14,
+    borderRadius: 7,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.25)',

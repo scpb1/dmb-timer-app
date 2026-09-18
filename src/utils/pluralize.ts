@@ -1,22 +1,2 @@
-/** Склонение русских существительных по числу (1 / 2–4 / 5+) */
-export function pluralize(
-  count: number,
-  one: string,
-  few: string,
-  many: string,
-): string {
-  const abs = Math.abs(count);
-  const mod10 = abs % 10;
-  const mod100 = abs % 100;
-
-  if (mod100 >= 11 && mod100 <= 14) {
-    return many;
-  }
-  if (mod10 === 1) {
-    return one;
-  }
-  if (mod10 >= 2 && mod10 <= 4) {
-    return few;
-  }
-  return many;
-}
+export { formatCount, inflect, pluralize } from '@/utils/inflection';
+export type { InflectableNoun, NounForms } from '@/utils/inflection';

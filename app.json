@@ -41,7 +41,16 @@
           }
         }
       ],
-      "expo-local-authentication"
+      "expo-local-authentication",
+      "expo-document-picker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Приложению нужен доступ к фото для фона таймера, дневника и записей встреч.",
+          "cameraPermission": "Приложению нужен доступ к камере для фото и видео встреч.",
+          "microphonePermission": "Приложению нужен доступ к микрофону для записи видео."
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -46,6 +46,10 @@ export const DEFAULT_EVENTS_STORAGE: EventsStorage = {
 export const PREDEFINED_EVENT_IDS = {
   ENLISTMENT: 'predefined-enlistment',
   EQUATOR: 'predefined-equator',
+  QUARTER_PASSED: 'predefined-quarter-passed',
+  QUARTER_REMAINING: 'predefined-quarter-remaining',
+  THIRD_PASSED: 'predefined-third-passed',
+  THIRD_REMAINING: 'predefined-third-remaining',
   TRAFFIC_RED: 'predefined-traffic-red',
   TRAFFIC_YELLOW: 'predefined-traffic-yellow',
   TRAFFIC_GREEN: 'predefined-traffic-green',
@@ -62,4 +66,19 @@ export function dddMilestoneEventId(daysLeft: number): string {
 
 export function dppMilestoneEventId(daysPassed: number): string {
   return `predefined-dpp-${daysPassed}`;
+}
+
+export function parseMonthEventIndex(id: string): number | null {
+  const match = /^predefined-month-(\d+)$/.exec(id);
+  return match ? Number(match[1]) : null;
+}
+
+export function parseDddMilestoneValue(id: string): number | null {
+  const match = /^predefined-ddd-(\d+)$/.exec(id);
+  return match ? Number(match[1]) : null;
+}
+
+export function parseDppMilestoneValue(id: string): number | null {
+  const match = /^predefined-dpp-(\d+)$/.exec(id);
+  return match ? Number(match[1]) : null;
 }

@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import Animated, {
   Easing,
@@ -13,13 +13,16 @@ import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import type { ThemeMode } from '@/types/onboarding';
 
-const { width, height } = Dimensions.get('window');
-
 interface ScreenBackgroundProps {
   themeMode?: ThemeMode;
 }
 
-function DarkGradient() {
+interface GradientSize {
+  width: number;
+  height: number;
+}
+
+function DarkGradient({ width, height }: GradientSize) {
   return (
     <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
       <Defs>
@@ -40,7 +43,7 @@ function DarkGradient() {
   );
 }
 
-function LightGradient() {
+function LightGradient({ width, height }: GradientSize) {
   return (
     <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
       <Defs>
@@ -64,6 +67,7 @@ function LightGradient() {
 /** Заметный статичный градиент (тёмный ↔ бежевый) */
 export function ScreenBackground({ themeMode = 'light' }: ScreenBackgroundProps) {
   const themeProgress = useSharedValue(themeMode === 'dark' ? 0 : 1);
+  const [size, setSize] = useState<GradientSize>({ width: 0, height: 0 });
 
   useEffect(() => {
     themeProgress.value = withTiming(themeMode === 'dark' ? 0 : 1, {
@@ -81,12 +85,24 @@ export function ScreenBackground({ themeMode = 'light' }: ScreenBackgroundProps)
   }));
 
   return (
-    <View style={styles.container}>
-      <Animated.View style={[styles.layer, darkLayerStyle]}>
-        <DarkGradient />
+    <View
+      style={styles.container}
+      onLayout={(event) => {
+        const { width, height } = event.nativeEvent.layout;
+        setSize((current) =>
+          current.width === width && current.height === height ? current : { width, height },
+        );
+      }}
+    >
+      <Animated.View
+        style={[styles.layer, { backgroundColor: colors.dark.background.start }, darkLayerStyle]}
+      >
+        {size.width > 0 ? <DarkGradient width={size.width} height={size.height} /> : null}
       </Animated.View>
-      <Animated.View style={[styles.layer, lightLayerStyle]}>
-        <LightGradient />
+      <Animated.View
+        style={[styles.layer, { backgroundColor: colors.light.background.start }, lightLayerStyle]}
+      >
+        {size.width > 0 ? <LightGradient width={size.width} height={size.height} /> : null}
       </Animated.View>
     </View>
   );
@@ -95,7 +111,6 @@ export function ScreenBackground({ themeMode = 'light' }: ScreenBackgroundProps)
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.dark.background.start,
   },
   layer: {
     ...StyleSheet.absoluteFillObject,

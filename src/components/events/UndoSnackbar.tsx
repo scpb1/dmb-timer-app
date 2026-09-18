@@ -5,10 +5,15 @@ import { typography } from '@/theme/typography';
 
 interface UndoSnackbarProps {
   visible: boolean;
+  message?: string;
   onUndo: () => void;
 }
 
-export function UndoSnackbar({ visible, onUndo }: UndoSnackbarProps) {
+export function UndoSnackbar({
+  visible,
+  message = 'Событие удалено',
+  onUndo,
+}: UndoSnackbarProps) {
   if (!visible) {
     return null;
   }
@@ -16,7 +21,7 @@ export function UndoSnackbar({ visible, onUndo }: UndoSnackbarProps) {
   return (
     <View style={styles.container}>
       <View style={styles.snackbar}>
-        <Text style={styles.message}>Событие удалено</Text>
+        <Text style={styles.message}>{message}</Text>
         <Pressable onPress={onUndo} hitSlop={8} accessibilityRole="button">
           <Text style={styles.action}>Отменить удаление</Text>
         </Pressable>
@@ -38,7 +43,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.light.text.primary,
-    borderRadius: 12,
+    borderRadius: 6,
     paddingVertical: 14,
     paddingHorizontal: 16,
     shadowColor: '#000',

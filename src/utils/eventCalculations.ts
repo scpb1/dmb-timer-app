@@ -19,7 +19,7 @@ import {
   dppMilestoneEventId,
   PREDEFINED_EVENT_IDS,
 } from '@/types/events';
-import { pluralize } from '@/utils/pluralize';
+import { formatCount } from '@/utils/inflection';
 
 interface PredefinedTemplate {
   id: string;
@@ -41,7 +41,7 @@ function generatePredefinedTemplates(
 
   events.push({
     id: PREDEFINED_EVENT_IDS.ENLISTMENT,
-    defaultName: 'День призыва',
+    defaultName: 'Призыв',
     date: enlist,
     dateFormat: 'dpp',
     dppValue: 0,
@@ -50,10 +50,9 @@ function generatePredefinedTemplates(
   let monthIndex = 1;
   let monthDate = addMonths(enlist, monthIndex);
   while (monthDate < demob) {
-    const monthWord = pluralize(monthIndex, 'месяц', 'месяца', 'месяцев');
     events.push({
       id: monthEventId(monthIndex),
-      defaultName: `${monthIndex} ${monthWord} службы`,
+      defaultName: `${formatCount(monthIndex, 'month')} службы`,
       date: startOfDay(monthDate),
       dateFormat: 'date',
     });
@@ -91,6 +90,42 @@ function generatePredefinedTemplates(
     dateFormat: 'dpp',
     dppValue: equatorDay,
   });
+
+  const quarterDays = Math.round(totalDays / 4);
+  if (quarterDays > 0 && quarterDays < totalDays) {
+    events.push({
+      id: PREDEFINED_EVENT_IDS.QUARTER_PASSED,
+      defaultName: 'Прошла 1/4 службы',
+      date: addDays(enlist, quarterDays),
+      dateFormat: 'dpp',
+      dppValue: quarterDays,
+    });
+    events.push({
+      id: PREDEFINED_EVENT_IDS.QUARTER_REMAINING,
+      defaultName: 'Осталась 1/4 службы',
+      date: addDays(demob, -quarterDays),
+      dateFormat: 'ddd',
+      dddValue: quarterDays,
+    });
+  }
+
+  const thirdDays = Math.round(totalDays / 3);
+  if (thirdDays > 0 && thirdDays < totalDays) {
+    events.push({
+      id: PREDEFINED_EVENT_IDS.THIRD_PASSED,
+      defaultName: 'Прошла 1/3 службы',
+      date: addDays(enlist, thirdDays),
+      dateFormat: 'dpp',
+      dppValue: thirdDays,
+    });
+    events.push({
+      id: PREDEFINED_EVENT_IDS.THIRD_REMAINING,
+      defaultName: 'Осталась 1/3 службы',
+      date: addDays(demob, -thirdDays),
+      dateFormat: 'ddd',
+      dddValue: thirdDays,
+    });
+  }
 
   const trafficLight: Array<{ id: string; name: string; daysLeft: number }> = [
     { id: PREDEFINED_EVENT_IDS.TRAFFIC_RED, name: 'Светофор — красный', daysLeft: 3 },
@@ -254,14 +289,16 @@ export function formatEventDate(date: Date): string {
   return format(date, 'd MMMM yyyy', { locale: ru });
 }
 
-export function formatEventSubtitle(event: DisplayEvent): string | null {
-  if (event.dateFormat === 'ddd' && event.dddValue !== undefined) {
-    return `${event.dddValue} ддд`;
+export function formatDaysUntilDate(date: Date, now: Date = new Date()): string | null {
+  const days = differenceInCalendarDays(startOfDay(date), startOfDay(now));
+  if (days < 0) {
+    return null;
   }
-  if (event.dateFormat === 'dpp' && event.dppValue !== undefined) {
-    return `${event.dppValue} дпп`;
+  if (days === 0) {
+    return 'Сегодня';
   }
-  return null;
+
+  return `Осталось ${formatCount(days, 'day')} до даты`;
 }
 
 export function parseEventsStorage(raw: string | null): EventsStorage {

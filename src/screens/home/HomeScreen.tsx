@@ -1,5 +1,13 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -16,6 +24,7 @@ import { getLinearDisplayValues, getStatCardDisplay } from '@/utils/timerCalcula
 import { resetAllData } from '@/services/database';
 import { colors } from '@/theme/colors';
 import { logger } from '@/utils/logger';
+import { getBackgroundScrimColor } from '@/utils/timerBackground';
 
 type Props = StackScreenProps<HomeStackParamList, 'HomeMain'> & {
   onResetToOnboarding: () => void;
@@ -30,6 +39,7 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
     passedBreakdown,
     remainingBreakdown,
     reload,
+    updateSettings,
   } = useServiceTimer();
 
   useFocusEffect(
@@ -42,6 +52,8 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
 
   const theme = colors.light;
   const statCardMode = settings.statCardMode ?? DEFAULT_TIMER_SETTINGS.statCardMode;
+  const hasPhotoBackground = Boolean(settings.backgroundImageUri);
+  const foregroundColor = hasPhotoBackground ? '#F2F0EC' : theme.text.primary;
 
   const handleResetData = () => {
     Alert.alert(
@@ -90,7 +102,23 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
 
   return (
     <View style={styles.root}>
-      <ScreenBackground themeMode="light" />
+      {settings.backgroundImageUri ? (
+        <>
+          <Image
+            source={{ uri: settings.backgroundImageUri }}
+            style={styles.backgroundImage}
+            resizeMode="cover"
+          />
+          <View
+            style={[
+              styles.backgroundScrim,
+              { backgroundColor: getBackgroundScrimColor(settings.backgroundDim) },
+            ]}
+          />
+        </>
+      ) : (
+        <ScreenBackground themeMode="light" />
+      )}
 
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.topBar}>
@@ -100,7 +128,7 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
               onPress={() => navigation.navigate('TimerSettings')}
               hitSlop={12}
             >
-              <MaterialCommunityIcons name="brush" size={26} color={theme.text.primary} />
+              <MaterialCommunityIcons name="brush" size={26} color={foregroundColor} />
             </Pressable>
 
             <Pressable
@@ -111,7 +139,7 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
               <MaterialCommunityIcons
                 name={showStats ? 'eye' : 'eye-off'}
                 size={26}
-                color={theme.text.primary}
+                color={foregroundColor}
               />
             </Pressable>
           </View>
@@ -120,7 +148,7 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
             <MaterialCommunityIcons
               name="refresh"
               size={18}
-              color={theme.text.secondary}
+              color={hasPhotoBackground ? 'rgba(242, 240, 236, 0.72)' : theme.text.secondary}
             />
           </Pressable>
         </View>
@@ -137,6 +165,11 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
               primaryValue={centerDisplay.primaryValue}
               secondaryValue={centerDisplay.secondaryValue}
               unitLabel={centerDisplay.unitLabel}
+              photoBackground={hasPhotoBackground}
+              centerDisplay={settings.centerDisplay}
+              onCenterDisplayChange={(nextDisplay) =>
+                updateSettings({ centerDisplay: nextDisplay })
+              }
             />
           ) : null}
 
@@ -145,18 +178,23 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
               mode={settings.progressBarMode}
               filledCount={filledCount}
               display={linearDisplay}
+              centerDisplay={settings.centerDisplay}
+              onCenterDisplayChange={(centerDisplay) => updateSettings({ centerDisplay })}
+              photoBackground={hasPhotoBackground}
             />
           ) : null}
 
           {showStats && passedBreakdown && remainingBreakdown ? (
             <View style={styles.statsRow}>
               <TimerStatCard
-                title="Прошло"
+                title="ПРОШЛО"
                 display={getStatCardDisplay(passedBreakdown, statCardMode)}
+                photoBackground={hasPhotoBackground}
               />
               <TimerStatCard
-                title="Осталось"
+                title="ОСТАЛОСЬ"
                 display={getStatCardDisplay(remainingBreakdown, statCardMode)}
+                photoBackground={hasPhotoBackground}
               />
             </View>
           ) : null}
@@ -169,6 +207,14 @@ export function HomeScreen({ navigation, onResetToOnboarding }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  backgroundImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  backgroundScrim: {
+    ...StyleSheet.absoluteFillObject,
   },
   container: {
     flex: 1,

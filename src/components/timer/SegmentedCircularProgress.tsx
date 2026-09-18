@@ -1,7 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import type { ProgressBarMode } from '@/types/timer';
+import { CenterDisplayToggle } from '@/components/timer/CenterDisplayToggle';
+import type { ProgressBarMode, TimerCenterDisplay } from '@/types/timer';
 import { PROGRESS_BAR_SEGMENT_COUNT } from '@/types/timer';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
@@ -13,6 +14,9 @@ interface SegmentedCircularProgressProps {
   secondaryValue?: string | null;
   unitLabel: string;
   size?: number;
+  photoBackground?: boolean;
+  centerDisplay?: TimerCenterDisplay;
+  onCenterDisplayChange?: (display: TimerCenterDisplay) => void;
 }
 
 const DEFAULT_SIZE = 280;
@@ -59,6 +63,9 @@ export function SegmentedCircularProgress({
   secondaryValue,
   unitLabel,
   size = DEFAULT_SIZE,
+  photoBackground = false,
+  centerDisplay = 'remaining',
+  onCenterDisplayChange,
 }: SegmentedCircularProgressProps) {
   const segmentCount = PROGRESS_BAR_SEGMENT_COUNT[mode];
   const center = size / 2;
@@ -77,32 +84,65 @@ export function SegmentedCircularProgress({
     return {
       key: index,
       d: describeSegmentPath(center, center, innerRadius, outerRadius, startAngle, endAngle),
-      fill: isFilled ? theme.text.accent : 'rgba(167, 154, 138, 0.35)',
+      fill: photoBackground
+        ? isFilled
+          ? '#F2F0EC'
+          : 'rgba(242, 240, 236, 0.30)'
+        : isFilled
+          ? theme.text.accent
+          : 'rgba(167, 154, 138, 0.35)',
     };
   });
 
   return (
-    <View style={[styles.wrapper, { width: size, height: size }]}>
-      <Svg width={size} height={size}>
-        {segments.map((segment) => (
-          <Path key={segment.key} d={segment.d} fill={segment.fill} />
-        ))}
-      </Svg>
+    <View style={[styles.block, { width: size }]}>
+      {onCenterDisplayChange ? (
+        <View style={styles.toggleRow}>
+          <CenterDisplayToggle
+            value={centerDisplay}
+            onChange={onCenterDisplayChange}
+            photoBackground={photoBackground}
+          />
+        </View>
+      ) : null}
 
-      <View style={styles.centerContent} pointerEvents="none">
-        {secondaryValue != null ? (
-          <Text style={styles.secondaryValue}>{secondaryValue}%</Text>
-        ) : null}
-        <Text style={styles.primaryValue} adjustsFontSizeToFit numberOfLines={1}>
-          {primaryValue}
-        </Text>
-        <Text style={styles.unitLabel}>{unitLabel}</Text>
+      <View style={[styles.wrapper, { width: size, height: size }]}>
+        <Svg width={size} height={size}>
+          {segments.map((segment) => (
+            <Path key={segment.key} d={segment.d} fill={segment.fill} />
+          ))}
+        </Svg>
+
+        <View style={styles.centerContent} pointerEvents="none">
+          {secondaryValue != null ? (
+            <Text style={[styles.secondaryValue, photoBackground && styles.photoText]}>
+              {secondaryValue}%
+            </Text>
+          ) : null}
+          <Text
+            style={[styles.primaryValue, photoBackground && styles.photoText]}
+            adjustsFontSizeToFit
+            numberOfLines={1}
+          >
+            {primaryValue}
+          </Text>
+          <Text style={[styles.unitLabel, photoBackground && styles.photoText]}>
+            {unitLabel}
+          </Text>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  block: {
+    alignItems: 'center',
+  },
+  toggleRow: {
+    width: '100%',
+    marginBottom: 8,
+  },
   wrapper: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -130,5 +170,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.light.text.secondary,
     marginTop: -10,
+  },
+  photoText: {
+    color: '#F2F0EC',
+    textShadowColor: 'rgba(0, 0, 0, 0.42)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
 });

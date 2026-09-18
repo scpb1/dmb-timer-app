@@ -4,10 +4,7 @@ export type TimerType = 'circular' | 'linear';
 /** Режим сегментированного прогресс-бара */
 export type ProgressBarMode = 'percent' | 'days' | 'weeks' | 'months';
 
-/**
- * Что показывать в центре кольца (пока не используется в UI).
- * Заложено для будущей настройки «прошло / осталось».
- */
+/** Что показывать в центре таймера: прошедшее или оставшееся */
 export type TimerCenterDisplay = 'remaining' | 'elapsed';
 
 /** Режим отображения плашек «Прошло / Осталось» */
@@ -21,14 +18,20 @@ export interface TimerSettings {
   /** Будущая настройка отображения в центре кольца */
   centerDisplay: TimerCenterDisplay;
   statCardMode: StatCardMode;
+  /** Локальный URI фотографии на фоне таймера */
+  backgroundImageUri: string | null;
+  /** Затемнение фото на фоне, 0–100 */
+  backgroundDim: number;
 }
 
 export const DEFAULT_TIMER_SETTINGS: TimerSettings = {
   timerType: 'circular',
   progressBarMode: 'percent',
-  percentDecimalPlaces: 6,
+  percentDecimalPlaces: 2,
   centerDisplay: 'remaining',
   statCardMode: 'days',
+  backgroundImageUri: null,
+  backgroundDim: 32,
 };
 
 export const PROGRESS_BAR_SEGMENT_COUNT: Record<ProgressBarMode, number> = {
@@ -52,9 +55,11 @@ export const CIRCULAR_PROGRESS_BAR_MODE_LABELS: Record<
   months: 'Месяцы',
 };
 
-export const LINEAR_PROGRESS_BAR_MODE_LABELS: Record<ProgressBarMode, string> = {
+export const LINEAR_PROGRESS_BAR_MODE_LABELS: Record<
+  Exclude<ProgressBarMode, 'days'>,
+  string
+> = {
   percent: 'Проценты',
-  days: 'Дни',
   weeks: 'Недели',
   months: 'Месяцы',
 };
@@ -69,7 +74,7 @@ export const STAT_CARD_MODE_LABELS: Record<StatCardMode, string> = {
 };
 
 export const CIRCULAR_PROGRESS_BAR_MODES = ['percent', 'weeks', 'months'] as const;
-export const LINEAR_PROGRESS_BAR_MODES = ['percent', 'days', 'weeks', 'months'] as const;
+export const LINEAR_PROGRESS_BAR_MODES = ['percent', 'weeks', 'months'] as const;
 
 export function getProgressBarModeOptions(timerType: TimerType) {
   const labels =
@@ -87,10 +92,10 @@ export function getProgressBarModeOptions(timerType: TimerType) {
 }
 
 export function normalizeProgressBarMode(
-  timerType: TimerType,
+  _timerType: TimerType,
   mode: ProgressBarMode,
 ): ProgressBarMode {
-  if (timerType === 'circular' && mode === 'days') {
+  if (mode === 'days') {
     return 'percent';
   }
   return mode;

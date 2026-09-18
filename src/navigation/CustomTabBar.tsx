@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 
 import { colors } from '@/theme/colors';
 import type { MainTabParamList } from '@/types/navigation';
@@ -15,8 +16,16 @@ const TAB_CONFIG: Record<TabName, { icon: keyof typeof Feather.glyphMap; label: 
   Trackers: { icon: 'calendar', label: 'Трекеры' },
 };
 
+const HIDDEN_TAB_ROUTES = new Set(['PersonalDiary', 'LetterTheme', 'LetterEditor']);
+
 /** Нижняя панель: минималистичные иконки + полоска активной вкладки */
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+  const currentRoute = state.routes[state.index];
+  const nestedName = getFocusedRouteNameFromRoute(currentRoute) ?? currentRoute.name;
+  if (HIDDEN_TAB_ROUTES.has(nestedName)) {
+    return <View />;
+  }
+
   return (
     <View style={styles.wrapper} pointerEvents="box-none">
       <View style={styles.bar}>

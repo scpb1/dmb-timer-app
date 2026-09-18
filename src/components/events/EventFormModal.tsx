@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     color: colors.light.text.primary,
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.4)',
-    borderRadius: 12,
+    borderRadius: 6,
     paddingVertical: 12,
     paddingHorizontal: 14,
     marginBottom: 4,
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   formatButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.4)',
     alignItems: 'center',

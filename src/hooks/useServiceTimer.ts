@@ -12,10 +12,11 @@ import {
   type TimerType,
 } from '@/types/timer';
 import { getConfig, setConfig } from '@/services/database';
+import { clampBackgroundDim, DEFAULT_BACKGROUND_DIM } from '@/utils/timerBackground';
 import {
   calculateServiceProgress,
   getCenterDisplayValues,
-  getTimeBreakdown,
+  getServiceTimeBreakdowns,
   type CenterDisplayValues,
   type ServiceProgress,
   type TimeBreakdown,
@@ -44,6 +45,8 @@ function parseTimerSettings(
   decimalPlaces: string | null,
   centerDisplay: string | null,
   statCardMode: string | null,
+  backgroundImageUri: string | null,
+  backgroundDim: string | null,
 ): TimerSettings {
   const validModes: ProgressBarMode[] = ['percent', 'days', 'weeks', 'months'];
   const validStatCardModes: StatCardMode[] = ['days', 'weeks', 'months'];
@@ -67,7 +70,8 @@ function parseTimerSettings(
 
   const normalizedMode = normalizeProgressBarMode(type, mode);
 
-  const parsedDecimals = decimalPlaces ? Number(decimalPlaces) : NaN;
+  const parsedDecimals =
+    decimalPlaces == null || decimalPlaces === '' ? NaN : Number(decimalPlaces);
   const percentDecimalPlaces =
     Number.isFinite(parsedDecimals) && parsedDecimals >= 0 && parsedDecimals <= 6
       ? parsedDecimals
@@ -84,17 +88,32 @@ function parseTimerSettings(
     percentDecimalPlaces,
     centerDisplay: display,
     statCardMode: cardMode,
+    backgroundImageUri: backgroundImageUri || null,
+    backgroundDim:
+      backgroundDim == null || backgroundDim === ''
+        ? DEFAULT_BACKGROUND_DIM
+        : clampBackgroundDim(Number(backgroundDim)),
   };
 }
 
 async function loadTimerSettings(): Promise<TimerSettings> {
-  const [timerType, progressBarMode, decimalPlaces, centerDisplay, statCardMode] =
+  const [
+    timerType,
+    progressBarMode,
+    decimalPlaces,
+    centerDisplay,
+    statCardMode,
+    backgroundImageUri,
+    backgroundDim,
+  ] =
     await Promise.all([
       getConfig(CONFIG_KEYS.TIMER_TYPE),
       getConfig(CONFIG_KEYS.PROGRESS_BAR_MODE),
       getConfig(CONFIG_KEYS.PERCENT_DECIMAL_PLACES),
       getConfig(CONFIG_KEYS.TIMER_CENTER_DISPLAY),
       getConfig(CONFIG_KEYS.STAT_CARD_MODE),
+      getConfig(CONFIG_KEYS.TIMER_BACKGROUND_IMAGE),
+      getConfig(CONFIG_KEYS.TIMER_BACKGROUND_DIM),
     ]);
 
   return parseTimerSettings(
@@ -103,6 +122,8 @@ async function loadTimerSettings(): Promise<TimerSettings> {
     decimalPlaces,
     centerDisplay,
     statCardMode,
+    backgroundImageUri,
+    backgroundDim,
   );
 }
 
@@ -122,12 +143,17 @@ function computeTimerState(
     settings.percentDecimalPlaces,
     settings.centerDisplay,
   );
+  const { passed, remaining } = getServiceTimeBreakdowns(
+    enlistmentDate,
+    demobilizationDate,
+    now,
+  );
 
   return {
     progress,
     centerDisplay,
-    passedBreakdown: getTimeBreakdown(enlistmentDate, now),
-    remainingBreakdown: getTimeBreakdown(now, demobilizationDate),
+    passedBreakdown: passed,
+    remainingBreakdown: remaining,
   };
 }
 
@@ -226,6 +252,7 @@ export function useServiceTimer(): UseServiceTimerResult {
         merged.timerType,
         merged.progressBarMode,
       ),
+      backgroundDim: clampBackgroundDim(merged.backgroundDim),
     };
 
     await Promise.all([
@@ -234,7 +261,13 @@ export function useServiceTimer(): UseServiceTimerResult {
       setConfig(CONFIG_KEYS.PERCENT_DECIMAL_PLACES, String(nextSettings.percentDecimalPlaces)),
       setConfig(CONFIG_KEYS.TIMER_CENTER_DISPLAY, nextSettings.centerDisplay),
       setConfig(CONFIG_KEYS.STAT_CARD_MODE, nextSettings.statCardMode),
+      setConfig(CONFIG_KEYS.TIMER_BACKGROUND_DIM, String(nextSettings.backgroundDim)),
     ]);
+    // URI пишем последним: при ошибке остальных настроек файл можно безопасно откатить.
+    await setConfig(
+      CONFIG_KEYS.TIMER_BACKGROUND_IMAGE,
+      nextSettings.backgroundImageUri ?? '',
+    );
 
     setState((prev) => {
       if (!prev.enlistmentDate || !prev.demobilizationDate) {

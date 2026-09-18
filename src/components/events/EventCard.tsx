@@ -1,47 +1,68 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-import type { DisplayEvent } from '@/types/events';
-import { formatEventDate, formatEventSubtitle } from '@/utils/eventCalculations';
+import { EventGlyphBadge } from '@/components/events/EventGlyphBadge';
+import type { EventGlyph } from '@/utils/eventGlyphs';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 
 interface EventCardProps {
-  event: DisplayEvent;
-  onEdit: (event: DisplayEvent) => void;
-  onDelete: (event: DisplayEvent) => void;
+  name: string;
+  dateText: string;
+  subtitle?: string | null;
+  isPast: boolean;
+  kind: 'event' | 'holiday';
+  glyph: EventGlyph;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
-export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
-  const subtitle = formatEventSubtitle(event);
+export function EventCard({
+  name,
+  dateText,
+  subtitle,
+  isPast,
+  kind,
+  glyph,
+  onEdit,
+  onDelete,
+}: EventCardProps) {
+  const isHoliday = kind === 'holiday';
 
   return (
-    <View style={[styles.card, event.isPast && styles.cardPast]}>
+    <View
+      style={[
+        styles.card,
+        isHoliday && styles.cardHoliday,
+        isPast && styles.cardPast,
+      ]}
+    >
+      <EventGlyphBadge glyph={glyph} />
       <View style={styles.content}>
         <Text style={styles.name} numberOfLines={2}>
-          {event.name}
+          {name}
         </Text>
-        <Text style={styles.date}>{formatEventDate(event.date)}</Text>
+        <Text style={styles.date}>{dateText}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
 
       <View style={styles.actions}>
         <Pressable
           style={styles.actionButton}
-          onPress={() => onEdit(event)}
+          onPress={onEdit}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Изменить событие"
+          accessibilityLabel={isHoliday ? 'Изменить праздник' : 'Изменить событие'}
         >
           <Feather name="edit-2" size={18} color={colors.light.text.secondary} />
         </Pressable>
 
         <Pressable
           style={styles.actionButton}
-          onPress={() => onDelete(event)}
+          onPress={onDelete}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Удалить событие"
+          accessibilityLabel={isHoliday ? 'Удалить праздник' : 'Удалить событие'}
         >
           <Feather name="x" size={20} color={colors.light.text.secondary} />
         </Pressable>
@@ -55,14 +76,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 16,
+    borderRadius: 8,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.25)',
   },
+  cardHoliday: {
+    backgroundColor: colors.light.holiday.cardBackground,
+    borderColor: colors.light.holiday.cardBorder,
+  },
   cardPast: {
-    opacity: 0.65,
+    opacity: 0.4,
   },
   content: {
     flex: 1,

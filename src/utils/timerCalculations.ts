@@ -1,4 +1,4 @@
-import { pluralize } from '@/utils/pluralize';
+import { formatCount, inflect } from '@/utils/inflection';
 
 import { differenceInCalendarDays, startOfDay } from 'date-fns';
 
@@ -39,6 +39,21 @@ export function getTimeBreakdown(from: Date, to: Date): TimeBreakdown {
     hours: Math.floor((totalSeconds % 86400) / 3600),
     minutes: Math.floor((totalSeconds % 3600) / 60),
     seconds: totalSeconds % 60,
+  };
+}
+
+/** Считает прошедшее и оставшееся время от полуночи дня призыва / до полуночи дня дембеля */
+export function getServiceTimeBreakdowns(
+  enlistmentDate: Date,
+  demobilizationDate: Date,
+  now: Date = new Date(),
+): { passed: TimeBreakdown; remaining: TimeBreakdown } {
+  const enlistmentStart = startOfDay(enlistmentDate);
+  const demobilizationStart = startOfDay(demobilizationDate);
+
+  return {
+    passed: getTimeBreakdown(enlistmentStart, now),
+    remaining: getTimeBreakdown(now, demobilizationStart),
   };
 }
 
@@ -111,10 +126,7 @@ export interface CenterDisplayValues {
   unitLabel: string;
 }
 
-/**
- * Значения для центра кольца.
- * centerDisplay пока всегда «remaining», но логика готова к переключению.
- */
+/** Значения для центра кольца и подписи линейного таймера */
 export function getCenterDisplayValues(
   mode: ProgressBarMode,
   progress: ServiceProgress,
@@ -122,40 +134,46 @@ export function getCenterDisplayValues(
   centerDisplay: TimerCenterDisplay = 'remaining',
 ): CenterDisplayValues {
   const useRemaining = centerDisplay === 'remaining';
+  const days = useRemaining ? progress.daysLeft : progress.daysPassed;
+  const weeks = useRemaining ? progress.weeksLeft : progress.weeksPassed;
+  const months = useRemaining ? progress.monthsLeft : progress.monthsPassed;
+  const percentValue = useRemaining
+    ? (1 - progress.progressRatio) * 100
+    : progress.progressPercent;
 
   switch (mode) {
     case 'percent':
       return {
-        primaryValue: String(useRemaining ? progress.daysLeft : progress.daysPassed),
-        secondaryValue: formatProgressPercent(progress.progressPercent, decimalPlaces),
-        unitLabel: 'ддд',
+        primaryValue: String(days),
+        secondaryValue: formatProgressPercent(percentValue, decimalPlaces),
+        unitLabel: useRemaining ? 'ддд' : 'дпп',
       };
     case 'days':
       return {
-        primaryValue: String(useRemaining ? progress.daysLeft : progress.daysPassed),
+        primaryValue: String(days),
         secondaryValue: null,
-        unitLabel: 'ддд',
+        unitLabel: useRemaining ? 'ддд' : 'дпп',
       };
     case 'weeks':
       return {
-        primaryValue: String(useRemaining ? progress.weeksLeft : progress.weeksPassed),
+        primaryValue: String(weeks),
         secondaryValue: null,
-        unitLabel: 'недель',
+        unitLabel: inflect(weeks, 'week'),
       };
     case 'months':
       return {
-        primaryValue: String(useRemaining ? progress.monthsLeft : progress.monthsPassed),
+        primaryValue: String(months),
         secondaryValue: null,
-        unitLabel: 'месяцев',
+        unitLabel: inflect(months, 'month'),
       };
   }
 }
 
 export function formatTimeBreakdownLines(breakdown: TimeBreakdown): string[] {
   return [
-    `${breakdown.hours} ${pluralize(breakdown.hours, 'час', 'часа', 'часов')}`,
-    `${breakdown.minutes} ${pluralize(breakdown.minutes, 'минута', 'минуты', 'минут')}`,
-    `${breakdown.seconds} ${pluralize(breakdown.seconds, 'секунда', 'секунды', 'секунд')}`,
+    formatCount(breakdown.hours, 'hour'),
+    formatCount(breakdown.minutes, 'minute'),
+    formatCount(breakdown.seconds, 'second'),
   ];
 }
 
@@ -176,7 +194,7 @@ export function getStatCardDisplay(
     case 'days':
       return {
         primaryValue: breakdown.days,
-        unitLabel: pluralize(breakdown.days, 'день', 'дня', 'дней'),
+        unitLabel: inflect(breakdown.days, 'day'),
         detailLines: formatTimeBreakdownLines(breakdown),
       };
     case 'weeks': {
@@ -184,10 +202,8 @@ export function getStatCardDisplay(
       const remainderDays = breakdown.days % 7;
       return {
         primaryValue: weeks,
-        unitLabel: pluralize(weeks, 'неделя', 'недели', 'недель'),
-        detailLines: [
-          `${remainderDays} ${pluralize(remainderDays, 'день', 'дня', 'дней')}`,
-        ],
+        unitLabel: inflect(weeks, 'week'),
+        detailLines: [formatCount(remainderDays, 'day')],
       };
     }
     case 'months': {
@@ -195,16 +211,14 @@ export function getStatCardDisplay(
       const remainderDays = breakdown.days % 30;
       return {
         primaryValue: months,
-        unitLabel: pluralize(months, 'месяц', 'месяца', 'месяцев'),
-        detailLines: [
-          `${remainderDays} ${pluralize(remainderDays, 'день', 'дня', 'дней')}`,
-        ],
+        unitLabel: inflect(months, 'month'),
+        detailLines: [formatCount(remainderDays, 'day')],
       };
     }
     default:
       return {
         primaryValue: breakdown.days,
-        unitLabel: pluralize(breakdown.days, 'день', 'дня', 'дней'),
+        unitLabel: inflect(breakdown.days, 'day'),
         detailLines: formatTimeBreakdownLines(breakdown),
       };
   }
@@ -227,9 +241,13 @@ export function getLinearDisplayValues(
   const useRemaining = centerDisplay === 'remaining';
 
   if (mode === 'percent') {
+    const percentValue = useRemaining
+      ? (1 - progress.progressRatio) * 100
+      : progress.progressPercent;
+
     return {
       mode: 'percent',
-      percentText: `${formatProgressPercent(progress.progressPercent, decimalPlaces)}%`,
+      percentText: `${formatProgressPercent(percentValue, decimalPlaces)}%`,
     };
   }
 

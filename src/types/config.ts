@@ -12,7 +12,12 @@ export const CONFIG_KEYS = {
   PERCENT_DECIMAL_PLACES: 'percent_decimal_places',
   TIMER_CENTER_DISPLAY: 'timer_center_display',
   STAT_CARD_MODE: 'stat_card_mode',
+  TIMER_BACKGROUND_IMAGE: 'timer_background_image',
+  TIMER_BACKGROUND_DIM: 'timer_background_dim',
   EVENTS_DATA: 'events_data',
+  HOLIDAYS_DATA: 'holidays_data',
+  TRACKERS_CALLS_DATA: 'trackers_calls_data',
+  TRACKERS_MEETINGS_DATA: 'trackers_meetings_data',
 } as const;
 
 export type ConfigKey = (typeof CONFIG_KEYS)[keyof typeof CONFIG_KEYS];

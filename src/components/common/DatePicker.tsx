@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   },
   button: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 6,
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginHorizontal: 24,

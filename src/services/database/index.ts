@@ -1,6 +1,16 @@
 import * as SQLite from 'expo-sqlite';
 
 import { logger } from '@/utils/logger';
+import { removeTimerBackground } from '@/utils/timerBackground';
+import { CONFIG_KEYS } from '@/types/config';
+import { initDiarySchema, resetDiaryEntries } from './diary';
+
+export {
+  getDiaryEntry,
+  getLetterThemes,
+  getUsedLetterThemeIds,
+  upsertDiaryEntry,
+} from './diary';
 
 const DATABASE_NAME = 'zhdi.db';
 
@@ -18,6 +28,7 @@ export async function initDatabase(): Promise<void> {
   try {
     database = await SQLite.openDatabaseAsync(DATABASE_NAME);
     await database.execAsync(CREATE_CONFIG_TABLE);
+    await initDiarySchema(database);
     logger.info('База данных инициализирована');
   } catch (error) {
     logger.error('Ошибка инициализации базы данных', error);
@@ -67,7 +78,16 @@ export async function setConfig(key: string, value: string): Promise<void> {
 export async function resetAllData(): Promise<void> {
   try {
     const db = getDatabase();
+    const backgroundImageUri = await getConfig(CONFIG_KEYS.TIMER_BACKGROUND_IMAGE);
     await db.runAsync('DELETE FROM config');
+    await resetDiaryEntries();
+
+    try {
+      await removeTimerBackground(backgroundImageUri);
+    } catch (error) {
+      logger.error('Не удалось удалить файл фона таймера при сбросе', error);
+    }
+
     logger.info('Все данные сброшены');
   } catch (error) {
     logger.error('Ошибка сброса данных', error);

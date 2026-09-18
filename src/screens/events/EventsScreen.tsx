@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -11,61 +11,122 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
+import { AddKindMenu } from '@/components/events/AddKindMenu';
 import { EventCard } from '@/components/events/EventCard';
 import { EventFormModal } from '@/components/events/EventFormModal';
+import { HolidayFormModal } from '@/components/events/HolidayFormModal';
 import { UndoSnackbar } from '@/components/events/UndoSnackbar';
 import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { useEvents } from '@/hooks/useEvents';
+import { useHolidays } from '@/hooks/useHolidays';
 import type { DisplayEvent } from '@/types/events';
+import type { DisplayHoliday } from '@/types/holidays';
+import { formatDaysUntilDate, formatEventDate } from '@/utils/eventCalculations';
+import { getEventGlyph, getHolidayGlyph } from '@/utils/eventGlyphs';
+import { formatHolidayDate, formatHolidayName } from '@/utils/holidayCalculations';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 
+type ListItem =
+  | { kind: 'event'; date: Date; event: DisplayEvent }
+  | { kind: 'holiday'; date: Date; holiday: DisplayHoliday };
+
 export function EventsScreen() {
   const {
-    isLoading,
+    isLoading: eventsLoading,
     events,
-    pendingDeletion,
+    pendingDeletion: pendingEventDeletion,
     addEvent,
     updateEvent,
     deleteEvent,
-    undoDelete,
-    reload,
+    undoDelete: undoEventDelete,
+    reload: reloadEvents,
   } = useEvents();
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const {
+    isLoading: holidaysLoading,
+    holidays,
+    pendingDeletion: pendingHolidayDeletion,
+    addHoliday,
+    updateHoliday,
+    deleteHoliday,
+    undoDelete: undoHolidayDelete,
+    reload: reloadHolidays,
+  } = useHolidays();
+
+  const [kindMenuVisible, setKindMenuVisible] = useState(false);
+  const [eventModalVisible, setEventModalVisible] = useState(false);
+  const [eventModalMode, setEventModalMode] = useState<'add' | 'edit'>('add');
   const [editingEvent, setEditingEvent] = useState<DisplayEvent | null>(null);
+  const [holidayModalVisible, setHolidayModalVisible] = useState(false);
+  const [holidayModalMode, setHolidayModalMode] = useState<'add' | 'edit'>('add');
+  const [editingHoliday, setEditingHoliday] = useState<DisplayHoliday | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      reload();
-    }, [reload]),
+      void reloadEvents();
+      void reloadHolidays();
+    }, [reloadEvents, reloadHolidays]),
   );
 
-  const openAddModal = () => {
-    setModalMode('add');
+  const items = useMemo<ListItem[]>(() => {
+    const next: ListItem[] = [
+      ...events.map((event) => ({ kind: 'event' as const, date: event.date, event })),
+      ...holidays.map((holiday) => ({ kind: 'holiday' as const, date: holiday.date, holiday })),
+    ];
+    return next.sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [events, holidays]);
+
+  const openAddMenu = () => setKindMenuVisible(true);
+
+  const openAddEvent = () => {
+    setKindMenuVisible(false);
+    setEventModalMode('add');
     setEditingEvent(null);
-    setModalVisible(true);
+    setEventModalVisible(true);
   };
 
-  const openEditModal = (event: DisplayEvent) => {
-    setModalMode('edit');
+  const openAddHoliday = () => {
+    setKindMenuVisible(false);
+    setHolidayModalMode('add');
+    setEditingHoliday(null);
+    setHolidayModalVisible(true);
+  };
+
+  const openEditEvent = (event: DisplayEvent) => {
+    setEventModalMode('edit');
     setEditingEvent(event);
-    setModalVisible(true);
+    setEventModalVisible(true);
   };
 
-  const handleSave = async (form: Parameters<typeof addEvent>[0]) => {
-    if (modalMode === 'add') {
+  const openEditHoliday = (holiday: DisplayHoliday) => {
+    setHolidayModalMode('edit');
+    setEditingHoliday(holiday);
+    setHolidayModalVisible(true);
+  };
+
+  const handleSaveEvent = async (form: Parameters<typeof addEvent>[0]) => {
+    if (eventModalMode === 'add') {
       return addEvent(form);
     }
-
     if (!editingEvent) {
       return false;
     }
-
     return updateEvent(editingEvent.id, form, editingEvent.isCustom);
   };
 
+  const handleSaveHoliday = async (form: Parameters<typeof addHoliday>[0]) => {
+    if (holidayModalMode === 'add') {
+      return addHoliday(form);
+    }
+    if (!editingHoliday) {
+      return false;
+    }
+    return updateHoliday(editingHoliday.id, form, editingHoliday.isCustom);
+  };
+
+  const pendingHoliday = pendingHolidayDeletion !== null;
+  const isLoading = eventsLoading || holidaysLoading;
   const theme = colors.light;
 
   return (
@@ -77,10 +138,10 @@ export function EventsScreen() {
           <Text style={styles.title}>События</Text>
           <Pressable
             style={styles.addButton}
-            onPress={openAddModal}
+            onPress={openAddMenu}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Добавить событие"
+            accessibilityLabel="Добавить событие или праздник"
           >
             <Feather name="plus" size={24} color={theme.text.primary} />
           </Pressable>
@@ -90,10 +151,10 @@ export function EventsScreen() {
           <View style={styles.loader}>
             <ActivityIndicator size="large" color={theme.text.primary} />
           </View>
-        ) : events.length === 0 ? (
+        ) : items.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
-              Нет событий. Нажмите «+», чтобы добавить своё.
+              Нет событий и праздников. Нажмите «+», чтобы добавить.
             </Text>
           </View>
         ) : (
@@ -102,26 +163,64 @@ export function EventsScreen() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {events.map((event) => (
-              <EventCard
-                key={event.id}
-                event={event}
-                onEdit={openEditModal}
-                onDelete={deleteEvent}
-              />
-            ))}
+            {items.map((item) =>
+              item.kind === 'event' ? (
+                <EventCard
+                  key={`event-${item.event.id}`}
+                  kind="event"
+                  name={item.event.name}
+                  dateText={formatEventDate(item.event.date)}
+                  subtitle={formatDaysUntilDate(item.event.date)}
+                  isPast={item.event.isPast}
+                  glyph={getEventGlyph(item.event)}
+                  onEdit={() => openEditEvent(item.event)}
+                  onDelete={() => void deleteEvent(item.event)}
+                />
+              ) : (
+                <EventCard
+                  key={`holiday-${item.holiday.id}-${item.holiday.date.getFullYear()}`}
+                  kind="holiday"
+                  name={formatHolidayName(item.holiday)}
+                  dateText={formatHolidayDate(item.holiday)}
+                  subtitle={formatDaysUntilDate(item.holiday.date)}
+                  isPast={item.holiday.isPast}
+                  glyph={getHolidayGlyph(item.holiday)}
+                  onEdit={() => openEditHoliday(item.holiday)}
+                  onDelete={() => void deleteHoliday(item.holiday)}
+                />
+              ),
+            )}
           </ScrollView>
         )}
 
-        <UndoSnackbar visible={pendingDeletion !== null} onUndo={undoDelete} />
+        <UndoSnackbar
+          visible={pendingEventDeletion !== null || pendingHoliday}
+          message={pendingHoliday ? 'Праздник удалён' : 'Событие удалено'}
+          onUndo={() => void (pendingHoliday ? undoHolidayDelete() : undoEventDelete())}
+        />
       </SafeAreaView>
 
+      <AddKindMenu
+        visible={kindMenuVisible}
+        onClose={() => setKindMenuVisible(false)}
+        onChooseEvent={openAddEvent}
+        onChooseHoliday={openAddHoliday}
+      />
+
       <EventFormModal
-        visible={modalVisible}
-        mode={modalMode}
+        visible={eventModalVisible}
+        mode={eventModalMode}
         event={editingEvent}
-        onClose={() => setModalVisible(false)}
-        onSave={handleSave}
+        onClose={() => setEventModalVisible(false)}
+        onSave={handleSaveEvent}
+      />
+
+      <HolidayFormModal
+        visible={holidayModalVisible}
+        mode={holidayModalMode}
+        holiday={editingHoliday}
+        onClose={() => setHolidayModalVisible(false)}
+        onSave={handleSaveHoliday}
       />
     </View>
   );
@@ -153,7 +252,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 22,
+    borderRadius: 11,
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.25)',
   },
