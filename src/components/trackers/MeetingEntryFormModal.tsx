@@ -11,23 +11,26 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { format, parseISO } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { format } from 'date-fns';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 
-import { MeetingDurationInput } from '@/components/trackers/MeetingDurationInput';
+import { DatePicker } from '@/components/common/DatePicker';
+import { MeetingTimeRangeInput } from '@/components/trackers/MeetingTimeRangeInput';
 import { MoodPicker } from '@/components/trackers/MoodPicker';
 import { PhotoGrid } from '@/components/trackers/PhotoGrid';
 import { PhotoViewerModal } from '@/components/trackers/PhotoViewerModal';
 import type { MeetingEntryInput } from '@/hooks/useMeetingTracker';
-import type { MeetingMediaItem, TrackerMood } from '@/types/trackers';
+import type { MeetingEntry, MeetingMediaItem, TrackerMood } from '@/types/trackers';
+import { getMeetingPhotos, getMeetingVideos } from '@/types/trackers';
+import { getMeetingDurationSeconds, parseDateKey, validateMeetingTimes } from '@/utils/meetingTime';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 
 interface MeetingEntryFormModalProps {
   visible: boolean;
   date: string;
+  entry?: MeetingEntry | null;
   onClose: () => void;
   onSave: (date: string, input: MeetingEntryInput) => Promise<boolean>;
 }
@@ -35,33 +38,53 @@ interface MeetingEntryFormModalProps {
 export function MeetingEntryFormModal({
   visible,
   date,
+  entry,
   onClose,
   onSave,
 }: MeetingEntryFormModalProps) {
-  const [hours, setHours] = useState(1);
-  const [minutes, setMinutes] = useState(0);
+  const [entryDate, setEntryDate] = useState(date);
+  const [startTime, setStartTime] = useState<string | undefined>();
+  const [endTime, setEndTime] = useState<string | undefined>();
+  const [title, setTitle] = useState('');
   const [moods, setMoods] = useState<TrackerMood[]>([]);
   const [impressions, setImpressions] = useState('');
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [video, setVideo] = useState<MeetingMediaItem | undefined>();
+  const [photos, setPhotos] = useState<MeetingMediaItem[]>([]);
+  const [videos, setVideos] = useState<MeetingMediaItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [viewerItems, setViewerItems] = useState<MeetingMediaItem[]>([]);
   const [viewerVisible, setViewerVisible] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
   useEffect(() => {
-    if (visible) {
-      setHours(1);
-      setMinutes(0);
-      setMoods([]);
-      setImpressions('');
-      setPhotos([]);
-      setVideo(undefined);
+    if (!visible) {
+      return;
+    }
+
+    if (entry) {
+      setEntryDate(entry.date);
+      setStartTime(entry.startTime);
+      setEndTime(entry.endTime);
+      setTitle(entry.title ?? '');
+      setMoods(entry.moods ?? []);
+      setImpressions(entry.impressions ?? '');
+      setPhotos(getMeetingPhotos(entry).map((uri) => ({ uri, type: 'photo' as const })));
+      setVideos(getMeetingVideos(entry));
       setIsSaving(false);
       setViewerVisible(false);
+      return;
     }
-  }, [visible]);
 
-  const formattedDate = format(parseISO(date), 'd MMMM yyyy', { locale: ru });
+    setEntryDate(date);
+    setStartTime(undefined);
+    setEndTime(undefined);
+    setTitle('');
+    setMoods([]);
+    setImpressions('');
+    setPhotos([]);
+    setVideos([]);
+    setIsSaving(false);
+    setViewerVisible(false);
+  }, [visible, entry, date]);
 
   const pickPhotosFromLibrary = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -78,7 +101,10 @@ export function MeetingEntryFormModal({
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      setPhotos((current) => [...current, ...result.assets.map((asset) => asset.uri)]);
+      setPhotos((current) => [
+        ...current,
+        ...result.assets.map((asset) => ({ uri: asset.uri, type: 'photo' as const })),
+      ]);
     }
   };
 
@@ -95,11 +121,11 @@ export function MeetingEntryFormModal({
     });
 
     if (!result.canceled && result.assets[0]) {
-      setPhotos((current) => [...current, result.assets[0].uri]);
+      setPhotos((current) => [...current, { uri: result.assets[0].uri, type: 'photo' }]);
     }
   };
 
-  const pickVideo = async () => {
+  const pickVideosFromLibrary = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert('Нет доступа', 'Разрешите доступ к галерее');
@@ -108,33 +134,64 @@ export function MeetingEntryFormModal({
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 0,
+      videoMaxDuration: 600,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setVideos((current) => [
+        ...current,
+        ...result.assets.map((asset) => ({ uri: asset.uri, type: 'video' as const })),
+      ]);
+    }
+  };
+
+  const pickVideoFromCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Нет доступа', 'Разрешите доступ к камере');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
       quality: 0.8,
       videoMaxDuration: 600,
     });
 
     if (!result.canceled && result.assets[0]) {
-      setVideo({ uri: result.assets[0].uri, type: 'video' });
+      setVideos((current) => [...current, { uri: result.assets[0].uri, type: 'video' }]);
     }
   };
 
-  const removePhoto = (index: number) => {
-    setPhotos((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  const openViewer = (items: MeetingMediaItem[], index: number) => {
+    setViewerItems(items);
+    setViewerIndex(index);
+    setViewerVisible(true);
   };
 
   const handleSave = async () => {
-    const durationSeconds = hours * 3600 + minutes * 60;
-    if (durationSeconds <= 0) {
-      Alert.alert('Укажите длительность', 'Длительность встречи должна быть больше 0');
+    const timeError = validateMeetingTimes(entryDate, startTime, endTime);
+    if (timeError) {
+      Alert.alert('Укажите время', timeError);
       return;
     }
 
-    const mediaItems: MeetingMediaItem[] = [
-      ...photos.map((uri) => ({ uri, type: 'photo' as const })),
-      ...(video ? [video] : []),
-    ];
+    const mediaItems: MeetingMediaItem[] = [...photos, ...videos];
+    const durationSeconds =
+      getMeetingDurationSeconds({
+        startTime,
+        endTime,
+        durationSeconds: 0,
+      }) ?? 0;
 
     setIsSaving(true);
-    const success = await onSave(date, {
+    const success = await onSave(entryDate, {
+      title,
+      startTime,
+      endTime,
       durationSeconds,
       moods: moods.length > 0 ? moods : undefined,
       mediaItems: mediaItems.length > 0 ? mediaItems : undefined,
@@ -168,20 +225,46 @@ export function MeetingEntryFormModal({
             >
               <View style={styles.header}>
                 <View>
-                  <Text style={styles.title}>Новая встреча</Text>
-                  <Text style={styles.subtitle}>{formattedDate}</Text>
+                  <Text style={styles.title}>{entry ? 'Изменить встречу' : 'Новая встреча'}</Text>
                 </View>
-                <Pressable onPress={onClose} hitSlop={8}>
+                <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Закрыть">
                   <Feather name="x" size={22} color={colors.light.text.primary} />
                 </Pressable>
               </View>
 
-              <MeetingDurationInput
-                hours={hours}
-                minutes={minutes}
-                onChangeHours={setHours}
-                onChangeMinutes={setMinutes}
+              <DatePicker
+                label="Дата"
+                value={parseDateKey(entryDate)}
+                onChange={(next) => {
+                  const nextDate = format(next, 'yyyy-MM-dd');
+                  setEntryDate(nextDate);
+                  if (!startTime) {
+                    setEndTime(undefined);
+                  }
+                }}
+                labelStyle={styles.datePickerLabel}
+                buttonStyle={styles.datePickerButton}
+                buttonTextStyle={styles.datePickerButtonText}
               />
+
+              <MeetingTimeRangeInput
+                date={entryDate}
+                startTime={startTime}
+                endTime={endTime}
+                onChangeStart={setStartTime}
+                onChangeEnd={setEndTime}
+              />
+
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Название</Text>
+                <TextInput
+                  style={styles.titleInput}
+                  value={title}
+                  onChangeText={setTitle}
+                  placeholder="Как назвать встречу?"
+                  placeholderTextColor={colors.light.input.placeholder}
+                />
+              </View>
 
               <MoodPicker value={moods} onChange={setMoods} />
 
@@ -198,24 +281,31 @@ export function MeetingEntryFormModal({
                   </Pressable>
                 </View>
                 <PhotoGrid
-                  photos={photos}
+                  items={photos}
                   editable
-                  onPhotoPress={(index) => {
-                    setViewerIndex(index);
-                    setViewerVisible(true);
-                  }}
-                  onRemove={removePhoto}
+                  onItemPress={(index) => openViewer(photos, index)}
+                  onRemove={(index) => setPhotos((current) => current.filter((_, itemIndex) => itemIndex !== index))}
                 />
               </View>
 
               <View style={styles.field}>
                 <Text style={styles.fieldLabel}>Видео</Text>
-                <Pressable style={styles.attachButton} onPress={pickVideo}>
-                  <Feather name="video" size={18} color={colors.light.text.primary} />
-                  <Text style={styles.attachButtonText}>
-                    {video ? 'Видео выбрано' : 'Прикрепить видео'}
-                  </Text>
-                </Pressable>
+                <View style={styles.mediaButtons}>
+                  <Pressable style={styles.attachButton} onPress={pickVideosFromLibrary}>
+                    <Feather name="video" size={18} color={colors.light.text.primary} />
+                    <Text style={styles.attachButtonText}>Галерея</Text>
+                  </Pressable>
+                  <Pressable style={styles.attachButton} onPress={pickVideoFromCamera}>
+                    <Feather name="camera" size={18} color={colors.light.text.primary} />
+                    <Text style={styles.attachButtonText}>Камера</Text>
+                  </Pressable>
+                </View>
+                <PhotoGrid
+                  items={videos}
+                  editable
+                  onItemPress={(index) => openViewer(videos, index)}
+                  onRemove={(index) => setVideos((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                />
               </View>
 
               <View style={styles.field}>
@@ -246,7 +336,7 @@ export function MeetingEntryFormModal({
 
       <PhotoViewerModal
         visible={viewerVisible}
-        photos={photos}
+        items={viewerItems}
         initialIndex={viewerIndex}
         onClose={() => setViewerVisible(false)}
       />
@@ -266,8 +356,8 @@ const styles = StyleSheet.create({
   sheet: {
     maxHeight: '92%',
     backgroundColor: colors.light.background.start,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
     paddingBottom: Platform.OS === 'ios' ? 24 : 16,
   },
   handle: {
@@ -294,12 +384,23 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: colors.light.text.primary,
   },
-  subtitle: {
+  datePickerLabel: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
     color: colors.light.text.secondary,
-    marginTop: 4,
-    textTransform: 'capitalize',
+    textAlign: 'left',
+    fontWeight: '400',
+    marginBottom: 8,
+  },
+  datePickerButton: {
+    marginHorizontal: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+    paddingVertical: 10,
+  },
+  datePickerButtonText: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 15,
+    textAlign: 'left',
   },
   field: {
     gap: 8,
@@ -308,6 +409,17 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
     color: colors.light.text.secondary,
+  },
+  titleInput: {
+    borderWidth: 1,
+    borderColor: colors.light.input.border,
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 15,
+    color: colors.light.text.primary,
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
   },
   mediaButtons: {
     flexDirection: 'row',
@@ -319,7 +431,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.25)',
@@ -333,7 +445,7 @@ const styles = StyleSheet.create({
     minHeight: 88,
     borderWidth: 1,
     borderColor: colors.light.input.border,
-    borderRadius: 6,
+    borderRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontFamily: typography.fontFamily.sans,
@@ -346,7 +458,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.light.text.primary,
-    borderRadius: 7,
+    borderRadius: 4,
     paddingVertical: 14,
   },
   saveButtonDisabled: {

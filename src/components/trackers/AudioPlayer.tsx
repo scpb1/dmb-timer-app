@@ -54,7 +54,13 @@ export function AudioPlayer({ uri, fileName }: AudioPlayerProps) {
   };
 
   return (
-    <Pressable style={styles.container} onPress={togglePlayback} disabled={isLoading}>
+    <Pressable
+      style={styles.container}
+      onPress={togglePlayback}
+      disabled={isLoading}
+      accessibilityRole="button"
+      accessibilityLabel={isPlaying ? 'Пауза' : 'Слушать аудио'}
+    >
       <Feather
         name={isPlaying ? 'pause' : 'play'}
         size={18}
@@ -74,7 +80,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    borderRadius: 6,
+    borderRadius: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.25)',

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Feather } from '@expo/vector-icons';
 
@@ -9,6 +9,7 @@ import { MoodTags } from '@/components/trackers/MoodTags';
 import type { CallEntryInput } from '@/hooks/useCallTracker';
 import type { CallEntry } from '@/types/trackers';
 import { formatCallDuration } from '@/utils/durationFormat';
+import { parseDateKey } from '@/utils/meetingTime';
 import { getEntriesForDate } from '@/utils/trackerCalculations';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
@@ -16,15 +17,49 @@ import { typography } from '@/theme/typography';
 interface CallDayPanelProps {
   date: string;
   entries: CallEntry[];
+  editingEntry?: CallEntry | null;
   onAdd: (date: string, input: CallEntryInput) => Promise<boolean>;
+  onUpdate: (id: string, date: string, input: CallEntryInput) => Promise<boolean>;
   onEntryPress: (entry: CallEntry) => void;
+  onEditHandled?: () => void;
 }
 
-export function CallDayPanel({ date, entries, onAdd, onEntryPress }: CallDayPanelProps) {
+export function CallDayPanel({
+  date,
+  entries,
+  editingEntry,
+  onAdd,
+  onUpdate,
+  onEntryPress,
+  onEditHandled,
+}: CallDayPanelProps) {
   const [formVisible, setFormVisible] = useState(false);
 
   const dayEntries = useMemo(() => getEntriesForDate(entries, date), [entries, date]);
-  const formattedDate = format(parseISO(date), 'd MMMM yyyy', { locale: ru });
+  const formattedDate = format(parseDateKey(date), 'd MMMM yyyy', { locale: ru });
+
+  useEffect(() => {
+    if (editingEntry) {
+      setFormVisible(true);
+    }
+  }, [editingEntry]);
+
+  const openCreate = () => {
+    onEditHandled?.();
+    setFormVisible(true);
+  };
+
+  const handleCloseForm = () => {
+    setFormVisible(false);
+    onEditHandled?.();
+  };
+
+  const handleSave = async (entryDate: string, input: CallEntryInput) => {
+    if (editingEntry) {
+      return onUpdate(editingEntry.id, entryDate, input);
+    }
+    return onAdd(entryDate, input);
+  };
 
   return (
     <View style={styles.container}>
@@ -42,7 +77,9 @@ export function CallDayPanel({ date, entries, onAdd, onEntryPress }: CallDayPane
               onPress={() => onEntryPress(entry)}
             >
               <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>Звонок {index + 1}</Text>
+                <Text style={styles.cardTitle} numberOfLines={2}>
+                  {entry.title?.trim() || `Звонок ${index + 1}`}
+                </Text>
                 <Text style={styles.cardDuration}>{formatCallDuration(entry.durationSeconds)}</Text>
               </View>
               <MoodTags moods={entry.moods} compact />
@@ -62,7 +99,7 @@ export function CallDayPanel({ date, entries, onAdd, onEntryPress }: CallDayPane
         </View>
       )}
 
-      <Pressable style={styles.addButton} onPress={() => setFormVisible(true)}>
+      <Pressable style={styles.addButton} onPress={openCreate}>
         <Feather name="plus" size={18} color={colors.light.text.primary} />
         <Text style={styles.addButtonText}>Добавить звонок</Text>
       </Pressable>
@@ -70,8 +107,9 @@ export function CallDayPanel({ date, entries, onAdd, onEntryPress }: CallDayPane
       <CallEntryFormModal
         visible={formVisible}
         date={date}
-        onClose={() => setFormVisible(false)}
-        onSave={onAdd}
+        entry={formVisible ? editingEntry : null}
+        onClose={handleCloseForm}
+        onSave={handleSave}
       />
     </View>
   );
@@ -102,7 +140,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: 'rgba(255, 255, 255, 0.45)',
-    borderRadius: 7,
+    borderRadius: 4,
     padding: 14,
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.25)',
@@ -110,15 +148,18 @@ const styles = StyleSheet.create({
   },
   cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
   cardTitle: {
+    flex: 1,
+    marginRight: 8,
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 15,
     color: colors.light.text.primary,
   },
   cardDuration: {
+    flexShrink: 0,
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
     color: colors.light.text.secondary,
@@ -145,7 +186,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 14,
-    borderRadius: 7,
+    borderRadius: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.45)',
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.25)',

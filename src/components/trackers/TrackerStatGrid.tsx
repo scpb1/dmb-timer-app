@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
     width: '48%',
     flexGrow: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 7,
+    borderRadius: 4,
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderWidth: 1,

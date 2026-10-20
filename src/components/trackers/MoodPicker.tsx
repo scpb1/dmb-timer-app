@@ -38,6 +38,9 @@ export function MoodPicker({ value, onChange }: MoodPickerProps) {
                 isSelected && styles.chipSelected,
               ]}
               onPress={() => toggleMood(mood.id)}
+              accessibilityRole="button"
+              accessibilityLabel={mood.label}
+              accessibilityState={{ selected: isSelected }}
             >
               <MoodIcon moodId={mood.id} size={15} />
               <Text
@@ -76,7 +79,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 4,
     borderWidth: 1,
   },
   chipSelected: {

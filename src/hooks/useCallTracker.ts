@@ -15,6 +15,7 @@ import { getConfig, setConfig } from '@/services/database';
 import { logger } from '@/utils/logger';
 
 interface CallEntryInput {
+  title?: string;
   durationSeconds: number;
   moods?: TrackerMood[];
   audioUri?: string;
@@ -22,13 +23,22 @@ interface CallEntryInput {
   impressions?: string;
 }
 
+const UNDO_TIMEOUT_MS = 5000;
+
+interface PendingDeletion {
+  entry: CallEntry;
+  storageSnapshot: CallsStorage;
+}
+
 interface UseCallTrackerResult {
   isLoading: boolean;
   entries: CallEntry[];
+  pendingDeletion: PendingDeletion | null;
   reload: () => Promise<void>;
   addEntry: (date: string, input: CallEntryInput) => Promise<boolean>;
-  updateEntry: (id: string, input: CallEntryInput) => Promise<boolean>;
+  updateEntry: (id: string, date: string, input: CallEntryInput) => Promise<boolean>;
   deleteEntry: (id: string) => Promise<void>;
+  undoDelete: () => Promise<void>;
 }
 
 type LegacyCallEntry = CallEntry & {
@@ -91,7 +101,33 @@ async function saveAudioFile(sourceUri: string, entryId: string): Promise<string
 export function useCallTracker(): UseCallTrackerResult {
   const [isLoading, setIsLoading] = useState(true);
   const [entries, setEntries] = useState<CallEntry[]>([]);
+  const [pendingDeletion, setPendingDeletion] = useState<PendingDeletion | null>(null);
   const storageRef = useRef<CallsStorage>(DEFAULT_CALLS_STORAGE);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingDeletionRef = useRef<PendingDeletion | null>(null);
+  pendingDeletionRef.current = pendingDeletion;
+
+  const clearUndoTimer = useCallback(() => {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
+    }
+  }, []);
+
+  const commitPendingMedia = useCallback(async (pending: PendingDeletion) => {
+    if (!pending.entry.audioUri) {
+      return;
+    }
+
+    try {
+      const info = await FileSystem.getInfoAsync(pending.entry.audioUri);
+      if (info.exists) {
+        await FileSystem.deleteAsync(pending.entry.audioUri, { idempotent: true });
+      }
+    } catch (error) {
+      logger.error('Ошибка удаления аудио', error);
+    }
+  }, []);
 
   const reload = useCallback(async () => {
     try {
@@ -124,6 +160,7 @@ export function useCallTracker(): UseCallTrackerResult {
       const record: CallEntry = {
         id,
         date,
+        title: input.title?.trim() || undefined,
         durationSeconds: input.durationSeconds,
         moods: input.moods?.length ? input.moods : undefined,
         audioUri,
@@ -146,20 +183,33 @@ export function useCallTracker(): UseCallTrackerResult {
     }
   }, []);
 
-  const updateEntry = useCallback(async (id: string, input: CallEntryInput): Promise<boolean> => {
+  const updateEntry = useCallback(async (id: string, date: string, input: CallEntryInput): Promise<boolean> => {
     try {
       const existing = storageRef.current.entries.find((entry) => entry.id === id);
       if (!existing) {
         return false;
       }
 
-      let audioUri = input.audioUri ?? existing.audioUri;
-      let audioName = input.audioName ?? existing.audioName;
+      let audioUri = input.audioUri;
+      let audioName = input.audioName;
 
       if (input.audioUri && input.audioUri !== existing.audioUri) {
         const saved = await saveAudioFile(input.audioUri, id);
         audioUri = saved ?? existing.audioUri;
         audioName = input.audioName;
+        if (existing.audioUri && existing.audioUri !== audioUri) {
+          try {
+            await FileSystem.deleteAsync(existing.audioUri, { idempotent: true });
+          } catch (error) {
+            logger.error('Ошибка удаления старого аудио', error);
+          }
+        }
+      } else if (!input.audioUri && existing.audioUri) {
+        try {
+          await FileSystem.deleteAsync(existing.audioUri, { idempotent: true });
+        } catch (error) {
+          logger.error('Ошибка удаления аудио', error);
+        }
       }
 
       const nextStorage: CallsStorage = {
@@ -167,6 +217,8 @@ export function useCallTracker(): UseCallTrackerResult {
           entry.id === id
             ? {
                 ...entry,
+                date,
+                title: input.title?.trim() || undefined,
                 durationSeconds: input.durationSeconds,
                 moods: input.moods?.length ? input.moods : undefined,
                 audioUri,
@@ -189,33 +241,65 @@ export function useCallTracker(): UseCallTrackerResult {
 
   const deleteEntry = useCallback(async (id: string) => {
     try {
-      const target = storageRef.current.entries.find((entry) => entry.id === id);
-      if (target?.audioUri) {
-        const info = await FileSystem.getInfoAsync(target.audioUri);
-        if (info.exists) {
-          await FileSystem.deleteAsync(target.audioUri, { idempotent: true });
-        }
+      clearUndoTimer();
+      if (pendingDeletion) {
+        await commitPendingMedia(pendingDeletion);
+        setPendingDeletion(null);
       }
 
+      const target = storageRef.current.entries.find((entry) => entry.id === id);
+      if (!target) {
+        return;
+      }
+
+      const snapshot = storageRef.current;
       const nextStorage: CallsStorage = {
-        entries: storageRef.current.entries.filter((entry) => entry.id !== id),
+        entries: snapshot.entries.filter((entry) => entry.id !== id),
       };
 
       await persistCalls(nextStorage);
       storageRef.current = nextStorage;
       setEntries(nextStorage.entries);
+      setPendingDeletion({ entry: target, storageSnapshot: snapshot });
+
+      undoTimerRef.current = setTimeout(() => {
+        void commitPendingMedia({ entry: target, storageSnapshot: snapshot });
+        setPendingDeletion(null);
+        undoTimerRef.current = null;
+      }, UNDO_TIMEOUT_MS);
     } catch (error) {
       logger.error('Ошибка удаления звонка', error);
     }
-  }, []);
+  }, [clearUndoTimer, commitPendingMedia, pendingDeletion]);
+
+  const undoDelete = useCallback(async () => {
+    if (!pendingDeletion) {
+      return;
+    }
+
+    clearUndoTimer();
+    await persistCalls(pendingDeletion.storageSnapshot);
+    storageRef.current = pendingDeletion.storageSnapshot;
+    setEntries(pendingDeletion.storageSnapshot.entries);
+    setPendingDeletion(null);
+  }, [clearUndoTimer, pendingDeletion]);
+
+  useEffect(() => () => {
+    clearUndoTimer();
+    if (pendingDeletionRef.current) {
+      void commitPendingMedia(pendingDeletionRef.current);
+    }
+  }, [clearUndoTimer, commitPendingMedia]);
 
   return {
     isLoading,
     entries,
+    pendingDeletion,
     reload,
     addEntry,
     updateEntry,
     deleteEntry,
+    undoDelete,
   };
 }
 

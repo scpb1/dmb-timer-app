@@ -15,20 +15,32 @@ import {
 import { getConfig, setConfig } from '@/services/database';
 import { logger } from '@/utils/logger';
 
+const UNDO_TIMEOUT_MS = 5000;
+
 interface MeetingEntryInput {
+  title?: string;
+  startTime?: string;
+  endTime?: string;
   durationSeconds: number;
   moods?: TrackerMood[];
   mediaItems?: MeetingMediaItem[];
   impressions?: string;
 }
 
+interface PendingDeletion {
+  entry: MeetingEntry;
+  storageSnapshot: MeetingsStorage;
+}
+
 interface UseMeetingTrackerResult {
   isLoading: boolean;
   entries: MeetingEntry[];
+  pendingDeletion: PendingDeletion | null;
   reload: () => Promise<void>;
   addEntry: (date: string, input: MeetingEntryInput) => Promise<boolean>;
-  updateEntry: (id: string, input: MeetingEntryInput) => Promise<boolean>;
+  updateEntry: (id: string, date: string, input: MeetingEntryInput) => Promise<boolean>;
   deleteEntry: (id: string) => Promise<void>;
+  undoDelete: () => Promise<void>;
 }
 
 type LegacyMeetingEntry = MeetingEntry & {
@@ -98,15 +110,14 @@ async function saveMediaItems(
   const dir = await ensureMeetingsDirectory();
   const saved: MeetingMediaItem[] = [];
 
-  for (let index = 0; index < items.length; index += 1) {
-    const item = items[index];
+  for (const item of items) {
     if (item.uri.startsWith(dir)) {
       saved.push(item);
       continue;
     }
 
     const extension = getMediaExtension(item.uri, item.type);
-    const dest = `${dir}${entryId}-${index}.${extension}`;
+    const dest = `${dir}${entryId}-${Crypto.randomUUID()}.${extension}`;
 
     try {
       await FileSystem.copyAsync({ from: item.uri, to: dest });
@@ -140,7 +151,22 @@ async function deleteMediaItems(items?: MeetingMediaItem[]) {
 export function useMeetingTracker(): UseMeetingTrackerResult {
   const [isLoading, setIsLoading] = useState(true);
   const [entries, setEntries] = useState<MeetingEntry[]>([]);
+  const [pendingDeletion, setPendingDeletion] = useState<PendingDeletion | null>(null);
   const storageRef = useRef<MeetingsStorage>(DEFAULT_MEETINGS_STORAGE);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingDeletionRef = useRef<PendingDeletion | null>(null);
+  pendingDeletionRef.current = pendingDeletion;
+
+  const clearUndoTimer = useCallback(() => {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
+    }
+  }, []);
+
+  const commitPendingMedia = useCallback(async (pending: PendingDeletion) => {
+    await deleteMediaItems(pending.entry.mediaItems);
+  }, []);
 
   const reload = useCallback(async () => {
     try {
@@ -170,6 +196,9 @@ export function useMeetingTracker(): UseMeetingTrackerResult {
       const record: MeetingEntry = {
         id,
         date,
+        title: input.title?.trim() || undefined,
+        startTime: input.startTime,
+        endTime: input.endTime,
         durationSeconds: input.durationSeconds,
         moods: input.moods?.length ? input.moods : undefined,
         mediaItems,
@@ -191,7 +220,7 @@ export function useMeetingTracker(): UseMeetingTrackerResult {
     }
   }, []);
 
-  const updateEntry = useCallback(async (id: string, input: MeetingEntryInput): Promise<boolean> => {
+  const updateEntry = useCallback(async (id: string, date: string, input: MeetingEntryInput): Promise<boolean> => {
     try {
       const existing = storageRef.current.entries.find((entry) => entry.id === id);
       if (!existing) {
@@ -199,16 +228,20 @@ export function useMeetingTracker(): UseMeetingTrackerResult {
       }
 
       let mediaItems = existing.mediaItems;
-      if (input.mediaItems) {
-        await deleteMediaItems(existing.mediaItems);
-        mediaItems = await saveMediaItems(id, input.mediaItems);
-      }
+      const nextItems = input.mediaItems ?? [];
+      const nextUris = new Set(nextItems.map((item) => item.uri));
+      await deleteMediaItems((existing.mediaItems ?? []).filter((item) => !nextUris.has(item.uri)));
+      mediaItems = nextItems.length > 0 ? await saveMediaItems(id, nextItems) : undefined;
 
       const nextStorage: MeetingsStorage = {
         entries: storageRef.current.entries.map((entry) =>
           entry.id === id
             ? {
                 ...entry,
+                date,
+                title: input.title?.trim() || undefined,
+                startTime: input.startTime,
+                endTime: input.endTime,
                 durationSeconds: input.durationSeconds,
                 moods: input.moods?.length ? input.moods : undefined,
                 mediaItems,
@@ -230,28 +263,65 @@ export function useMeetingTracker(): UseMeetingTrackerResult {
 
   const deleteEntry = useCallback(async (id: string) => {
     try {
-      const target = storageRef.current.entries.find((entry) => entry.id === id);
-      await deleteMediaItems(target?.mediaItems);
+      clearUndoTimer();
+      if (pendingDeletion) {
+        await commitPendingMedia(pendingDeletion);
+        setPendingDeletion(null);
+      }
 
+      const target = storageRef.current.entries.find((entry) => entry.id === id);
+      if (!target) {
+        return;
+      }
+
+      const snapshot = storageRef.current;
       const nextStorage: MeetingsStorage = {
-        entries: storageRef.current.entries.filter((entry) => entry.id !== id),
+        entries: snapshot.entries.filter((entry) => entry.id !== id),
       };
 
       await persistMeetings(nextStorage);
       storageRef.current = nextStorage;
       setEntries(nextStorage.entries);
+      setPendingDeletion({ entry: target, storageSnapshot: snapshot });
+
+      undoTimerRef.current = setTimeout(() => {
+        void commitPendingMedia({ entry: target, storageSnapshot: snapshot });
+        setPendingDeletion(null);
+        undoTimerRef.current = null;
+      }, UNDO_TIMEOUT_MS);
     } catch (error) {
       logger.error('Ошибка удаления встречи', error);
     }
-  }, []);
+  }, [clearUndoTimer, commitPendingMedia, pendingDeletion]);
+
+  const undoDelete = useCallback(async () => {
+    if (!pendingDeletion) {
+      return;
+    }
+
+    clearUndoTimer();
+    await persistMeetings(pendingDeletion.storageSnapshot);
+    storageRef.current = pendingDeletion.storageSnapshot;
+    setEntries(pendingDeletion.storageSnapshot.entries);
+    setPendingDeletion(null);
+  }, [clearUndoTimer, pendingDeletion]);
+
+  useEffect(() => () => {
+    clearUndoTimer();
+    if (pendingDeletionRef.current) {
+      void commitPendingMedia(pendingDeletionRef.current);
+    }
+  }, [clearUndoTimer, commitPendingMedia]);
 
   return {
     isLoading,
     entries,
+    pendingDeletion,
     reload,
     addEntry,
     updateEntry,
     deleteEntry,
+    undoDelete,
   };
 }
 

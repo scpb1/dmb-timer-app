@@ -2,27 +2,45 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
+import type { MeetingMediaItem } from '@/types/trackers';
+
 interface PhotoGridProps {
-  photos: string[];
-  onPhotoPress: (index: number) => void;
+  items: MeetingMediaItem[];
+  onItemPress: (index: number) => void;
   onRemove?: (index: number) => void;
   editable?: boolean;
 }
 
-export function PhotoGrid({ photos, onPhotoPress, onRemove, editable = false }: PhotoGridProps) {
-  if (photos.length === 0) {
+export function PhotoGrid({ items, onItemPress, onRemove, editable = false }: PhotoGridProps) {
+  if (items.length === 0) {
     return null;
   }
 
   return (
     <View style={styles.grid}>
-      {photos.map((uri, index) => (
-        <View key={`${uri}-${index}`} style={styles.itemWrap}>
-          <Pressable onPress={() => onPhotoPress(index)}>
-            <Image source={{ uri }} style={styles.thumbnail} />
+      {items.map((item, index) => (
+        <View key={`${item.type}-${item.uri}-${index}`} style={styles.itemWrap}>
+          <Pressable
+            onPress={() => onItemPress(index)}
+            accessibilityRole="button"
+            accessibilityLabel={item.type === 'video' ? `Видео ${index + 1}` : `Фото ${index + 1}`}
+          >
+            {item.type === 'video' ? (
+              <View style={[styles.thumbnail, styles.videoThumb]}>
+                <Feather name="play" size={22} color="#fff" />
+              </View>
+            ) : (
+              <Image source={{ uri: item.uri }} style={styles.thumbnail} />
+            )}
           </Pressable>
           {editable && onRemove ? (
-            <Pressable style={styles.removeButton} onPress={() => onRemove(index)} hitSlop={6}>
+            <Pressable
+              style={styles.removeButton}
+              onPress={() => onRemove(index)}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={item.type === 'video' ? `Удалить видео ${index + 1}` : `Удалить фото ${index + 1}`}
+            >
               <Feather name="x" size={14} color="#fff" />
             </Pressable>
           ) : null}
@@ -44,8 +62,13 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: 88,
     height: 88,
-    borderRadius: 5,
+    borderRadius: 4,
     backgroundColor: 'rgba(167, 154, 138, 0.15)',
+  },
+  videoThumb: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(62, 54, 48, 0.72)',
   },
   removeButton: {
     position: 'absolute',
@@ -53,7 +76,7 @@ const styles = StyleSheet.create({
     right: 4,
     width: 22,
     height: 22,
-    borderRadius: 6,
+    borderRadius: 4,
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
     alignItems: 'center',
     justifyContent: 'center',

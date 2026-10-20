@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Feather } from '@expo/vector-icons';
 
@@ -9,7 +9,7 @@ import { MoodTags } from '@/components/trackers/MoodTags';
 import type { MeetingEntryInput } from '@/hooks/useMeetingTracker';
 import type { MeetingEntry } from '@/types/trackers';
 import { getMeetingMediaCount } from '@/types/trackers';
-import { formatMeetingDuration } from '@/utils/durationFormat';
+import { formatMeetingListMeta, parseDateKey } from '@/utils/meetingTime';
 import { getEntriesForDate } from '@/utils/trackerCalculations';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
@@ -17,15 +17,49 @@ import { typography } from '@/theme/typography';
 interface MeetingDayPanelProps {
   date: string;
   entries: MeetingEntry[];
+  editingEntry?: MeetingEntry | null;
   onAdd: (date: string, input: MeetingEntryInput) => Promise<boolean>;
+  onUpdate: (id: string, date: string, input: MeetingEntryInput) => Promise<boolean>;
   onEntryPress: (entry: MeetingEntry) => void;
+  onEditHandled?: () => void;
 }
 
-export function MeetingDayPanel({ date, entries, onAdd, onEntryPress }: MeetingDayPanelProps) {
+export function MeetingDayPanel({
+  date,
+  entries,
+  editingEntry,
+  onAdd,
+  onUpdate,
+  onEntryPress,
+  onEditHandled,
+}: MeetingDayPanelProps) {
   const [formVisible, setFormVisible] = useState(false);
 
   const dayEntries = useMemo(() => getEntriesForDate(entries, date), [entries, date]);
-  const formattedDate = format(parseISO(date), 'd MMMM yyyy', { locale: ru });
+  const formattedDate = format(parseDateKey(date), 'd MMMM yyyy', { locale: ru });
+
+  useEffect(() => {
+    if (editingEntry) {
+      setFormVisible(true);
+    }
+  }, [editingEntry]);
+
+  const openCreate = () => {
+    onEditHandled?.();
+    setFormVisible(true);
+  };
+
+  const handleCloseForm = () => {
+    setFormVisible(false);
+    onEditHandled?.();
+  };
+
+  const handleSave = async (entryDate: string, input: MeetingEntryInput) => {
+    if (editingEntry) {
+      return onUpdate(editingEntry.id, entryDate, input);
+    }
+    return onAdd(entryDate, input);
+  };
 
   return (
     <View style={styles.container}>
@@ -38,6 +72,7 @@ export function MeetingDayPanel({ date, entries, onAdd, onEntryPress }: MeetingD
         <View style={styles.list}>
           {dayEntries.map((entry, index) => {
             const mediaCount = getMeetingMediaCount(entry);
+            const timeLabel = formatMeetingListMeta(entry);
 
             return (
               <Pressable
@@ -46,10 +81,10 @@ export function MeetingDayPanel({ date, entries, onAdd, onEntryPress }: MeetingD
                 onPress={() => onEntryPress(entry)}
               >
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>Встреча {index + 1}</Text>
-                  <Text style={styles.cardDuration}>
-                    {formatMeetingDuration(entry.durationSeconds)}
+                  <Text style={styles.cardTitle} numberOfLines={2}>
+                    {entry.title?.trim() || `Встреча ${index + 1}`}
                   </Text>
+                  {timeLabel ? <Text style={styles.cardDuration}>{timeLabel}</Text> : null}
                 </View>
                 <MoodTags moods={entry.moods} compact />
                 {entry.impressions ? (
@@ -79,7 +114,7 @@ export function MeetingDayPanel({ date, entries, onAdd, onEntryPress }: MeetingD
         </View>
       )}
 
-      <Pressable style={styles.addButton} onPress={() => setFormVisible(true)}>
+      <Pressable style={styles.addButton} onPress={openCreate}>
         <Feather name="plus" size={18} color={colors.light.text.primary} />
         <Text style={styles.addButtonText}>Добавить встречу</Text>
       </Pressable>
@@ -87,8 +122,9 @@ export function MeetingDayPanel({ date, entries, onAdd, onEntryPress }: MeetingD
       <MeetingEntryFormModal
         visible={formVisible}
         date={date}
-        onClose={() => setFormVisible(false)}
-        onSave={onAdd}
+        entry={formVisible ? editingEntry : null}
+        onClose={handleCloseForm}
+        onSave={handleSave}
       />
     </View>
   );
@@ -119,7 +155,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: 'rgba(255, 255, 255, 0.45)',
-    borderRadius: 7,
+    borderRadius: 4,
     padding: 14,
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.25)',
@@ -127,15 +163,19 @@ const styles = StyleSheet.create({
   },
   cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
   cardTitle: {
+    flex: 1,
+    marginRight: 8,
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 15,
     color: colors.light.text.primary,
   },
   cardDuration: {
+    flexShrink: 0,
+    maxWidth: '46%',
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
     color: colors.light.text.secondary,
@@ -166,7 +206,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 14,
-    borderRadius: 7,
+    borderRadius: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.45)',
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.25)',

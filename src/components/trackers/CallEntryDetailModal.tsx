@@ -21,6 +21,7 @@ interface CallEntryDetailModalProps {
   visible: boolean;
   entry: CallEntry | null;
   onClose: () => void;
+  onEdit: (entry: CallEntry) => void;
   onDelete: (id: string) => Promise<void>;
 }
 
@@ -28,6 +29,7 @@ export function CallEntryDetailModal({
   visible,
   entry,
   onClose,
+  onEdit,
   onDelete,
 }: CallEntryDetailModalProps) {
   if (!entry) {
@@ -35,7 +37,7 @@ export function CallEntryDetailModal({
   }
 
   const handleDelete = () => {
-    Alert.alert('Удалить звонок?', 'Запись будет удалена без возможности восстановления', [
+    Alert.alert('Удалить звонок?', 'Запись можно вернуть сразу после удаления', [
       { text: 'Отмена', style: 'cancel' },
       {
         text: 'Удалить',
@@ -58,8 +60,8 @@ export function CallEntryDetailModal({
 
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.header}>
-              <Text style={styles.title}>Звонок</Text>
-              <Pressable onPress={onClose} hitSlop={8}>
+              <Text style={styles.title} numberOfLines={2}>{entry.title?.trim() || 'Звонок'}</Text>
+              <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Закрыть">
                 <Feather name="x" size={22} color={colors.light.text.primary} />
               </Pressable>
             </View>
@@ -87,6 +89,17 @@ export function CallEntryDetailModal({
               </View>
             ) : null}
 
+            <Pressable
+              style={styles.editButton}
+              onPress={() => {
+                onEdit(entry);
+                onClose();
+              }}
+            >
+              <Feather name="edit-2" size={18} color={colors.light.text.primary} />
+              <Text style={styles.editButtonText}>Изменить звонок</Text>
+            </Pressable>
+
             <Pressable style={styles.deleteButton} onPress={handleDelete}>
               <Feather name="trash-2" size={18} color={colors.light.text.accent} />
               <Text style={styles.deleteButtonText}>Удалить звонок</Text>
@@ -110,8 +123,8 @@ const styles = StyleSheet.create({
   sheet: {
     maxHeight: '85%',
     backgroundColor: colors.light.background.start,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
     paddingBottom: Platform.OS === 'ios' ? 24 : 16,
   },
   handle: {
@@ -134,6 +147,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
+    flex: 1,
+    marginRight: 12,
     fontFamily: typography.fontFamily.primary,
     fontSize: 22,
     color: colors.light.text.primary,
@@ -156,6 +171,23 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.light.text.primary,
     lineHeight: 22,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingVertical: 12,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(167, 154, 138, 0.25)',
+  },
+  editButtonText: {
+    fontFamily: typography.fontFamily.sansBold,
+    fontSize: 15,
+    color: colors.light.text.primary,
   },
   deleteButton: {
     flexDirection: 'row',

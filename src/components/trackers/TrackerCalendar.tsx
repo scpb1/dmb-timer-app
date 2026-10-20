@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   addMonths,
@@ -12,16 +12,21 @@ import { ru } from 'date-fns/locale';
 import { Feather } from '@expo/vector-icons';
 
 import { isDateSelectable } from '@/utils/trackerCalculations';
+import { parseDateKey } from '@/utils/meetingTime';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 
 const WEEKDAY_HEADERS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DAY_SIZE = 36;
 
+export type DiaryDayMarks = Record<string, { personal?: boolean; letter?: boolean }>;
+
 interface TrackerCalendarProps {
-  markedDates: Set<string>;
+  entryCounts?: Record<string, number>;
+  kindMarks?: DiaryDayMarks;
   selectedDate?: string | null;
   onDayPress: (date: Date) => void;
+  onTodayPress?: (date: Date) => void;
   allowFutureDays?: boolean;
 }
 
@@ -57,14 +62,39 @@ function chunkRows(cells: Array<Date | null>): Array<Array<Date | null>> {
   return rows;
 }
 
+function entryDotCount(count: number): number {
+  if (count <= 0) {
+    return 0;
+  }
+  return count >= 3 ? 3 : count;
+}
+
 export function TrackerCalendar({
-  markedDates,
+  entryCounts,
+  kindMarks,
   selectedDate,
   onDayPress,
+  onTodayPress,
   allowFutureDays = false,
 }: TrackerCalendarProps) {
   const [visibleMonth, setVisibleMonth] = useState(() => startOfDay(new Date()));
   const rows = useMemo(() => chunkRows(buildMonthGrid(visibleMonth)), [visibleMonth]);
+  const showingCurrentMonth = isSameMonth(visibleMonth, new Date());
+
+  useEffect(() => {
+    if (!selectedDate) {
+      return;
+    }
+
+    const next = startOfDay(parseDateKey(selectedDate));
+    setVisibleMonth((current) => (isSameMonth(current, next) ? current : next));
+  }, [selectedDate]);
+
+  const goToToday = () => {
+    const today = startOfDay(new Date());
+    setVisibleMonth(today);
+    onTodayPress?.(today);
+  };
 
   const monthLabel = format(visibleMonth, 'LLLL yyyy', { locale: ru });
   const capitalizedMonthLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
@@ -76,17 +106,31 @@ export function TrackerCalendar({
           style={styles.navButton}
           onPress={() => setVisibleMonth((current) => subMonths(current, 1))}
           hitSlop={8}
+          accessibilityRole="button"
           accessibilityLabel="Предыдущий месяц"
         >
           <Feather name="chevron-left" size={22} color={colors.light.text.primary} />
         </Pressable>
 
-        <Text style={styles.monthLabel}>{capitalizedMonthLabel}</Text>
+        <View style={styles.monthBlock}>
+          <Text style={styles.monthLabel}>{capitalizedMonthLabel}</Text>
+          {showingCurrentMonth ? null : (
+            <Pressable
+              onPress={goToToday}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel="Сегодня"
+            >
+              <Text style={styles.todayButton}>Сегодня</Text>
+            </Pressable>
+          )}
+        </View>
 
         <Pressable
           style={styles.navButton}
           onPress={() => setVisibleMonth((current) => addMonths(current, 1))}
           hitSlop={8}
+          accessibilityRole="button"
           accessibilityLabel="Следующий месяц"
         >
           <Feather name="chevron-right" size={22} color={colors.light.text.primary} />
@@ -111,10 +155,11 @@ export function TrackerCalendar({
 
               const dateKey = format(date, 'yyyy-MM-dd');
               const selectable = isDateSelectable(date, allowFutureDays);
-              const marked = markedDates.has(dateKey);
               const selected = selectedDate === dateKey;
               const today = isToday(date);
               const inCurrentMonth = isSameMonth(date, visibleMonth);
+              const kindDots = kindMarks?.[dateKey];
+              const trackerDots = entryDotCount(entryCounts?.[dateKey] ?? 0);
 
               return (
                 <Pressable
@@ -124,11 +169,11 @@ export function TrackerCalendar({
                   onPress={() => onDayPress(date)}
                   accessibilityRole="button"
                   accessibilityState={{ disabled: !selectable, selected }}
+                  accessibilityLabel={format(date, 'd MMMM', { locale: ru })}
                 >
                   <View
                     style={[
                       styles.dayCircle,
-                      marked && selectable && styles.dayCircleMarked,
                       selected && styles.dayCircleSelected,
                       today && !selected && styles.dayCircleToday,
                       !selectable && styles.dayCircleDisabled,
@@ -138,7 +183,6 @@ export function TrackerCalendar({
                       style={[
                         styles.dayText,
                         !inCurrentMonth && styles.dayTextMuted,
-                        marked && selectable && styles.dayTextMarked,
                         selected && styles.dayTextSelected,
                         !selectable && styles.dayTextDisabled,
                         today && !selected && styles.dayTextToday,
@@ -147,6 +191,28 @@ export function TrackerCalendar({
                       {format(date, 'd')}
                     </Text>
                   </View>
+                  {kindMarks ? (
+                    <View style={styles.dotsRow}>
+                      <View
+                        style={[
+                          styles.dot,
+                          kindDots?.personal ? styles.dotPersonal : styles.dotHidden,
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.dot,
+                          kindDots?.letter ? styles.dotLetter : styles.dotHidden,
+                        ]}
+                      />
+                    </View>
+                  ) : (
+                    <View style={styles.dotsRow}>
+                      {Array.from({ length: trackerDots }, (_, index) => (
+                        <View key={index} style={[styles.dot, styles.dotTracker]} />
+                      ))}
+                    </View>
+                  )}
                 </Pressable>
               );
             })}
@@ -160,7 +226,7 @@ export function TrackerCalendar({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 8,
+    borderRadius: 4,
     padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.25)',
@@ -177,10 +243,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  monthBlock: {
+    alignItems: 'center',
+    gap: 2,
+  },
   monthLabel: {
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 16,
     color: colors.light.text.primary,
+  },
+  todayButton: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 13,
+    color: colors.light.text.accent,
   },
   weekdayRow: {
     flexDirection: 'row',
@@ -205,24 +280,24 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: DAY_SIZE + 8,
+    height: DAY_SIZE + 14,
   },
   dayCircle: {
     width: DAY_SIZE,
     height: DAY_SIZE,
     borderRadius: DAY_SIZE / 2,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dayCircleMarked: {
-    backgroundColor: 'rgba(229, 57, 53, 0.22)',
-  },
   dayCircleSelected: {
     backgroundColor: colors.light.text.primary,
+    borderRadius: DAY_SIZE / 2,
   },
   dayCircleToday: {
     borderWidth: 1,
     borderColor: colors.light.text.accent,
+    borderRadius: DAY_SIZE / 2,
   },
   dayCircleDisabled: {
     opacity: 0.35,
@@ -235,10 +310,6 @@ const styles = StyleSheet.create({
   dayTextMuted: {
     color: colors.light.text.secondary,
   },
-  dayTextMarked: {
-    fontFamily: typography.fontFamily.sansBold,
-    color: colors.light.text.accent,
-  },
   dayTextSelected: {
     fontFamily: typography.fontFamily.sansBold,
     color: colors.light.background.start,
@@ -248,5 +319,30 @@ const styles = StyleSheet.create({
   },
   dayTextToday: {
     fontFamily: typography.fontFamily.sansBold,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    height: 6,
+    marginTop: 2,
+  },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 4,
+  },
+  dotPersonal: {
+    backgroundColor: colors.light.text.primary,
+  },
+  dotLetter: {
+    backgroundColor: colors.light.text.accent,
+  },
+  dotTracker: {
+    backgroundColor: colors.light.text.accent,
+  },
+  dotHidden: {
+    backgroundColor: 'transparent',
   },
 });

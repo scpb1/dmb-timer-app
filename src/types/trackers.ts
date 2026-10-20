@@ -108,6 +108,7 @@ export interface MeetingMediaItem {
 export interface CallEntry {
   id: string;
   date: string;
+  title?: string;
   durationSeconds: number;
   moods?: TrackerMood[];
   audioUri?: string;
@@ -119,6 +120,9 @@ export interface CallEntry {
 export interface MeetingEntry {
   id: string;
   date: string;
+  title?: string;
+  startTime?: string;
+  endTime?: string;
   durationSeconds: number;
   moods?: TrackerMood[];
   mediaItems?: MeetingMediaItem[];

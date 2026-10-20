@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 4,
     borderWidth: 1,
   },
   tagCompact: {

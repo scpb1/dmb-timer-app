@@ -11,14 +11,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { format, parseISO } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { format } from 'date-fns';
 import { Feather } from '@expo/vector-icons';
 
+import { DatePicker } from '@/components/common/DatePicker';
 import { CallDurationInput } from '@/components/trackers/CallDurationInput';
 import { MoodPicker } from '@/components/trackers/MoodPicker';
 import type { CallEntryInput } from '@/hooks/useCallTracker';
-import type { TrackerMood } from '@/types/trackers';
+import type { CallEntry, TrackerMood } from '@/types/trackers';
+import { parseDateKey } from '@/utils/meetingTime';
 import { pickAudioFile } from '@/utils/pickAudioFile';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
@@ -26,13 +27,22 @@ import { typography } from '@/theme/typography';
 interface CallEntryFormModalProps {
   visible: boolean;
   date: string;
+  entry?: CallEntry | null;
   onClose: () => void;
   onSave: (date: string, input: CallEntryInput) => Promise<boolean>;
 }
 
-export function CallEntryFormModal({ visible, date, onClose, onSave }: CallEntryFormModalProps) {
+export function CallEntryFormModal({
+  visible,
+  date,
+  entry,
+  onClose,
+  onSave,
+}: CallEntryFormModalProps) {
+  const [entryDate, setEntryDate] = useState(date);
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
+  const [title, setTitle] = useState('');
   const [moods, setMoods] = useState<TrackerMood[]>([]);
   const [impressions, setImpressions] = useState('');
   const [audioUri, setAudioUri] = useState<string | undefined>();
@@ -40,18 +50,33 @@ export function CallEntryFormModal({ visible, date, onClose, onSave }: CallEntry
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (visible) {
-      setMinutes(0);
-      setSeconds(0);
-      setMoods([]);
-      setImpressions('');
-      setAudioUri(undefined);
-      setAudioName(undefined);
-      setIsSaving(false);
+    if (!visible) {
+      return;
     }
-  }, [visible]);
 
-  const formattedDate = format(parseISO(date), 'd MMMM yyyy', { locale: ru });
+    if (entry) {
+      setEntryDate(entry.date);
+      setMinutes(Math.floor(entry.durationSeconds / 60));
+      setSeconds(entry.durationSeconds % 60);
+      setTitle(entry.title ?? '');
+      setMoods(entry.moods ?? []);
+      setImpressions(entry.impressions ?? '');
+      setAudioUri(entry.audioUri);
+      setAudioName(entry.audioName);
+      setIsSaving(false);
+      return;
+    }
+
+    setEntryDate(date);
+    setMinutes(0);
+    setSeconds(0);
+    setTitle('');
+    setMoods([]);
+    setImpressions('');
+    setAudioUri(undefined);
+    setAudioName(undefined);
+    setIsSaving(false);
+  }, [visible, entry, date]);
 
   const attachAudio = async () => {
     const picked = await pickAudioFile();
@@ -70,7 +95,8 @@ export function CallEntryFormModal({ visible, date, onClose, onSave }: CallEntry
     }
 
     setIsSaving(true);
-    const success = await onSave(date, {
+    const success = await onSave(entryDate, {
+      title,
       durationSeconds,
       moods: moods.length > 0 ? moods : undefined,
       audioUri,
@@ -104,13 +130,22 @@ export function CallEntryFormModal({ visible, date, onClose, onSave }: CallEntry
           >
             <View style={styles.header}>
               <View>
-                <Text style={styles.title}>Новый звонок</Text>
-                <Text style={styles.subtitle}>{formattedDate}</Text>
+                <Text style={styles.title}>{entry ? 'Изменить звонок' : 'Новый звонок'}</Text>
               </View>
-              <Pressable onPress={onClose} hitSlop={8}>
+              <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Закрыть">
                 <Feather name="x" size={22} color={colors.light.text.primary} />
               </Pressable>
             </View>
+
+            <DatePicker
+              label="Дата"
+              value={parseDateKey(entryDate)}
+              onChange={(next) => setEntryDate(format(next, 'yyyy-MM-dd'))}
+              maximumDate={new Date()}
+              labelStyle={styles.datePickerLabel}
+              buttonStyle={styles.datePickerButton}
+              buttonTextStyle={styles.datePickerButtonText}
+            />
 
             <CallDurationInput
               minutes={minutes}
@@ -118,6 +153,17 @@ export function CallEntryFormModal({ visible, date, onClose, onSave }: CallEntry
               onChangeMinutes={setMinutes}
               onChangeSeconds={setSeconds}
             />
+
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Название</Text>
+              <TextInput
+                style={styles.titleInput}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Как назвать звонок?"
+                placeholderTextColor={colors.light.input.placeholder}
+              />
+            </View>
 
             <MoodPicker value={moods} onChange={setMoods} />
 
@@ -127,6 +173,11 @@ export function CallEntryFormModal({ visible, date, onClose, onSave }: CallEntry
                 <Feather name="paperclip" size={18} color={colors.light.text.primary} />
                 <Text style={styles.attachButtonText}>{audioName ?? 'Прикрепить файл'}</Text>
               </Pressable>
+              {audioUri ? (
+                <Pressable onPress={() => { setAudioUri(undefined); setAudioName(undefined); }}>
+                  <Text style={styles.removeAudio}>Убрать аудио</Text>
+                </Pressable>
+              ) : null}
             </View>
 
             <View style={styles.field}>
@@ -169,8 +220,8 @@ const styles = StyleSheet.create({
   sheet: {
     maxHeight: '90%',
     backgroundColor: colors.light.background.start,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
     paddingBottom: Platform.OS === 'ios' ? 24 : 16,
   },
   handle: {
@@ -197,12 +248,23 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: colors.light.text.primary,
   },
-  subtitle: {
+  datePickerLabel: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
     color: colors.light.text.secondary,
-    marginTop: 4,
-    textTransform: 'capitalize',
+    textAlign: 'left',
+    fontWeight: '400',
+    marginBottom: 8,
+  },
+  datePickerButton: {
+    marginHorizontal: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+    paddingVertical: 10,
+  },
+  datePickerButtonText: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 15,
+    textAlign: 'left',
   },
   field: {
     gap: 8,
@@ -212,6 +274,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.light.text.secondary,
   },
+  titleInput: {
+    borderWidth: 1,
+    borderColor: colors.light.input.border,
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 15,
+    color: colors.light.text.primary,
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+  },
   attachButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -219,7 +292,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.25)',
@@ -230,11 +303,16 @@ const styles = StyleSheet.create({
     color: colors.light.text.primary,
     maxWidth: 220,
   },
+  removeAudio: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 13,
+    color: colors.light.text.accent,
+  },
   textArea: {
     minHeight: 88,
     borderWidth: 1,
     borderColor: colors.light.input.border,
-    borderRadius: 6,
+    borderRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontFamily: typography.fontFamily.sans,
@@ -247,7 +325,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.light.text.primary,
-    borderRadius: 7,
+    borderRadius: 4,
     paddingVertical: 14,
   },
   saveButtonDisabled: {

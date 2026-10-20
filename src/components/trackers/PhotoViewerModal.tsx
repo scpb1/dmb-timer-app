@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   Modal,
@@ -11,8 +11,10 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'react-native';
+import { ResizeMode, Video } from 'expo-av';
 import { Feather } from '@expo/vector-icons';
 
+import type { MeetingMediaItem } from '@/types/trackers';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 
@@ -20,26 +22,37 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface PhotoViewerModalProps {
   visible: boolean;
-  photos: string[];
+  items: MeetingMediaItem[];
   initialIndex?: number;
   onClose: () => void;
 }
 
 export function PhotoViewerModal({
   visible,
-  photos,
+  items,
   initialIndex = 0,
   onClose,
 }: PhotoViewerModalProps) {
   const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    setCurrentIndex(initialIndex);
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ x: initialIndex * SCREEN_WIDTH, animated: false });
+    });
+  }, [visible, initialIndex]);
+
   const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     setCurrentIndex(index);
   };
 
-  if (photos.length === 0) {
+  if (items.length === 0) {
     return null;
   }
 
@@ -48,9 +61,15 @@ export function PhotoViewerModal({
       <View style={styles.overlay}>
         <View style={styles.topBar}>
           <Text style={styles.counter}>
-            {currentIndex + 1} / {photos.length}
+            {currentIndex + 1} / {items.length}
           </Text>
-          <Pressable onPress={onClose} hitSlop={12} style={styles.closeButton}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={12}
+            style={styles.closeButton}
+            accessibilityRole="button"
+            accessibilityLabel="Закрыть"
+          >
             <Feather name="x" size={24} color="#fff" />
           </Pressable>
         </View>
@@ -61,12 +80,21 @@ export function PhotoViewerModal({
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           onMomentumScrollEnd={handleMomentumScrollEnd}
-          contentOffset={{ x: initialIndex * SCREEN_WIDTH, y: 0 }}
           style={styles.carousel}
         >
-          {photos.map((uri) => (
-            <View key={uri} style={styles.slide}>
-              <Image source={{ uri }} style={styles.image} resizeMode="contain" />
+          {items.map((item, index) => (
+            <View key={`${item.type}-${item.uri}-${index}`} style={styles.slide}>
+              {item.type === 'video' ? (
+                <Video
+                  source={{ uri: item.uri }}
+                  style={styles.media}
+                  resizeMode={ResizeMode.CONTAIN}
+                  useNativeControls
+                  shouldPlay={visible && currentIndex === index}
+                />
+              ) : (
+                <Image source={{ uri: item.uri }} style={styles.media} resizeMode="contain" />
+              )}
             </View>
           ))}
         </ScrollView>
@@ -109,8 +137,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  image: {
+  media: {
     width: SCREEN_WIDTH - 32,
     height: SCREEN_HEIGHT * 0.68,
+    backgroundColor: colors.dark.background.start,
   },
 });

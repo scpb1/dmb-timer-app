@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { useFocusEffect } from '@react-navigation/native';
 
+import { UndoSnackbar } from '@/components/events/UndoSnackbar';
 import { CallDayPanel } from '@/components/trackers/CallDayPanel';
 import { CallEntryDetailModal } from '@/components/trackers/CallEntryDetailModal';
 import { MeetingDayPanel } from '@/components/trackers/MeetingDayPanel';
@@ -12,22 +13,26 @@ import { SegmentedControl } from '@/components/trackers/SegmentedControl';
 import { TrackerCalendar } from '@/components/trackers/TrackerCalendar';
 import { TrackerStatGrid } from '@/components/trackers/TrackerStatGrid';
 import { ScreenBackground } from '@/components/common/ScreenBackground';
+import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useCallTracker } from '@/hooks/useCallTracker';
 import { useMeetingTracker } from '@/hooks/useMeetingTracker';
 import { useTrackerStore } from '@/stores/useTrackerStore';
 import type { CallEntry, MeetingEntry } from '@/types/trackers';
 import {
   getCallStats,
-  getDatesWithEntries,
+  getEntryCountsByDate,
   getMeetingStats,
 } from '@/utils/trackerCalculations';
 import { colors } from '@/theme/colors';
-import { typography } from '@/theme/typography';
 
 const TAB_OPTIONS = [
   { value: 'calls' as const, label: 'Звонки' },
   { value: 'meetings' as const, label: 'Встречи' },
 ];
+
+function todayKey(): string {
+  return format(new Date(), 'yyyy-MM-dd');
+}
 
 export function TrackersScreen() {
   const activeTab = useTrackerStore((state) => state.activeTab);
@@ -36,22 +41,30 @@ export function TrackersScreen() {
   const {
     isLoading: callsLoading,
     entries: callEntries,
+    pendingDeletion: pendingCallDeletion,
     reload: reloadCalls,
     addEntry: addCallEntry,
+    updateEntry: updateCallEntry,
     deleteEntry: deleteCallEntry,
+    undoDelete: undoCallDelete,
   } = useCallTracker();
 
   const {
     isLoading: meetingsLoading,
     entries: meetingEntries,
+    pendingDeletion: pendingMeetingDeletion,
     reload: reloadMeetings,
     addEntry: addMeetingEntry,
+    updateEntry: updateMeetingEntry,
     deleteEntry: deleteMeetingEntry,
+    undoDelete: undoMeetingDelete,
   } = useMeetingTracker();
 
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(todayKey);
   const [selectedCallEntry, setSelectedCallEntry] = useState<CallEntry | null>(null);
   const [selectedMeetingEntry, setSelectedMeetingEntry] = useState<MeetingEntry | null>(null);
+  const [editingCall, setEditingCall] = useState<CallEntry | null>(null);
+  const [editingMeeting, setEditingMeeting] = useState<MeetingEntry | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -62,16 +75,20 @@ export function TrackersScreen() {
 
   const handleTabChange = (tab: typeof activeTab) => {
     setActiveTab(tab);
-    setSelectedDate(null);
+    if (tab === 'calls' && selectedDate > todayKey()) {
+      setSelectedDate(todayKey());
+    }
     setSelectedCallEntry(null);
     setSelectedMeetingEntry(null);
+    setEditingCall(null);
+    setEditingMeeting(null);
   };
 
   const callStats = useMemo(() => getCallStats(callEntries), [callEntries]);
   const meetingStats = useMemo(() => getMeetingStats(meetingEntries), [meetingEntries]);
-  const callMarkedDates = useMemo(() => getDatesWithEntries(callEntries), [callEntries]);
-  const meetingMarkedDates = useMemo(
-    () => getDatesWithEntries(meetingEntries),
+  const callEntryCounts = useMemo(() => getEntryCountsByDate(callEntries), [callEntries]);
+  const meetingEntryCounts = useMemo(
+    () => getEntryCountsByDate(meetingEntries),
     [meetingEntries],
   );
 
@@ -83,14 +100,58 @@ export function TrackersScreen() {
     setSelectedMeetingEntry(null);
   };
 
+  const handleAddCall = async (
+    date: string,
+    input: Parameters<typeof addCallEntry>[1],
+  ) => {
+    const success = await addCallEntry(date, input);
+    if (success) {
+      setSelectedDate(date);
+    }
+    return success;
+  };
+
+  const handleUpdateCall = async (
+    id: string,
+    date: string,
+    input: Parameters<typeof updateCallEntry>[2],
+  ) => {
+    const success = await updateCallEntry(id, date, input);
+    if (success) {
+      setSelectedDate(date);
+    }
+    return success;
+  };
+
+  const handleAddMeeting = async (
+    date: string,
+    input: Parameters<typeof addMeetingEntry>[1],
+  ) => {
+    const success = await addMeetingEntry(date, input);
+    if (success) {
+      setSelectedDate(date);
+    }
+    return success;
+  };
+
+  const handleUpdateMeeting = async (
+    id: string,
+    date: string,
+    input: Parameters<typeof updateMeetingEntry>[2],
+  ) => {
+    const success = await updateMeetingEntry(id, date, input);
+    if (success) {
+      setSelectedDate(date);
+    }
+    return success;
+  };
+
   return (
     <View style={styles.root}>
-      <ScreenBackground themeMode="light" />
+      <ScreenBackground />
 
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Трекеры</Text>
-        </View>
+        <ScreenHeader title="Трекеры" />
 
         <SegmentedControl options={TAB_OPTIONS} value={activeTab} onChange={handleTabChange} />
 
@@ -108,37 +169,52 @@ export function TrackersScreen() {
             <TrackerStatGrid stats={activeTab === 'calls' ? callStats : meetingStats} />
 
             <TrackerCalendar
-              markedDates={activeTab === 'calls' ? callMarkedDates : meetingMarkedDates}
+              entryCounts={activeTab === 'calls' ? callEntryCounts : meetingEntryCounts}
               selectedDate={selectedDate}
               onDayPress={handleDayPress}
+              onTodayPress={(date) => setSelectedDate(format(date, 'yyyy-MM-dd'))}
               allowFutureDays={activeTab === 'meetings'}
             />
 
-            {selectedDate && activeTab === 'calls' ? (
+            {activeTab === 'calls' ? (
               <CallDayPanel
                 date={selectedDate}
                 entries={callEntries}
-                onAdd={addCallEntry}
+                editingEntry={editingCall}
+                onAdd={handleAddCall}
+                onUpdate={handleUpdateCall}
                 onEntryPress={setSelectedCallEntry}
+                onEditHandled={() => setEditingCall(null)}
               />
-            ) : null}
-
-            {selectedDate && activeTab === 'meetings' ? (
+            ) : (
               <MeetingDayPanel
                 date={selectedDate}
                 entries={meetingEntries}
-                onAdd={addMeetingEntry}
+                editingEntry={editingMeeting}
+                onAdd={handleAddMeeting}
+                onUpdate={handleUpdateMeeting}
                 onEntryPress={setSelectedMeetingEntry}
+                onEditHandled={() => setEditingMeeting(null)}
               />
-            ) : null}
+            )}
           </ScrollView>
         )}
       </SafeAreaView>
+
+      <UndoSnackbar
+        visible={pendingCallDeletion !== null || pendingMeetingDeletion !== null}
+        message={pendingMeetingDeletion ? 'Встреча удалена' : 'Звонок удалён'}
+        onUndo={() => void (pendingMeetingDeletion ? undoMeetingDelete() : undoCallDelete())}
+      />
 
       <CallEntryDetailModal
         visible={selectedCallEntry !== null}
         entry={selectedCallEntry}
         onClose={() => setSelectedCallEntry(null)}
+        onEdit={(entry) => {
+          setSelectedDate(entry.date);
+          setEditingCall(entry);
+        }}
         onDelete={deleteCallEntry}
       />
 
@@ -146,6 +222,10 @@ export function TrackersScreen() {
         visible={selectedMeetingEntry !== null}
         entry={selectedMeetingEntry}
         onClose={() => setSelectedMeetingEntry(null)}
+        onEdit={(entry) => {
+          setSelectedDate(entry.date);
+          setEditingMeeting(entry);
+        }}
         onDelete={deleteMeetingEntry}
       />
     </View>
@@ -161,14 +241,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 96,
     gap: 16,
-  },
-  header: {
-    paddingTop: 12,
-  },
-  title: {
-    fontFamily: typography.fontFamily.primary,
-    fontSize: 24,
-    color: colors.light.text.primary,
   },
   loader: {
     flex: 1,

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '@/theme/colors';
+import { useColorTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 interface SegmentedControlOption<T extends string> {
@@ -12,27 +12,54 @@ interface SegmentedControlProps<T extends string> {
   options: SegmentedControlOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  compact?: boolean;
 }
 
 export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  compact = false,
 }: SegmentedControlProps<T>) {
+  const { theme, colors: palette } = useColorTheme();
+  const activeFill = theme.scheme === 'light' ? 'rgba(255, 255, 255, 0.75)' : palette.overlay.muted;
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: palette.overlay.fill,
+          borderColor: palette.overlay.border,
+        },
+      ]}
+    >
       {options.map((option) => {
         const isActive = option.value === value;
 
         return (
           <Pressable
             key={option.value}
-            style={[styles.segment, isActive && styles.segmentActive]}
+            style={[
+              styles.segment,
+              compact && styles.segmentCompact,
+              isActive && { backgroundColor: activeFill },
+            ]}
             onPress={() => onChange(option.value)}
             accessibilityRole="button"
             accessibilityState={{ selected: isActive }}
+            accessibilityLabel={option.label}
           >
-            <Text style={[styles.label, isActive && styles.labelActive]}>{option.label}</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: palette.text.secondary },
+                compact && styles.labelCompact,
+                isActive && [styles.labelActive, { color: palette.text.primary }],
+              ]}
+            >
+              {option.label}
+            </Text>
           </Pressable>
         );
       })}
@@ -43,11 +70,9 @@ export function SegmentedControl<T extends string>({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 6,
+    borderRadius: 4,
     padding: 4,
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.25)',
   },
   segment: {
     flex: 1,
@@ -56,16 +81,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 4,
   },
-  segmentActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+  segmentCompact: {
+    paddingVertical: 8,
+    paddingHorizontal: 2,
   },
   label: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 15,
-    color: colors.light.text.secondary,
+  },
+  labelCompact: {
+    fontSize: 13,
   },
   labelActive: {
     fontFamily: typography.fontFamily.sansBold,
-    color: colors.light.text.primary,
   },
 });
