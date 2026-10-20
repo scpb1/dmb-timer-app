@@ -14,10 +14,21 @@ export const CONFIG_KEYS = {
   STAT_CARD_MODE: 'stat_card_mode',
   TIMER_BACKGROUND_IMAGE: 'timer_background_image',
   TIMER_BACKGROUND_DIM: 'timer_background_dim',
+  TIMER_UPCOMING_PREVIEW: 'timer_upcoming_preview',
+  TIMER_UPCOMING_PINNED_REF: 'timer_upcoming_pinned_ref',
+  TIMER_PHOTO_STAT_BORDER: 'timer_photo_stat_border',
+  TIMER_PHOTO_UPCOMING_BORDER: 'timer_photo_upcoming_border',
+  DOT_GRID_CELL_SHAPE: 'dot_grid_cell_shape',
+  MILESTONES_LAYOUT: 'timer_milestones_layout',
   EVENTS_DATA: 'events_data',
   HOLIDAYS_DATA: 'holidays_data',
   TRACKERS_CALLS_DATA: 'trackers_calls_data',
   TRACKERS_MEETINGS_DATA: 'trackers_meetings_data',
+  CUSTOM_TIMERS_DATA: 'custom_timers_data',
+  ACTIVE_TIMER_ID: 'active_timer_id',
+  SERVICE_SUMMARY_AUTO_SHOWN_DATE: 'service_summary_auto_shown_date',
+  SANDBOX_SEED_VERSION: 'sandbox_seed_version',
+  COLOR_THEME_ID: 'color_theme_id',
 } as const;
 
 export type ConfigKey = (typeof CONFIG_KEYS)[keyof typeof CONFIG_KEYS];

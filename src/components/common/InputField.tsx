@@ -11,7 +11,7 @@ import {
   ViewStyle,
 } from 'react-native';
 
-import { colors } from '@/theme/colors';
+import { colors, useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 import type { ThemeMode } from '@/types/onboarding';
 
@@ -41,10 +41,11 @@ export function InputField({
   inputStyle,
   labelStyle,
   onSubmitEditing,
-  themeMode = 'light',
+  themeMode,
 }: InputFieldProps) {
   const inputRef = useRef<TextInput>(null);
-  const theme = colors[themeMode];
+  const appTheme = useAppTheme();
+  const theme = themeMode ? colors[themeMode] : appTheme;
 
   return (
     <KeyboardAvoidingView

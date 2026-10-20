@@ -4,7 +4,7 @@ import { CenterDisplayToggle } from '@/components/timer/CenterDisplayToggle';
 import type { ProgressBarMode, TimerCenterDisplay } from '@/types/timer';
 import { PROGRESS_BAR_SEGMENT_COUNT } from '@/types/timer';
 import type { LinearDisplayValues } from '@/utils/timerCalculations';
-import { colors } from '@/theme/colors';
+import { colors, useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 interface SegmentedLinearProgressProps {
@@ -12,7 +12,7 @@ interface SegmentedLinearProgressProps {
   filledCount: number;
   display: LinearDisplayValues;
   centerDisplay?: TimerCenterDisplay;
-  onCenterDisplayChange: (display: TimerCenterDisplay) => void;
+  onCenterDisplayChange?: (display: TimerCenterDisplay) => void;
   photoBackground?: boolean;
 }
 
@@ -29,52 +29,74 @@ export function SegmentedLinearProgress({
   photoBackground = false,
 }: SegmentedLinearProgressProps) {
   const segmentCount = PROGRESS_BAR_SEGMENT_COUNT[mode];
-  const theme = colors.light;
+  const theme = useAppTheme();
 
   return (
     <View style={styles.wrapper}>
       <View style={styles.track}>
-        <View style={styles.zoneLabelsRow}>
-          <CenterDisplayToggle
-            value={centerDisplay}
-            onChange={onCenterDisplayChange}
-            photoBackground={photoBackground}
-          />
-        </View>
+        {onCenterDisplayChange ? (
+          <View style={styles.zoneLabelsRow}>
+            <CenterDisplayToggle
+              value={centerDisplay}
+              onChange={onCenterDisplayChange}
+              photoBackground={photoBackground}
+            />
+          </View>
+        ) : null}
 
         <View style={styles.bar}>
-          {Array.from({ length: segmentCount }, (_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.segment,
-                {
-                  backgroundColor:
-                    photoBackground
-                      ? index < filledCount
+          {Array.from({ length: segmentCount }, (_, index) => {
+            const isFilled = index < filledCount;
+            return (
+              <View
+                key={`${index}-${isFilled ? 'on' : 'off'}`}
+                style={[
+                  styles.segment,
+                  {
+                    backgroundColor: photoBackground
+                      ? isFilled
                         ? '#F2F0EC'
                         : 'rgba(242, 240, 236, 0.30)'
-                      : index < filledCount
+                      : isFilled
                         ? theme.text.accent
-                        : 'rgba(167, 154, 138, 0.35)',
-                },
-              ]}
-            />
-          ))}
+                        : theme.overlay.muted,
+                  },
+                ]}
+              />
+            );
+          })}
         </View>
       </View>
 
       <View style={styles.labelRow}>
         {display.mode === 'percent' ? (
-          <Text style={[styles.percentText, photoBackground && styles.photoText]}>
+          <Text
+            style={[
+              styles.percentText,
+              { color: theme.text.primary },
+              photoBackground && styles.photoText,
+            ]}
+          >
             {display.percentText}
           </Text>
         ) : (
           <>
-            <Text style={[styles.valueText, photoBackground && styles.photoText]}>
+            <Text
+              style={[
+                styles.valueText,
+                { color: theme.text.primary },
+                photoBackground && styles.photoText,
+              ]}
+            >
               {display.primaryValue}
             </Text>
-            <Text style={[styles.unitText, photoBackground && styles.photoText]}>
+            <Text
+              style={[
+                styles.unitText,
+                { color: theme.text.secondary },
+                photoBackground && styles.photoText,
+              ]}
+            >
               {display.unitLabel}
             </Text>
           </>

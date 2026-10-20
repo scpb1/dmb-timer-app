@@ -1,9 +1,19 @@
 import 'react-native-gesture-handler';
+import { createElement, type ComponentType } from 'react';
+import { Platform } from 'react-native';
 import { registerRootComponent } from 'expo';
 
-import App from './App';
+import { isAndroidWidgetAvailable } from './src/utils/nativeAvailability';
 
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
-registerRootComponent(App);
+function AppEntry() {
+  const App = require('./App').default as ComponentType;
+  return createElement(App);
+}
+
+registerRootComponent(AppEntry);
+
+if (Platform.OS === 'android' && isAndroidWidgetAvailable()) {
+  const { registerWidgetTaskHandler } = require('react-native-android-widget');
+  const { widgetTaskHandler } = require('./src/widgets/widgetTaskHandler');
+  registerWidgetTaskHandler(widgetTaskHandler);
+}

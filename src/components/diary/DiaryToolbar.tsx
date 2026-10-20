@@ -30,16 +30,6 @@ export function DiaryToolbar({ style, onChange }: DiaryToolbarProps) {
           <Text style={[styles.formatGlyph, style.bold && styles.formatGlyphActive]}>B</Text>
         </Pressable>
         <Pressable
-          style={[styles.iconButton, style.italic && styles.iconButtonActive]}
-          onPress={() => onChange({ italic: !style.italic })}
-          accessibilityRole="button"
-          accessibilityLabel="Курсив"
-        >
-          <Text style={[styles.formatGlyph, styles.italicGlyph, style.italic && styles.formatGlyphActive]}>
-            I
-          </Text>
-        </Pressable>
-        <Pressable
           style={[styles.iconButton, style.underline && styles.iconButtonActive]}
           onPress={() => onChange({ underline: !style.underline })}
           accessibilityRole="button"
@@ -124,7 +114,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.45)',
-    borderRadius: 7,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.28)',
     paddingHorizontal: 6,
@@ -148,10 +138,6 @@ const styles = StyleSheet.create({
   },
   formatGlyphActive: {
     color: colors.light.text.accent,
-  },
-  italicGlyph: {
-    fontStyle: 'italic',
-    fontFamily: typography.fontFamily.sans,
   },
   underlineGlyph: {
     textDecorationLine: 'underline',
@@ -189,7 +175,7 @@ const styles = StyleSheet.create({
     top: 36,
     left: 0,
     minWidth: 72,
-    borderRadius: 6,
+    borderRadius: 4,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.28)',
@@ -226,7 +212,7 @@ const styles = StyleSheet.create({
   colorSwatch: {
     width: 22,
     height: 22,
-    borderRadius: 6,
+    borderRadius: 4,
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.9)',
   },

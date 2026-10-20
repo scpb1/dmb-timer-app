@@ -72,7 +72,15 @@ export const DEFAULT_DIARY_TEXT_STYLE: DiaryTextStyle = {
 
 export const DIARY_MIN_PHOTO_RATIO = 1 / 6;
 export const DIARY_DEFAULT_PHOTO_RATIO = 0.72;
-export const DIARY_THEME_REVEAL_MS = 5_000;
+export const DIARY_THEME_REVEAL_DELAY_MS = 1_000;
+export const DIARY_THEME_REVEAL_MS = 2_000;
 export const DIARY_READY_BUTTON_DELAY_MS = 1_000;
+export const LETTER_THEME_TITLE_MAX_LENGTH = 80;
+export const LETTER_THEME_SEARCH_DEBOUNCE_MS = 350;
+export const CUSTOM_LETTER_THEME_ID_PREFIX = 'custom-';
+
+export function isCustomLetterThemeId(id: string): boolean {
+  return id.startsWith(CUSTOM_LETTER_THEME_ID_PREFIX);
+}
 
 export { SEED_LETTER_THEMES } from '@/data/letterThemes';

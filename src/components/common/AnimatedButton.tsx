@@ -51,6 +51,9 @@ export function AnimatedButton({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
     >
       {loading ? (
         <ActivityIndicator color={colors.light.text.primary} />
@@ -64,7 +67,7 @@ export function AnimatedButton({
 const styles = StyleSheet.create({
   button: {
     backgroundColor: colors.light.background.end,
-    borderRadius: 7,
+    borderRadius: 4,
     paddingVertical: 16,
     marginHorizontal: 24,
     marginTop: 16,

@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    borderRadius: 5,
+    borderRadius: 4,
     backgroundColor: 'rgba(167, 154, 138, 0.15)',
   },
   imagePressable: {
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     left: -10,
     width: 28,
     height: 28,
-    borderRadius: 7,
+    borderRadius: 4,
     backgroundColor: 'rgba(229, 57, 53, 0.92)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     height: 36,
     marginTop: -18,
     marginLeft: -18,
-    borderRadius: 9,
+    borderRadius: 4,
     backgroundColor: 'rgba(62, 54, 48, 0.72)',
     alignItems: 'center',
     justifyContent: 'center',

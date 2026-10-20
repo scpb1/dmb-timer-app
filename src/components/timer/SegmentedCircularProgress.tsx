@@ -4,7 +4,7 @@ import Svg, { Path } from 'react-native-svg';
 import { CenterDisplayToggle } from '@/components/timer/CenterDisplayToggle';
 import type { ProgressBarMode, TimerCenterDisplay } from '@/types/timer';
 import { PROGRESS_BAR_SEGMENT_COUNT } from '@/types/timer';
-import { colors } from '@/theme/colors';
+import { colors, useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 interface SegmentedCircularProgressProps {
@@ -71,7 +71,7 @@ export function SegmentedCircularProgress({
   const center = size / 2;
   const outerRadius = size / 2 - 8;
   const innerRadius = outerRadius - RING_THICKNESS;
-  const theme = colors.light;
+  const theme = useAppTheme();
   const angleStep = 360 / segmentCount;
   const segmentSpan = Math.max(angleStep - GAP_ANGLE_DEG, angleStep * 0.6);
 
@@ -109,24 +109,40 @@ export function SegmentedCircularProgress({
       <View style={[styles.wrapper, { width: size, height: size }]}>
         <Svg width={size} height={size}>
           {segments.map((segment) => (
-            <Path key={segment.key} d={segment.d} fill={segment.fill} />
+            <Path key={`${segment.key}-${segment.fill}`} d={segment.d} fill={segment.fill} />
           ))}
         </Svg>
 
         <View style={styles.centerContent} pointerEvents="none">
           {secondaryValue != null ? (
-            <Text style={[styles.secondaryValue, photoBackground && styles.photoText]}>
+            <Text
+              style={[
+                styles.secondaryValue,
+                { color: theme.text.secondary },
+                photoBackground && styles.photoText,
+              ]}
+            >
               {secondaryValue}%
             </Text>
           ) : null}
           <Text
-            style={[styles.primaryValue, photoBackground && styles.photoText]}
+            style={[
+              styles.primaryValue,
+              { color: theme.text.primary },
+              photoBackground && styles.photoText,
+            ]}
             adjustsFontSizeToFit
             numberOfLines={1}
           >
             {primaryValue}
           </Text>
-          <Text style={[styles.unitLabel, photoBackground && styles.photoText]}>
+          <Text
+            style={[
+              styles.unitLabel,
+              { color: theme.text.secondary },
+              photoBackground && styles.photoText,
+            ]}
+          >
             {unitLabel}
           </Text>
         </View>

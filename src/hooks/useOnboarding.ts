@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react';
 import { Alert } from 'react-native';
-import { differenceInCalendarDays, isAfter, isBefore, startOfDay } from 'date-fns';
+import { differenceInCalendarDays, addDays, isBefore, startOfDay } from 'date-fns';
 
 import { CONFIG_KEYS } from '@/types/config';
 import type { OnboardingFormData, OnboardingStep, ThemeMode } from '@/types/onboarding';
 import { getConfig, setConfig } from '@/services/database';
 import { logger } from '@/utils/logger';
+import { rescheduleHolidayNotifications } from '@/services/holidayNotifications';
 
 const REASONS = [
   '…ждёшь его каждый день.',
@@ -57,6 +58,7 @@ interface UseOnboardingResult {
   submitName: () => void;
   submitPartnerName: () => void;
   submitDates: () => Promise<boolean>;
+  applyServiceDuration: (days: number) => void;
   clearShakeError: () => void;
 }
 
@@ -90,14 +92,9 @@ export function useOnboarding({
 
     const enlistment = startOfDay(enlistmentDate);
     const demobilization = startOfDay(demobilizationDate);
-    const today = startOfDay(new Date());
 
     if (!isBefore(enlistment, demobilization)) {
       return 'Дата дембеля должна быть позже даты призыва';
-    }
-
-    if (isAfter(enlistment, today)) {
-      return 'Дата призыва не может быть в будущем';
     }
 
     return null;
@@ -252,6 +249,7 @@ export function useOnboarding({
       });
 
       logger.info('Онбординг завершён, профиль сохранён');
+      void rescheduleHolidayNotifications();
       onComplete();
       return true;
     } catch (err) {
@@ -271,6 +269,20 @@ export function useOnboarding({
     demobilizationDate,
     onComplete,
   ]);
+
+  const applyServiceDuration = useCallback(
+    (days: number) => {
+      if (!enlistmentDate) {
+        setError('Сначала укажите дату призыва');
+        setShakeError(true);
+        return;
+      }
+
+      setError(null);
+      setDemobilizationDate(addDays(startOfDay(enlistmentDate), days));
+    },
+    [enlistmentDate],
+  );
 
   const clearShakeError = useCallback(() => {
     setShakeError(false);
@@ -304,6 +316,7 @@ export function useOnboarding({
     submitName,
     submitPartnerName,
     submitDates,
+    applyServiceDuration,
     clearShakeError,
   };
 }

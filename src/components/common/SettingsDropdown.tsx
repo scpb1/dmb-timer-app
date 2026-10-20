@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 export interface DropdownOption<T extends string | number> {
@@ -24,7 +24,7 @@ export function SettingsDropdown<T extends string | number>({
   onChange,
 }: SettingsDropdownProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
-  const theme = colors.light;
+  const theme = useAppTheme();
   const selected = options.find((option) => option.value === value);
 
   const handleSelect = (next: T) => {
@@ -34,12 +34,21 @@ export function SettingsDropdown<T extends string | number>({
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: theme.text.secondary }]}>{label}</Text>
       <Pressable
-        style={[styles.trigger, isOpen && styles.triggerOpen]}
+        style={[
+          styles.trigger,
+          {
+            backgroundColor: theme.overlay.fill,
+            borderColor: theme.overlay.border,
+          },
+          isOpen && { borderColor: theme.text.accent },
+        ]}
         onPress={() => setIsOpen((prev) => !prev)}
       >
-        <Text style={styles.triggerText}>{selected?.label ?? '—'}</Text>
+        <Text style={[styles.triggerText, { color: theme.text.primary }]}>
+          {selected?.label ?? '—'}
+        </Text>
         <Feather
           name={isOpen ? 'chevron-up' : 'chevron-down'}
           size={20}
@@ -48,7 +57,12 @@ export function SettingsDropdown<T extends string | number>({
       </Pressable>
 
       {isOpen ? (
-        <View style={styles.menu}>
+        <View
+          style={[
+            styles.menu,
+            { borderColor: theme.overlay.border, backgroundColor: theme.overlay.fill },
+          ]}
+        >
           {options.map((option) => {
             const isSelected = option.value === value;
             return (
@@ -58,7 +72,11 @@ export function SettingsDropdown<T extends string | number>({
                 onPress={() => handleSelect(option.value)}
               >
                 <Text
-                  style={[styles.menuItemText, isSelected && styles.menuItemTextSelected]}
+                  style={[
+                    styles.menuItemText,
+                    { color: theme.text.primary },
+                    isSelected && { color: theme.text.accent },
+                  ]}
                 >
                   {option.label}
                 </Text>
@@ -81,32 +99,24 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
-    color: colors.light.text.secondary,
     marginBottom: 8,
   },
   trigger: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 7,
+    borderRadius: 4,
     paddingVertical: 16,
     paddingHorizontal: 18,
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.25)',
-  },
-  triggerOpen: {
-    borderColor: colors.light.text.accent,
-    backgroundColor: 'rgba(255, 255, 255, 0.55)',
   },
   triggerText: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 17,
-    color: colors.light.text.primary,
   },
   menu: {
     marginTop: 4,
-    borderRadius: 7,
+    borderRadius: 4,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.25)',
@@ -127,9 +137,5 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 16,
-    color: colors.light.text.primary,
-  },
-  menuItemTextSelected: {
-    color: colors.light.text.accent,
   },
 });

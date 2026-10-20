@@ -53,3 +53,31 @@ export async function removeTimerBackground(uri?: string | null): Promise<void> 
 
   await FileSystem.deleteAsync(uri, { idempotent: true });
 }
+
+type PhotoBackgroundListener = (hasPhoto: boolean) => void;
+
+let hasTimerPhotoBackground = false;
+const photoBackgroundListeners = new Set<PhotoBackgroundListener>();
+
+/** Сообщает нижней панели и другим слушателям, что у таймера есть фото. */
+export function setTimerPhotoBackgroundActive(hasPhoto: boolean): void {
+  if (hasTimerPhotoBackground === hasPhoto) {
+    return;
+  }
+
+  hasTimerPhotoBackground = hasPhoto;
+  photoBackgroundListeners.forEach((listener) => listener(hasTimerPhotoBackground));
+}
+
+export function getTimerPhotoBackgroundActive(): boolean {
+  return hasTimerPhotoBackground;
+}
+
+export function subscribeTimerPhotoBackground(
+  listener: PhotoBackgroundListener,
+): () => void {
+  photoBackgroundListeners.add(listener);
+  return () => {
+    photoBackgroundListeners.delete(listener);
+  };
+}

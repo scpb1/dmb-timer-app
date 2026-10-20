@@ -10,12 +10,13 @@ import {
   ViewStyle,
 } from 'react-native';
 import DateTimePicker, {
+  DateTimePickerAndroid,
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
-import { colors } from '@/theme/colors';
+import { colors, useAppTheme, useColorTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 import type { ThemeMode } from '@/types/onboarding';
 
@@ -31,7 +32,22 @@ interface DatePickerProps {
   themeMode?: ThemeMode;
 }
 
-/** Выбор даты с нативным пикером на iOS/Android */
+function pickerValue(value: Date | null): Date {
+  return startOfDay(value ?? new Date());
+}
+
+function commitIfSet(
+  event: DateTimePickerEvent,
+  selectedDate: Date | undefined,
+  onChange: (date: Date) => void,
+) {
+  if (event.type !== 'set' || !selectedDate) {
+    return;
+  }
+  onChange(startOfDay(selectedDate));
+}
+
+/** Выбор даты: системный календарь на Android, спиннер в модалке на iOS */
 export function DatePicker({
   label,
   value,
@@ -41,38 +57,49 @@ export function DatePicker({
   labelStyle,
   buttonStyle,
   buttonTextStyle,
-  themeMode = 'light',
+  themeMode,
 }: DatePickerProps) {
   const [showPicker, setShowPicker] = useState(false);
-  const [tempDate, setTempDate] = useState<Date>(value ?? new Date());
-  const theme = colors[themeMode];
+  const [tempDate, setTempDate] = useState<Date>(pickerValue(value));
+  const appTheme = useAppTheme();
+  const { theme: selectedTheme } = useColorTheme();
+  const theme = themeMode ? colors[themeMode] : appTheme;
+  const scheme = themeMode ?? selectedTheme.scheme;
 
   const formattedValue = value
     ? format(value, 'd MMMM yyyy', { locale: ru })
     : 'Выберите дату';
 
-  const handleChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+  const openPicker = () => {
+    const initial = pickerValue(value);
+
     if (Platform.OS === 'android') {
-      setShowPicker(false);
-      if (selectedDate) {
-        onChange(selectedDate);
-      }
+      DateTimePickerAndroid.open({
+        value: initial,
+        mode: 'date',
+        display: 'calendar',
+        minimumDate: minimumDate ? startOfDay(minimumDate) : undefined,
+        maximumDate: maximumDate ? startOfDay(maximumDate) : undefined,
+        onChange: (event, selectedDate) => {
+          commitIfSet(event, selectedDate, onChange);
+        },
+      });
       return;
     }
 
+    setTempDate(initial);
+    setShowPicker(true);
+  };
+
+  const handleIOSChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     if (selectedDate) {
-      setTempDate(selectedDate);
+      setTempDate(startOfDay(selectedDate));
     }
   };
 
   const handleConfirmIOS = () => {
-    onChange(tempDate);
+    onChange(startOfDay(tempDate));
     setShowPicker(false);
-  };
-
-  const openPicker = () => {
-    setTempDate(value ?? new Date());
-    setShowPicker(true);
   };
 
   return (
@@ -94,18 +121,6 @@ export function DatePicker({
         </Text>
       </Pressable>
 
-      {Platform.OS === 'android' && showPicker ? (
-        <DateTimePicker
-          value={tempDate}
-          mode="date"
-          display="default"
-          onChange={handleChange}
-          minimumDate={minimumDate}
-          maximumDate={maximumDate}
-          locale="ru-RU"
-        />
-      ) : null}
-
       {Platform.OS === 'ios' ? (
         <Modal visible={showPicker} transparent animationType="slide">
           <View style={styles.modalOverlay}>
@@ -123,10 +138,10 @@ export function DatePicker({
                 value={tempDate}
                 mode="date"
                 display="spinner"
-                onChange={handleChange}
-                minimumDate={minimumDate}
-                maximumDate={maximumDate}
-                locale="ru-RU"
+                onChange={handleIOSChange}
+                minimumDate={minimumDate ? startOfDay(minimumDate) : undefined}
+                maximumDate={maximumDate ? startOfDay(maximumDate) : undefined}
+                themeVariant={scheme === 'dark' ? 'dark' : 'light'}
               />
             </View>
           </View>
@@ -149,7 +164,7 @@ const styles = StyleSheet.create({
   },
   button: {
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: 4,
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginHorizontal: 24,
@@ -166,8 +181,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
     paddingBottom: 24,
   },
   modalHeader: {

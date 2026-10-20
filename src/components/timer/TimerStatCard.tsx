@@ -1,40 +1,87 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import {
+  elapsedRemainingLabel,
+  isElapsedRemainingLabel,
+  statCardUnitText,
+} from '@/components/timer/timerStatCardStyles';
 import type { StatCardDisplay } from '@/utils/timerCalculations';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 interface TimerStatCardProps {
-  title: 'ПРОШЛО' | 'ОСТАЛОСЬ';
+  title: 'прошло' | 'осталось' | 'ДО ПРИЗЫВА' | 'ПОСЛЕ ДЕМБЕЛЯ' | 'ДО НАЧАЛА' | 'ПОСЛЕ';
   display: StatCardDisplay | undefined;
   photoBackground?: boolean;
+  showBorder?: boolean;
 }
 
 export function TimerStatCard({
   title,
   display,
   photoBackground = false,
+  showBorder = true,
 }: TimerStatCardProps) {
+  const theme = useAppTheme();
   if (!display) {
     return null;
   }
 
+  const microCaps = isElapsedRemainingLabel(title);
+
   return (
-    <View style={[styles.card, photoBackground && styles.photoCard]}>
-      <Text style={[styles.title, photoBackground && styles.photoText]}>{title}</Text>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.overlay.fill,
+          borderColor: theme.overlay.border,
+        },
+        photoBackground && styles.photoCard,
+        !showBorder && styles.borderless,
+      ]}
+    >
+      <Text
+        style={[
+          microCaps ? elapsedRemainingLabel.label : styles.phaseTitle,
+          { color: theme.text.secondary },
+          photoBackground && styles.photoText,
+        ]}
+      >
+        {title}
+      </Text>
 
       <View style={styles.primaryBlock}>
-        <Text style={[styles.primaryValue, photoBackground && styles.photoText]}>
+        <Text
+          style={[
+            styles.primaryValue,
+            { color: theme.text.primary },
+            photoBackground && styles.photoText,
+          ]}
+        >
           {display.primaryValue}
         </Text>
-        <Text style={[styles.unitLabel, photoBackground && styles.photoText]}>
+        <Text
+          style={[
+            styles.unitLabel,
+            { color: theme.text.secondary },
+            photoBackground && styles.photoText,
+          ]}
+        >
           {display.unitLabel}
         </Text>
       </View>
 
       <View style={styles.detailBlock}>
         {display.detailLines.map((line, index) => (
-          <Text key={index} style={[styles.detailLine, photoBackground && styles.photoText]}>
+          <Text
+            key={index}
+            style={[
+              styles.detailLine,
+              { color: theme.text.secondary },
+              photoBackground && styles.photoText,
+            ]}
+          >
             {line}
           </Text>
         ))}
@@ -46,18 +93,15 @@ export function TimerStatCard({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 8,
+    borderRadius: 4,
     paddingVertical: 16,
     paddingHorizontal: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.25)',
   },
-  title: {
+  phaseTitle: {
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 18,
-    color: colors.light.text.secondary,
     marginBottom: 16,
   },
   primaryBlock: {
@@ -66,13 +110,10 @@ const styles = StyleSheet.create({
   primaryValue: {
     fontFamily: typography.fontFamily.display,
     fontSize: 36,
-    color: colors.light.text.primary,
     lineHeight: 40,
   },
   unitLabel: {
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 14,
-    color: colors.light.text.secondary,
+    ...statCardUnitText,
     marginTop: 2,
   },
   detailBlock: {
@@ -83,12 +124,14 @@ const styles = StyleSheet.create({
   detailLine: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 13,
-    color: colors.light.text.secondary,
     lineHeight: 18,
   },
   photoCard: {
     backgroundColor: 'transparent',
     borderColor: 'rgba(242, 240, 236, 0.38)',
+  },
+  borderless: {
+    borderWidth: 0,
   },
   photoText: {
     color: '#F2F0EC',

@@ -9,7 +9,7 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 const THUMB_SIZE = 20;
@@ -59,7 +59,8 @@ function SliderReadout({
     },
   );
 
-  return <Text style={styles.value}>{formatValue(textValue)}</Text>;
+  const theme = useAppTheme();
+  return <Text style={[styles.value, { color: theme.text.primary }]}>{formatValue(textValue)}</Text>;
 }
 
 /** Горизонтальный ползунок: жест и анимация идут на UI-потоке */
@@ -72,6 +73,7 @@ export function SettingsSlider({
   formatValue = String,
   sharedValue,
 }: SettingsSliderProps) {
+  const theme = useAppTheme();
   const trackWidth = useSharedValue(0);
   const progress = useSharedValue(ratioFromValue(value, min, max));
   const liveValue = useSharedValue(value);
@@ -159,7 +161,7 @@ export function SettingsSlider({
   return (
     <View style={styles.wrapper}>
       <View style={styles.header}>
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, { color: theme.text.secondary }]}>{label}</Text>
         <SliderReadout source={liveValue} formatValue={formatValue} />
       </View>
 
@@ -170,9 +172,15 @@ export function SettingsSlider({
             trackWidth.value = event.nativeEvent.layout.width;
           }}
         >
-          <View style={styles.track}>
-            <Animated.View style={[styles.fill, fillStyle]} />
-            <Animated.View style={[styles.thumb, thumbStyle]} />
+          <View style={[styles.track, { backgroundColor: theme.overlay.muted }]}>
+            <Animated.View style={[styles.fill, { backgroundColor: theme.text.accent }, fillStyle]} />
+            <Animated.View
+              style={[
+                styles.thumb,
+                { backgroundColor: theme.text.inverse, borderColor: theme.text.accent },
+                thumbStyle,
+              ]}
+            />
           </View>
         </Animated.View>
       </GestureDetector>
@@ -193,12 +201,10 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
-    color: colors.light.text.secondary,
   },
   value: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
-    color: colors.light.text.primary,
   },
   hitArea: {
     justifyContent: 'center',
@@ -207,14 +213,12 @@ const styles = StyleSheet.create({
   },
   track: {
     height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(167, 154, 138, 0.28)',
+    borderRadius: 4,
     justifyContent: 'center',
   },
   fill: {
     height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.light.text.accent,
+    borderRadius: 4,
   },
   thumb: {
     position: 'absolute',
@@ -222,8 +226,6 @@ const styles = StyleSheet.create({
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: THUMB_SIZE / 2,
-    backgroundColor: '#FCF7DF',
     borderWidth: 2,
-    borderColor: colors.light.text.accent,
   },
 });

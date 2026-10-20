@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { RouteProp } from '@react-navigation/native';
@@ -9,11 +9,17 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { AnimatedButton } from '@/components/common/AnimatedButton';
+import { AnimatedText } from '@/components/common/AnimatedText';
+import { LetterThemePickerModal } from '@/components/diary/LetterThemePickerModal';
 import { pickPreferredTheme, pickRandomTheme, useLetterThemes } from '@/hooks/useDiary';
 import { getDiaryEntry } from '@/services/database';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
-import { DIARY_READY_BUTTON_DELAY_MS, DIARY_THEME_REVEAL_MS } from '@/types/diary';
+import {
+  DIARY_READY_BUTTON_DELAY_MS,
+  DIARY_THEME_REVEAL_DELAY_MS,
+  DIARY_THEME_REVEAL_MS,
+} from '@/types/diary';
 import type { LetterTheme } from '@/types/diary';
 import type { DiaryStackParamList } from '@/types/navigation';
 
@@ -24,13 +30,12 @@ interface LetterThemeScreenProps {
 
 export function LetterThemeScreen({ navigation, route }: LetterThemeScreenProps) {
   const date = route.params?.date ?? format(new Date(), 'yyyy-MM-dd');
-  const { isLoading, unusedThemes, reload } = useLetterThemes(date);
+  const { isLoading, themes, usedThemeIds, unusedThemes, reload } = useLetterThemes(date);
   const [theme, setTheme] = useState<LetterTheme | null>(null);
-  const [revealed, setRevealed] = useState('');
   const [readyVisible, setReadyVisible] = useState(false);
   const [runId, setRunId] = useState(0);
   const [hasExisting, setHasExisting] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
     void reload();
@@ -61,46 +66,27 @@ export function LetterThemeScreen({ navigation, route }: LetterThemeScreenProps)
     });
   }, [isLoading, unusedThemes]);
 
-  const characters = useMemo(() => Array.from(theme?.title ?? ''), [theme?.title]);
-
   useEffect(() => {
+    setReadyVisible(false);
     if (!theme) {
-      setRevealed('');
-      setReadyVisible(false);
       return;
     }
 
-    setRevealed('');
-    setReadyVisible(false);
-
     const readyTimer = setTimeout(() => setReadyVisible(true), DIARY_READY_BUTTON_DELAY_MS);
-    const step = Math.max(18, DIARY_THEME_REVEAL_MS / Math.max(characters.length, 1));
-    let index = 0;
+    return () => clearTimeout(readyTimer);
+  }, [theme, runId]);
 
-    intervalRef.current = setInterval(() => {
-      index += 1;
-      setRevealed(characters.slice(0, index).join(''));
-      if (index >= characters.length && intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }, step);
-
-    return () => {
-      clearTimeout(readyTimer);
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [theme, runId, characters]);
+  const applyTheme = (next: LetterTheme) => {
+    setTheme(next);
+    setRunId((value) => value + 1);
+    setPickerOpen(false);
+  };
 
   const rerollTheme = () => {
     const next = pickRandomTheme(unusedThemes, theme?.id);
     if (next) {
-      setTheme(next);
+      applyTheme(next);
     }
-    setRunId((value) => value + 1);
   };
 
   const openEditor = (themeId: string) => {
@@ -120,7 +106,7 @@ export function LetterThemeScreen({ navigation, route }: LetterThemeScreenProps)
 
   return (
     <View style={styles.root}>
-      <ScreenBackground themeMode="light" />
+      <ScreenBackground />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.header}>
           <Pressable
@@ -131,18 +117,28 @@ export function LetterThemeScreen({ navigation, route }: LetterThemeScreenProps)
           >
             <Feather name="chevron-left" size={26} color={colors.light.text.primary} />
           </Pressable>
-          {unusedThemes.length > 0 ? (
+          <View style={styles.headerActions}>
             <Pressable
-              onPress={rerollTheme}
+              onPress={() => setPickerOpen(true)}
               style={styles.iconButton}
               accessibilityRole="button"
-              accessibilityLabel="Другая тема"
+              accessibilityLabel="Найти тему"
             >
-              <Feather name="shuffle" size={20} color={colors.light.text.primary} />
+              <Feather name="search" size={20} color={colors.light.text.primary} />
             </Pressable>
-          ) : (
-            <View style={styles.iconButton} />
-          )}
+            {unusedThemes.length > 0 ? (
+              <Pressable
+                onPress={rerollTheme}
+                style={styles.iconButton}
+                accessibilityRole="button"
+                accessibilityLabel="Другая тема"
+              >
+                <Feather name="shuffle" size={20} color={colors.light.text.primary} />
+              </Pressable>
+            ) : (
+              <View style={styles.iconButton} />
+            )}
+          </View>
         </View>
 
         {isLoading ? (
@@ -155,13 +151,26 @@ export function LetterThemeScreen({ navigation, route }: LetterThemeScreenProps)
             {hasExisting ? (
               <AnimatedButton label="Открыть сегодняшнее письмо" onPress={() => void openExisting()} />
             ) : (
-              <Text style={styles.emptyHint}>Можно открыть прошлые письма через дату в дневнике.</Text>
+              <Text style={styles.emptyHint}>Можно найти тему в поиске или добавить свою.</Text>
             )}
+            <View style={styles.emptyAction}>
+              <AnimatedButton label="Найти или добавить тему" onPress={() => setPickerOpen(true)} />
+            </View>
           </View>
         ) : (
           <View style={styles.body}>
             <Text style={styles.heading}>Твоя тема на сегодня:</Text>
-            <Text style={styles.themeText}>«{revealed}»</Text>
+            {theme ? (
+              <AnimatedText
+                key={`${theme.id}-${runId}`}
+                delay={DIARY_THEME_REVEAL_DELAY_MS}
+                duration={DIARY_THEME_REVEAL_MS}
+                style={styles.themeText}
+                initialColor={colors.light.text.primary}
+              >
+                {`«${theme.title}»`}
+              </AnimatedText>
+            ) : null}
 
             {readyVisible && theme ? (
               <Animated.View entering={FadeIn.duration(500)} style={styles.readyWrap}>
@@ -173,6 +182,17 @@ export function LetterThemeScreen({ navigation, route }: LetterThemeScreenProps)
           </View>
         )}
       </SafeAreaView>
+      <LetterThemePickerModal
+        visible={pickerOpen}
+        themes={themes}
+        usedThemeIds={usedThemeIds}
+        onClose={() => setPickerOpen(false)}
+        onSelect={applyTheme}
+        onCustomAdded={async (next) => {
+          await reload();
+          applyTheme(next);
+        }}
+      />
     </View>
   );
 }
@@ -191,11 +211,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   iconButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  emptyAction: {
+    width: '100%',
+    marginTop: 20,
   },
   center: {
     flex: 1,

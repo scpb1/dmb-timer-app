@@ -4,6 +4,7 @@ import { DiaryHomeScreen } from '@/screens/diary/DiaryHomeScreen';
 import { LetterDiaryScreen } from '@/screens/diary/LetterDiaryScreen';
 import { LetterThemeScreen } from '@/screens/diary/LetterThemeScreen';
 import { PersonalDiaryScreen } from '@/screens/diary/PersonalDiaryScreen';
+import { SettingsScreen } from '@/screens/diary/SettingsScreen';
 import type { DiaryStackParamList } from '@/types/navigation';
 
 const Stack = createStackNavigator<DiaryStackParamList>();
@@ -15,6 +16,7 @@ export function DiaryStackNavigator() {
       screenOptions={{ headerShown: false, animationEnabled: true }}
     >
       <Stack.Screen name="DiaryHome" component={DiaryHomeScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="PersonalDiary" component={PersonalDiaryScreen} />
       <Stack.Screen name="LetterTheme" component={LetterThemeScreen} />
       <Stack.Screen name="LetterEditor" component={LetterDiaryScreen} />

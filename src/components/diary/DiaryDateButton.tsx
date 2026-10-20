@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { format } from 'date-fns';
+import DateTimePicker, {
+  DateTimePickerAndroid,
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
+import { format, startOfDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Feather } from '@expo/vector-icons';
 
@@ -17,25 +20,29 @@ interface DiaryDateButtonProps {
 /** Компактный выбор даты в шапке дневника */
 export function DiaryDateButton({ date, onChange, maximumDate }: DiaryDateButtonProps) {
   const [showPicker, setShowPicker] = useState(false);
-  const [tempDate, setTempDate] = useState(date);
+  const [tempDate, setTempDate] = useState(startOfDay(date));
 
   const openPicker = () => {
-    setTempDate(date);
-    setShowPicker(true);
-  };
+    const initial = startOfDay(date);
 
-  const handleChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
-      setShowPicker(false);
-      if (selectedDate) {
-        onChange(selectedDate);
-      }
+      DateTimePickerAndroid.open({
+        value: initial,
+        mode: 'date',
+        display: 'calendar',
+        maximumDate: maximumDate ? startOfDay(maximumDate) : undefined,
+        onChange: (event: DateTimePickerEvent, selectedDate?: Date) => {
+          if (event.type !== 'set' || !selectedDate) {
+            return;
+          }
+          onChange(startOfDay(selectedDate));
+        },
+      });
       return;
     }
 
-    if (selectedDate) {
-      setTempDate(selectedDate);
-    }
+    setTempDate(initial);
+    setShowPicker(true);
   };
 
   return (
@@ -50,17 +57,6 @@ export function DiaryDateButton({ date, onChange, maximumDate }: DiaryDateButton
         <Text style={styles.label}>{format(date, 'd MMMM', { locale: ru })}</Text>
       </Pressable>
 
-      {Platform.OS === 'android' && showPicker ? (
-        <DateTimePicker
-          value={tempDate}
-          mode="date"
-          display="default"
-          onChange={handleChange}
-          maximumDate={maximumDate}
-          locale="ru-RU"
-        />
-      ) : null}
-
       {Platform.OS === 'ios' ? (
         <Modal visible={showPicker} transparent animationType="slide">
           <View style={styles.modalOverlay}>
@@ -71,7 +67,7 @@ export function DiaryDateButton({ date, onChange, maximumDate }: DiaryDateButton
                 </Pressable>
                 <Pressable
                   onPress={() => {
-                    onChange(tempDate);
+                    onChange(startOfDay(tempDate));
                     setShowPicker(false);
                   }}
                 >
@@ -82,9 +78,12 @@ export function DiaryDateButton({ date, onChange, maximumDate }: DiaryDateButton
                 value={tempDate}
                 mode="date"
                 display="spinner"
-                onChange={handleChange}
-                maximumDate={maximumDate}
-                locale="ru-RU"
+                onChange={(_event, selectedDate) => {
+                  if (selectedDate) {
+                    setTempDate(startOfDay(selectedDate));
+                  }
+                }}
+                maximumDate={maximumDate ? startOfDay(maximumDate) : undefined}
               />
             </View>
           </View>
@@ -101,7 +100,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    borderRadius: 6,
+    borderRadius: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.28)',
@@ -118,8 +117,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
     paddingBottom: 24,
   },
   modalHeader: {

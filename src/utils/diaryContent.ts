@@ -49,7 +49,7 @@ export function toRnTextStyle(style: DiaryTextStyle): TextStyle {
     fontFamily: resolveDiaryFontFamily(style.fontId, style.bold),
     fontSize: style.fontSize,
     color: style.color,
-    fontStyle: style.italic ? 'italic' : 'normal',
+    fontStyle: 'normal',
     textDecorationLine: style.underline ? 'underline' : 'none',
   };
 }
@@ -104,6 +104,15 @@ export function flattenSpans(spans: DiaryTextSpan[]): string {
 
 export function isParagraphEmpty(block: DiaryBlock): boolean {
   return block.type === 'paragraph' && flattenSpans(block.spans).trim().length === 0;
+}
+
+export function isDocumentBlank(document: DiaryDocument): boolean {
+  return document.blocks.every((block) => {
+    if (block.type === 'image') {
+      return false;
+    }
+    return flattenSpans(block.spans).trim().length === 0;
+  });
 }
 
 export function normalizeSpans(

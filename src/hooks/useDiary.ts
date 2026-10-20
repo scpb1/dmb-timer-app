@@ -21,6 +21,7 @@ import {
   resolveHolidayThemeTitle,
 } from '@/utils/holidayCalculations';
 import { logger } from '@/utils/logger';
+import { rescheduleAppNotifications } from '@/services/holidayNotifications';
 
 async function ensureDiaryDirectory(): Promise<string> {
   const base = FileSystem.documentDirectory;
@@ -53,6 +54,23 @@ export async function persistDiaryPhoto(sourceUri: string): Promise<string> {
   const dest = `${dir}${createDiaryId()}.${getImageExtension(sourceUri)}`;
   await FileSystem.copyAsync({ from: sourceUri, to: dest });
   return dest;
+}
+
+/** Удаляет копию фото из папки приложения, галерею телефона не трогает */
+export async function removeDiaryPhotoIfOwned(uri: string): Promise<void> {
+  try {
+    const dir = await ensureDiaryDirectory();
+    if (!uri.startsWith(dir)) {
+      return;
+    }
+
+    const info = await FileSystem.getInfoAsync(uri);
+    if (info.exists) {
+      await FileSystem.deleteAsync(uri, { idempotent: true });
+    }
+  } catch (error) {
+    logger.error('Не удалось удалить фото дневника из файлов приложения', error);
+  }
 }
 
 export function readImageSize(uri: string): Promise<{ width: number; height: number }> {
@@ -104,6 +122,9 @@ export function useDiaryEntry(kind: DiaryKind, entryDate: string): UseDiaryEntry
           document,
         });
         setEntry(saved);
+        if (kind === 'letter') {
+          void rescheduleAppNotifications();
+        }
         return true;
       } catch (error) {
         logger.error('Ошибка сохранения дневника', error);

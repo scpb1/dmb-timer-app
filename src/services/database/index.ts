@@ -4,17 +4,33 @@ import { logger } from '@/utils/logger';
 import { removeTimerBackground } from '@/utils/timerBackground';
 import { CONFIG_KEYS } from '@/types/config';
 import { initDiarySchema, resetDiaryEntries } from './diary';
+import {
+  DATABASE_FILES,
+  getActiveDatabaseProfile,
+  setActiveDatabaseProfile,
+  type DatabaseProfileId,
+} from './profile';
+import { ensureSandboxSeeded, reseedSandbox } from './sandboxSeed';
 
 export {
+  countDiaryEntriesByKind,
+  getDiaryCalendarMarks,
+  getDiaryEntriesByKind,
   getDiaryEntry,
   getLetterThemes,
   getUsedLetterThemeIds,
+  insertCustomLetterTheme,
   upsertDiaryEntry,
 } from './diary';
 
-const DATABASE_NAME = 'zhdi.db';
+export {
+  getActiveDatabaseProfile,
+  setActiveDatabaseProfile,
+  type DatabaseProfileId,
+} from './profile';
 
 let database: SQLite.SQLiteDatabase | null = null;
+let openedFileName: string | null = null;
 
 const CREATE_CONFIG_TABLE = `
   CREATE TABLE IF NOT EXISTS config (
@@ -23,17 +39,63 @@ const CREATE_CONFIG_TABLE = `
   );
 `;
 
-/** Открывает БД и создаёт таблицу config при первом запуске */
+async function openProfileDatabase(profile: DatabaseProfileId): Promise<void> {
+  const fileName = DATABASE_FILES[profile];
+  if (database && openedFileName === fileName) {
+    return;
+  }
+
+  if (database) {
+    await database.closeAsync();
+    database = null;
+    openedFileName = null;
+  }
+
+  database = await SQLite.openDatabaseAsync(fileName);
+  openedFileName = fileName;
+  await database.execAsync(CREATE_CONFIG_TABLE);
+  await initDiarySchema(database);
+
+  if (profile === 'sandbox') {
+    await ensureSandboxSeeded(database);
+  }
+}
+
+/** Открывает активный профиль БД: основную или тестовую */
 export async function initDatabase(): Promise<void> {
   try {
-    database = await SQLite.openDatabaseAsync(DATABASE_NAME);
-    await database.execAsync(CREATE_CONFIG_TABLE);
-    await initDiarySchema(database);
-    logger.info('База данных инициализирована');
+    const profile = await getActiveDatabaseProfile();
+    await openProfileDatabase(profile);
+    logger.info(`База данных инициализирована (${profile})`);
   } catch (error) {
     logger.error('Ошибка инициализации базы данных', error);
     throw error;
   }
+}
+
+export async function switchDatabaseProfile(next: DatabaseProfileId): Promise<void> {
+  const current = await getActiveDatabaseProfile();
+  if (current === next && database && openedFileName === DATABASE_FILES[next]) {
+    if (next === 'sandbox') {
+      await ensureSandboxSeeded(database);
+    }
+    return;
+  }
+
+  await setActiveDatabaseProfile(next);
+  await openProfileDatabase(next);
+  logger.info(`Переключились на базу ${next}`);
+}
+
+export async function reseedSandboxDatabase(): Promise<void> {
+  const profile = await getActiveDatabaseProfile();
+  if (profile !== 'sandbox' || !database) {
+    await switchDatabaseProfile('sandbox');
+  }
+  if (!database) {
+    throw new Error('Тестовая база не открыта');
+  }
+  await reseedSandbox(database);
 }
 
 function getDatabase(): SQLite.SQLiteDatabase {

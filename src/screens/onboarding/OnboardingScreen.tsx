@@ -16,6 +16,7 @@ import { AnimatedText } from '@/components/common/AnimatedText';
 import { DatePicker } from '@/components/common/DatePicker';
 import { InputField } from '@/components/common/InputField';
 import { PulsingHint } from '@/components/common/PulsingHint';
+import { ServiceDurationPresets } from '@/components/common/ServiceDurationPresets';
 import { ShakeView } from '@/components/common/ShakeView';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useStepTransition } from '@/hooks/useStepTransition';
@@ -70,6 +71,7 @@ export function OnboardingScreen({ onComplete }: Props) {
     submitName,
     submitPartnerName,
     submitDates,
+    applyServiceDuration,
     clearShakeError,
   } = onboarding;
 
@@ -233,7 +235,6 @@ export function OnboardingScreen({ onComplete }: Props) {
                 label="Дата призыва"
                 value={enlistmentDate}
                 onChange={setEnlistmentDate}
-                maximumDate={new Date()}
                 themeMode={themeMode}
               />
 
@@ -243,6 +244,11 @@ export function OnboardingScreen({ onComplete }: Props) {
                 onChange={setDemobilizationDate}
                 minimumDate={enlistmentDate ?? undefined}
                 themeMode={themeMode}
+              />
+
+              <ServiceDurationPresets
+                themeMode={themeMode}
+                onSelect={applyServiceDuration}
               />
 
               {error ? (

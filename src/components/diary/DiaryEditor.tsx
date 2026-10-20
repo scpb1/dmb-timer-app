@@ -22,7 +22,7 @@ import { DiaryImageBlockView } from '@/components/diary/DiaryImageBlock';
 import { DiaryParagraph } from '@/components/diary/DiaryParagraph';
 import { DiaryToolbar } from '@/components/diary/DiaryToolbar';
 import { ScreenBackground } from '@/components/common/ScreenBackground';
-import { persistDiaryPhoto, readImageSize, useDiaryEntry } from '@/hooks/useDiary';
+import { persistDiaryPhoto, readImageSize, removeDiaryPhotoIfOwned, useDiaryEntry } from '@/hooks/useDiary';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import type { DiaryBlock, DiaryKind, DiaryTextStyle } from '@/types/diary';
@@ -79,7 +79,6 @@ export function DiaryEditor({
   const [workSize, setWorkSize] = useState({ width: 0, height: 0 });
   const [isSaving, setIsSaving] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [savedHint, setSavedHint] = useState(false);
   const [isEditing, setIsEditing] = useState(Boolean(startFresh));
 
   const blocksRef = useRef(blocks);
@@ -119,21 +118,36 @@ export function DiaryEditor({
     setIsEditing(false);
   }, [date, startFresh, isLoading, entry?.id]);
 
-  const persist = useCallback(async () => {
+  const persist = useCallback(async (exitEditing = false) => {
     setIsSaving(true);
     const ok = await save({ version: 1, blocks: blocksRef.current }, themeId);
     setIsSaving(false);
     if (ok) {
       setBaseline({ version: 1, blocks: blocksRef.current });
-      setSavedHint(true);
-      setIsEditing(false);
-      setSelectedImageId(null);
-      setTimeout(() => setSavedHint(false), 1600);
+      if (exitEditing) {
+        setIsEditing(false);
+        setSelectedImageId(null);
+      }
     } else {
       Alert.alert('Не удалось сохранить', 'Попробуйте ещё раз');
     }
     return ok;
   }, [save, themeId]);
+
+  const persistRef = useRef(persist);
+  persistRef.current = persist;
+
+  useEffect(() => {
+    if (!isEditing || !dirty || isSaving) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void persistRef.current(false);
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [blocks, dirty, isEditing, isSaving]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
@@ -142,33 +156,17 @@ export function DiaryEditor({
       }
 
       event.preventDefault();
-      Alert.alert('Сохранить изменения?', 'Есть несохранённые правки.', [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Не сохранять',
-          style: 'destructive',
-          onPress: () => {
-            skipGuardRef.current = true;
-            navigation.dispatch(event.data.action);
-          },
-        },
-        {
-          text: 'Сохранить',
-          onPress: () => {
-            void persist().then((ok) => {
-              if (!ok) {
-                return;
-              }
-              skipGuardRef.current = true;
-              navigation.dispatch(event.data.action);
-            });
-          },
-        },
-      ]);
+      void persistRef.current(false).then((ok) => {
+        if (!ok) {
+          return;
+        }
+        skipGuardRef.current = true;
+        navigation.dispatch(event.data.action);
+      });
     });
 
     return unsubscribe;
-  }, [dirty, navigation, persist]);
+  }, [dirty, navigation]);
 
   const handleFormatChange = (patch: Partial<DiaryTextStyle>) => {
     const nextStyle = { ...typingStyle, ...patch };
@@ -210,10 +208,11 @@ export function DiaryEditor({
       return;
     }
 
-    Alert.alert('Сменить дату?', 'Несохранённые изменения будут потеряны.', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Сменить', style: 'destructive', onPress: apply },
-    ]);
+    void persist(false).then((ok) => {
+      if (ok) {
+        apply();
+      }
+    });
   };
 
   const insertPickedPhoto = async (uri: string) => {
@@ -306,20 +305,8 @@ export function DiaryEditor({
     setSelectedImageId(null);
   };
 
-  const requestDiscard = () => {
-    Alert.alert('Отменить изменения?', 'Несохранённые правки будут потеряны.', [
-      { text: 'Назад', style: 'cancel' },
-      {
-        text: 'Отменить',
-        style: 'destructive',
-        onPress: () => {
-          setBlocks(baseline.blocks);
-          setIsEditing(false);
-          setSelectedImageId(null);
-          setFocusedBlockId(baseline.blocks.find((block) => block.type === 'paragraph')?.id ?? null);
-        },
-      },
-    ]);
+  const exitEditing = () => {
+    void persist(true);
   };
 
   const blurInputs = () => {
@@ -331,7 +318,7 @@ export function DiaryEditor({
 
   return (
     <View style={styles.root}>
-      <ScreenBackground themeMode="light" />
+      <ScreenBackground />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <KeyboardAvoidingView
           style={styles.flex}
@@ -352,29 +339,19 @@ export function DiaryEditor({
             <View style={styles.headerRight}>
               {extraHeaderAction}
               {isEditing ? (
-                <>
-                  <Pressable
-                    onPress={requestDiscard}
-                    style={styles.iconAction}
-                    accessibilityRole="button"
-                    accessibilityLabel="Отменить изменения"
-                  >
-                    <Feather name="x" size={22} color={colors.light.text.primary} />
-                  </Pressable>
-                  <Pressable
-                    onPress={() => void persist()}
-                    style={[styles.saveButton, !dirty && styles.saveButtonIdle]}
-                    disabled={isSaving}
-                    accessibilityRole="button"
-                    accessibilityLabel="Сохранить изменения"
-                  >
-                    {isSaving ? (
-                      <ActivityIndicator size="small" color={colors.light.text.primary} />
-                    ) : (
-                      <Text style={styles.saveLabel}>{savedHint ? 'Сохранено' : 'Сохранить'}</Text>
-                    )}
-                  </Pressable>
-                </>
+                <Pressable
+                  onPress={exitEditing}
+                  style={styles.iconAction}
+                  disabled={isSaving}
+                  accessibilityRole="button"
+                  accessibilityLabel="Готово"
+                >
+                  {isSaving ? (
+                    <ActivityIndicator size="small" color={colors.light.text.primary} />
+                  ) : (
+                    <Feather name="check" size={22} color={colors.light.text.primary} />
+                  )}
+                </Pressable>
               ) : (
                 <Pressable
                   onPress={enterEditing}
@@ -464,6 +441,9 @@ export function DiaryEditor({
                           setFocusedBlockId(block.id);
                         }}
                         onDelete={() => {
+                          if (block.type === 'image') {
+                            void removeDiaryPhotoIfOwned(block.uri);
+                          }
                           setBlocks(removeBlock(blocksRef.current, block.id));
                           setSelectedImageId(null);
                         }}
@@ -536,28 +516,12 @@ const styles = StyleSheet.create({
   iconAction: {
     width: 40,
     height: 40,
-    borderRadius: 6,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.55)',
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.35)',
-  },
-  saveButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.55)',
-    borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.35)',
-  },
-  saveButtonIdle: {
-    opacity: 0.7,
-  },
-  saveLabel: {
-    fontFamily: typography.fontFamily.sansBold,
-    fontSize: 13,
-    color: colors.light.text.primary,
   },
   themeTitle: {
     fontFamily: typography.fontFamily.sans,
@@ -571,7 +535,7 @@ const styles = StyleSheet.create({
     zIndex: 0,
     marginHorizontal: 16,
     marginBottom: 16,
-    borderRadius: 9,
+    borderRadius: 4,
     backgroundColor: 'rgba(255, 253, 246, 0.72)',
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.28)',
@@ -596,7 +560,7 @@ const styles = StyleSheet.create({
     bottom: 24,
     width: 56,
     height: 56,
-    borderRadius: 14,
+    borderRadius: 4,
     backgroundColor: colors.light.background.start,
     borderWidth: 1,
     borderColor: 'rgba(167, 154, 138, 0.4)',

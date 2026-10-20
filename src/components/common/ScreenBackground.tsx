@@ -10,10 +10,13 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { colors } from '@/theme/colors';
+import { useColorTheme } from '@/theme';
 import { typography } from '@/theme/typography';
+import type { ColorTokens } from '@/theme/tokens';
 import type { ThemeMode } from '@/types/onboarding';
 
 interface ScreenBackgroundProps {
+  /** Только онбординг: кроссфейд лён ↔ графит. Без пропа — выбранная тема приложения. */
   themeMode?: ThemeMode;
 }
 
@@ -22,52 +25,87 @@ interface GradientSize {
   height: number;
 }
 
-function DarkGradient({ width, height }: GradientSize) {
+interface ThemeGradientProps extends GradientSize {
+  tokens: ColorTokens;
+  gradientId: string;
+  sheenEndY: string;
+}
+
+function ThemeGradient({ tokens, width, height, gradientId, sheenEndY }: ThemeGradientProps) {
+  const baseId = `${gradientId}Base`;
+  const sheenId = `${gradientId}Sheen`;
+
   return (
     <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
       <Defs>
-        <LinearGradient id="darkBase" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor={colors.dark.background.start} />
-          <Stop offset="42%" stopColor="#242427" />
-          <Stop offset="100%" stopColor={colors.dark.background.end} />
+        <LinearGradient id={baseId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <Stop offset="0%" stopColor={tokens.background.start} />
+          <Stop offset="45%" stopColor={tokens.background.mid} />
+          <Stop offset="100%" stopColor={tokens.background.end} />
         </LinearGradient>
-        <LinearGradient id="darkSheen" x1="100%" y1="0%" x2="0%" y2="100%">
-          <Stop offset="0%" stopColor="#45454b" stopOpacity="0.45" />
-          <Stop offset="48%" stopColor="#1a1a1c" stopOpacity="0" />
-          <Stop offset="100%" stopColor="#35353a" stopOpacity="0.35" />
+        <LinearGradient id={sheenId} x1="100%" y1="0%" x2="0%" y2={sheenEndY}>
+          <Stop
+            offset="0%"
+            stopColor={tokens.background.sheen.start}
+            stopOpacity={tokens.background.sheen.startOpacity}
+          />
+          <Stop
+            offset="50%"
+            stopColor={tokens.background.sheen.mid}
+            stopOpacity={tokens.background.sheen.midOpacity}
+          />
+          <Stop
+            offset="100%"
+            stopColor={tokens.background.sheen.end}
+            stopOpacity={tokens.background.sheen.endOpacity}
+          />
         </LinearGradient>
       </Defs>
-      <Rect x={0} y={0} width={width} height={height} fill="url(#darkBase)" />
-      <Rect x={0} y={0} width={width} height={height} fill="url(#darkSheen)" />
+      <Rect x={0} y={0} width={width} height={height} fill={`url(#${baseId})`} />
+      <Rect x={0} y={0} width={width} height={height} fill={`url(#${sheenId})`} />
     </Svg>
   );
 }
 
-function LightGradient({ width, height }: GradientSize) {
-  return (
-    <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
-      <Defs>
-        <LinearGradient id="lightBase" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor={colors.light.background.start} />
-          <Stop offset="45%" stopColor="#EDE8D5" />
-          <Stop offset="100%" stopColor={colors.light.background.end} />
-        </LinearGradient>
-        <LinearGradient id="lightSheen" x1="100%" y1="0%" x2="0%" y2="85%">
-          <Stop offset="0%" stopColor="#D8E4EA" stopOpacity="0.65" />
-          <Stop offset="50%" stopColor="#FCF7DF" stopOpacity="0" />
-          <Stop offset="100%" stopColor="#B8C8D2" stopOpacity="0.5" />
-        </LinearGradient>
-      </Defs>
-      <Rect x={0} y={0} width={width} height={height} fill="url(#lightBase)" />
-      <Rect x={0} y={0} width={width} height={height} fill="url(#lightSheen)" />
-    </Svg>
-  );
-}
-
-/** Заметный статичный градиент (тёмный ↔ бежевый) */
-export function ScreenBackground({ themeMode = 'light' }: ScreenBackgroundProps) {
-  const themeProgress = useSharedValue(themeMode === 'dark' ? 0 : 1);
+function useGradientSize() {
   const [size, setSize] = useState<GradientSize>({ width: 0, height: 0 });
+  const onLayout = (width: number, height: number) => {
+    setSize((current) =>
+      current.width === width && current.height === height ? current : { width, height },
+    );
+  };
+  return { size, onLayout };
+}
+
+function AppThemeBackground() {
+  const { theme } = useColorTheme();
+  const { size, onLayout } = useGradientSize();
+  const sheenEndY = theme.scheme === 'dark' ? '100%' : '85%';
+
+  return (
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background.start }]}
+      onLayout={(event) => {
+        const { width, height } = event.nativeEvent.layout;
+        onLayout(width, height);
+      }}
+    >
+      {size.width > 0 ? (
+        <ThemeGradient
+          tokens={theme.colors}
+          gradientId={`app-${theme.id}`}
+          sheenEndY={sheenEndY}
+          width={size.width}
+          height={size.height}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function OnboardingBackground({ themeMode }: { themeMode: ThemeMode }) {
+  const themeProgress = useSharedValue(themeMode === 'dark' ? 0 : 1);
+  const { size, onLayout } = useGradientSize();
 
   useEffect(() => {
     themeProgress.value = withTiming(themeMode === 'dark' ? 0 : 1, {
@@ -89,23 +127,45 @@ export function ScreenBackground({ themeMode = 'light' }: ScreenBackgroundProps)
       style={styles.container}
       onLayout={(event) => {
         const { width, height } = event.nativeEvent.layout;
-        setSize((current) =>
-          current.width === width && current.height === height ? current : { width, height },
-        );
+        onLayout(width, height);
       }}
     >
       <Animated.View
         style={[styles.layer, { backgroundColor: colors.dark.background.start }, darkLayerStyle]}
       >
-        {size.width > 0 ? <DarkGradient width={size.width} height={size.height} /> : null}
+        {size.width > 0 ? (
+          <ThemeGradient
+            tokens={colors.dark}
+            gradientId="onboarding-dark"
+            sheenEndY="100%"
+            width={size.width}
+            height={size.height}
+          />
+        ) : null}
       </Animated.View>
       <Animated.View
         style={[styles.layer, { backgroundColor: colors.light.background.start }, lightLayerStyle]}
       >
-        {size.width > 0 ? <LightGradient width={size.width} height={size.height} /> : null}
+        {size.width > 0 ? (
+          <ThemeGradient
+            tokens={colors.light}
+            gradientId="onboarding-light"
+            sheenEndY="85%"
+            width={size.width}
+            height={size.height}
+          />
+        ) : null}
       </Animated.View>
     </View>
   );
+}
+
+/** Фон экрана: выбранная тема или кроссфейд онбординга */
+export function ScreenBackground({ themeMode }: ScreenBackgroundProps) {
+  if (themeMode) {
+    return <OnboardingBackground themeMode={themeMode} />;
+  }
+  return <AppThemeBackground />;
 }
 
 const styles = StyleSheet.create({

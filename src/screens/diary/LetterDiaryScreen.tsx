@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   shuffle: {
     width: 40,
     height: 40,
-    borderRadius: 6,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.4)',

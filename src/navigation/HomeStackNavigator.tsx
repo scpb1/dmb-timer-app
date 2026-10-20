@@ -2,6 +2,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 import type { HomeStackParamList } from '@/types/navigation';
 import { HomeScreen } from '@/screens/home/HomeScreen';
+import { ColorThemeScreen } from '@/screens/home/ColorThemeScreen';
 import { TimerSettingsScreen } from '@/screens/home/TimerSettingsScreen';
 
 const Stack = createStackNavigator<HomeStackParamList>();
@@ -25,6 +26,7 @@ export function HomeStackNavigator({ onResetToOnboarding }: HomeStackNavigatorPr
         )}
       </Stack.Screen>
       <Stack.Screen name="TimerSettings" component={TimerSettingsScreen} />
+      <Stack.Screen name="ColorThemes" component={ColorThemeScreen} />
     </Stack.Navigator>
   );
 }

@@ -22,7 +22,13 @@ export function CenterDisplayToggle({
     <View style={styles.row}>
       <View style={styles.spacer} />
 
-      <Pressable onPress={() => onChange('elapsed')} hitSlop={4}>
+      <Pressable
+        onPress={() => onChange('elapsed')}
+        hitSlop={4}
+        accessibilityRole="button"
+        accessibilityLabel="Показать прошедшее"
+        accessibilityState={{ selected: value === 'elapsed' }}
+      >
         <Text
           style={[
             styles.label,
@@ -42,7 +48,13 @@ export function CenterDisplayToggle({
 
       <View style={styles.spacer} />
 
-      <Pressable onPress={() => onChange('remaining')} hitSlop={4}>
+      <Pressable
+        onPress={() => onChange('remaining')}
+        hitSlop={4}
+        accessibilityRole="button"
+        accessibilityLabel="Показать оставшееся"
+        accessibilityState={{ selected: value === 'remaining' }}
+      >
         <Text
           style={[
             styles.label,
