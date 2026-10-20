@@ -1,38 +1,14 @@
+import { graphiteTheme } from './themes/graphite';
+import { linenTheme } from './themes/linen';
+import type { ColorTokens } from './tokens';
+
+/**
+ * Совместимый доступ `colors.light` / `colors.dark`.
+ * Новые темы — в `src/theme/themes/*`, брать через `getColorTheme(id)`.
+ */
 export const colors = {
-  dark: {
-    background: {
-      start: '#1a1a1c',
-      end: '#2d2d30',
-    },
-    text: {
-      primary: '#F5F2EB',
-      secondary: 'rgba(255, 255, 255, 0.5)',
-      accent: '#e53935',
-    },
-    input: {
-      border: 'rgba(245, 242, 235, 0.5)',
-      placeholder: 'rgba(245, 242, 235, 0.35)',
-    },
-  },
-  light: {
-    background: {
-      start: '#FCF7DF',
-      end: '#C7D3DB',
-    },
-    text: {
-      primary: '#3E3630',
-      secondary: '#A79A8A',
-      accent: '#e53935',
-    },
-    input: {
-      border: '#3E3630',
-      placeholder: 'rgba(62, 54, 48, 0.4)',
-    },
-    holiday: {
-      cardBackground: 'rgba(232, 168, 152, 0.46)',
-      cardBorder: 'rgba(176, 96, 82, 0.38)',
-    },
-  },
-} as const;
+  dark: graphiteTheme.colors,
+  light: linenTheme.colors,
+} as const satisfies { dark: ColorTokens; light: ColorTokens };
 
 export type ThemeColors = typeof colors;
