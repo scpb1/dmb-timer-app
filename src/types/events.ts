@@ -8,6 +8,7 @@ export interface EventOverride {
   dddValue?: number;
   dppValue?: number;
   dateValue?: string;
+  icon?: string;
 }
 
 export interface CustomEventRecord {
@@ -17,6 +18,7 @@ export interface CustomEventRecord {
   dddValue?: number;
   dppValue?: number;
   dateValue?: string;
+  icon?: string;
 }
 
 export interface EventsStorage {
@@ -33,6 +35,7 @@ export interface DisplayEvent {
   dddValue?: number;
   dppValue?: number;
   dateValue?: string;
+  icon?: string;
   isCustom: boolean;
   isPast: boolean;
 }

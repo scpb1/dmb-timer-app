@@ -18,6 +18,8 @@ import {
   parseHolidaysStorage,
   type HolidayServiceRange,
 } from '@/utils/holidayCalculations';
+import { DEFAULT_HOLIDAY_ICON, isCatalogIcon } from '@/utils/eventGlyphs';
+import { rescheduleHolidayNotifications } from '@/services/holidayNotifications';
 import { logger } from '@/utils/logger';
 
 const UNDO_TIMEOUT_MS = 5000;
@@ -30,6 +32,7 @@ interface PendingDeletion {
 export interface HolidayFormData {
   name: string;
   dateValue: Date | null;
+  icon?: string;
 }
 
 interface UseHolidaysResult {
@@ -77,6 +80,7 @@ function formToCustomRecord(form: HolidayFormData, id: string): CustomHolidayRec
     name: form.name.trim(),
     month,
     day,
+    icon: isCatalogIcon(form.icon) ? form.icon : DEFAULT_HOLIDAY_ICON,
   };
 }
 
@@ -86,6 +90,7 @@ function formToOverride(form: HolidayFormData): HolidayOverride {
     name: form.name.trim(),
     month,
     day,
+    icon: isCatalogIcon(form.icon) ? form.icon : undefined,
   };
 }
 
@@ -136,7 +141,9 @@ export function useHolidays(): UseHolidaysResult {
       ]);
       const parsedStorage = parseHolidaysStorage(holidaysRaw);
       setStorage(parsedStorage);
-      setHolidays(buildDisplayHolidays(parsedStorage, new Date(), serviceRange));
+      const nextHolidays = buildDisplayHolidays(parsedStorage, new Date(), serviceRange);
+      setHolidays(nextHolidays);
+      void rescheduleHolidayNotifications();
     } catch (error) {
       logger.error('Ошибка загрузки праздников', error);
       setHolidays([]);
@@ -153,6 +160,7 @@ export function useHolidays(): UseHolidaysResult {
     const serviceRange = await loadServiceRange();
     setStorage(nextStorage);
     setHolidays(buildDisplayHolidays(nextStorage, new Date(), serviceRange));
+    void rescheduleHolidayNotifications();
   }, []);
 
   const addHoliday = useCallback(

@@ -12,10 +12,12 @@ import {
 } from 'react-native';
 
 import { DatePicker } from '@/components/common/DatePicker';
+import { IconPicker } from '@/components/events/IconPicker';
 import type { HolidayFormData } from '@/hooks/useHolidays';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 import { HOLIDAY_NAME_MAX_LENGTH, type DisplayHoliday } from '@/types/holidays';
+import { DEFAULT_HOLIDAY_ICON, getAutomaticHolidayGlyph, isCatalogIcon } from '@/utils/eventGlyphs';
 
 interface HolidayFormModalProps {
   visible: boolean;
@@ -30,12 +32,14 @@ function buildInitialForm(holiday: DisplayHoliday | null): HolidayFormData {
     return {
       name: '',
       dateValue: null,
+      icon: DEFAULT_HOLIDAY_ICON,
     };
   }
 
   return {
     name: holiday.name,
     dateValue: holiday.date,
+    icon: isCatalogIcon(holiday.icon) ? holiday.icon : holiday.isCustom ? DEFAULT_HOLIDAY_ICON : undefined,
   };
 }
 
@@ -48,21 +52,24 @@ export function HolidayFormModal({
 }: HolidayFormModalProps) {
   const [name, setName] = useState('');
   const [dateValue, setDateValue] = useState<Date | null>(null);
+  const [icon, setIcon] = useState<string | undefined>(DEFAULT_HOLIDAY_ICON);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const theme = useAppTheme();
 
   useEffect(() => {
     if (visible) {
       const initial = buildInitialForm(holiday);
       setName(initial.name);
       setDateValue(initial.dateValue);
+      setIcon(initial.icon);
       setError(null);
       setIsSaving(false);
     }
   }, [visible, holiday]);
 
   const handleSave = async () => {
-    const form: HolidayFormData = { name, dateValue };
+    const form: HolidayFormData = { name, dateValue, icon };
     const trimmedName = name.trim();
 
     if (!trimmedName) {
@@ -99,14 +106,14 @@ export function HolidayFormModal({
       >
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        <View style={styles.sheet}>
-          <View style={styles.header}>
-            <Pressable onPress={onClose} hitSlop={8}>
-              <Text style={styles.headerAction}>Отмена</Text>
+        <View style={[styles.sheet, { backgroundColor: theme.background.start }]}>
+          <View style={[styles.header, { borderBottomColor: theme.overlay.border }]}>
+            <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Отмена">
+              <Text style={[styles.headerAction, { color: theme.text.secondary }]}>Отмена</Text>
             </Pressable>
-            <Text style={styles.headerTitle}>{title}</Text>
+            <Text style={[styles.headerTitle, { color: theme.text.primary }]}>{title}</Text>
             <Pressable onPress={() => void handleSave()} hitSlop={8} disabled={isSaving}>
-              <Text style={[styles.headerAction, styles.headerConfirm]}>
+              <Text style={[styles.headerAction, styles.headerConfirm, { color: theme.text.primary }]}>
                 {isSaving ? '...' : 'Готово'}
               </Text>
             </Pressable>
@@ -117,7 +124,7 @@ export function HolidayFormModal({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.fieldLabel}>Название</Text>
+            <Text style={[styles.fieldLabel, { color: theme.text.primary }]}>Название</Text>
             <TextInput
               value={name}
               onChangeText={(text) => {
@@ -125,13 +132,26 @@ export function HolidayFormModal({
                 setError(null);
               }}
               placeholder="Название праздника"
-              placeholderTextColor={colors.light.input.placeholder}
-              style={styles.textInput}
+              placeholderTextColor={theme.input.placeholder}
+              style={[
+                styles.textInput,
+                {
+                  color: theme.text.primary,
+                  borderColor: theme.overlay.border,
+                  backgroundColor: theme.overlay.fill,
+                },
+              ]}
               maxLength={HOLIDAY_NAME_MAX_LENGTH}
             />
-            <Text style={styles.charCount}>
+            <Text style={[styles.charCount, { color: theme.text.secondary }]}>
               {name.length}/{HOLIDAY_NAME_MAX_LENGTH}
             </Text>
+
+            <IconPicker
+              value={icon}
+              onChange={setIcon}
+              autoGlyph={holiday && !holiday.isCustom ? getAutomaticHolidayGlyph(holiday) : undefined}
+            />
 
             <DatePicker
               label="Дата праздника"
@@ -143,11 +163,11 @@ export function HolidayFormModal({
               labelStyle={styles.datePickerLabel}
               buttonStyle={styles.datePickerButton}
             />
-            <Text style={styles.hint}>
-              В списке появятся все даты этого праздника за время службы. День и месяц задают, когда он приходится.
+            <Text style={[styles.hint, { color: theme.text.secondary }]}>
+              Появятся все даты этого дня за время ожидания. День и месяц задают, когда он приходится, иконка — как он выглядит в списке.
             </Text>
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? <Text style={[styles.error, { color: theme.text.accent }]}>{error}</Text> : null}
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -165,9 +185,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   sheet: {
-    backgroundColor: '#FCF7DF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
     maxHeight: '85%',
     paddingBottom: Platform.OS === 'ios' ? 24 : 16,
   },
@@ -178,22 +197,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(167, 154, 138, 0.4)',
   },
   headerTitle: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 16,
     fontWeight: '600',
-    color: colors.light.text.primary,
   },
   headerAction: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 16,
-    color: colors.light.text.secondary,
     minWidth: 64,
   },
   headerConfirm: {
-    color: colors.light.text.primary,
     fontWeight: '600',
     textAlign: 'right',
   },
@@ -206,16 +221,13 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
     fontWeight: '600',
-    color: colors.light.text.primary,
     marginBottom: 8,
   },
   textInput: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 16,
-    color: colors.light.text.primary,
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.4)',
-    borderRadius: 6,
+    borderRadius: 4,
     paddingVertical: 12,
     paddingHorizontal: 14,
     marginBottom: 4,
@@ -223,7 +235,6 @@ const styles = StyleSheet.create({
   charCount: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 12,
-    color: colors.light.text.secondary,
     textAlign: 'right',
     marginBottom: 20,
   },
@@ -239,14 +250,12 @@ const styles = StyleSheet.create({
   hint: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 13,
-    color: colors.light.text.secondary,
     lineHeight: 18,
     marginTop: 8,
   },
   error: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
-    color: colors.light.text.accent,
     marginTop: 8,
     textAlign: 'center',
   },

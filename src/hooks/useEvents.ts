@@ -14,7 +14,9 @@ import {
 } from '@/types/events';
 import { getConfig, setConfig } from '@/services/database';
 import { buildDisplayEvents, parseEventsStorage } from '@/utils/eventCalculations';
+import { DEFAULT_EVENT_ICON, isCatalogIcon } from '@/utils/eventGlyphs';
 import { logger } from '@/utils/logger';
+import { rescheduleAppNotifications } from '@/services/holidayNotifications';
 
 const UNDO_TIMEOUT_MS = 5000;
 
@@ -27,7 +29,9 @@ interface EventFormData {
   name: string;
   dateFormat: EventDateFormat;
   dddValue: string;
+  dppValue: string;
   dateValue: Date | null;
+  icon?: string;
 }
 
 interface UseEventsResult {
@@ -57,6 +61,11 @@ function validateForm(form: EventFormData): string | null {
     if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
       return 'Введите целое число ддд (дней до дембеля) от 0';
     }
+  } else if (form.dateFormat === 'dpp') {
+    const parsed = Number(form.dppValue.trim());
+    if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
+      return 'Введите целое число дпп (дней после призыва) от 0';
+    }
   } else if (!form.dateValue) {
     return 'Выберите дату';
   }
@@ -71,10 +80,13 @@ function formToCustomRecord(form: EventFormData, id: string): CustomEventRecord 
     dateFormat: form.dateFormat,
     dddValue:
       form.dateFormat === 'ddd' ? Number(form.dddValue.trim()) : undefined,
+    dppValue:
+      form.dateFormat === 'dpp' ? Number(form.dppValue.trim()) : undefined,
     dateValue:
       form.dateFormat === 'date' && form.dateValue
         ? formatISO(form.dateValue, { representation: 'date' })
         : undefined,
+    icon: isCatalogIcon(form.icon) ? form.icon : DEFAULT_EVENT_ICON,
   };
 }
 
@@ -84,15 +96,19 @@ function formToOverride(form: EventFormData): EventOverride {
     dateFormat: form.dateFormat,
     dddValue:
       form.dateFormat === 'ddd' ? Number(form.dddValue.trim()) : undefined,
+    dppValue:
+      form.dateFormat === 'dpp' ? Number(form.dppValue.trim()) : undefined,
     dateValue:
       form.dateFormat === 'date' && form.dateValue
         ? formatISO(form.dateValue, { representation: 'date' })
         : undefined,
+    icon: isCatalogIcon(form.icon) ? form.icon : undefined,
   };
 }
 
 async function persistStorage(storage: EventsStorage): Promise<void> {
   await setConfig(CONFIG_KEYS.EVENTS_DATA, JSON.stringify(storage));
+  void rescheduleAppNotifications();
 }
 
 /** Загружает и управляет списком событий службы */

@@ -5,7 +5,9 @@ import type { LetterTheme } from '@/types/diary';
 import {
   DEFAULT_HOLIDAYS_STORAGE,
   HOLIDAY_THEME_ID_PREFIX,
+  LEGACY_HOLIDAY_NAMES,
   PREDEFINED_HOLIDAYS,
+  SEASON_HOLIDAY_ACCUSATIVE,
   type CustomHolidayRecord,
   type DisplayHoliday,
   type HolidayOverride,
@@ -48,6 +50,7 @@ interface HolidaySeed {
   name: string;
   month: number;
   day: number;
+  icon?: string;
   isCustom: boolean;
 }
 
@@ -91,6 +94,7 @@ function applyOverride(
     name: override?.name ?? template.defaultName,
     month: override?.month ?? template.month,
     day: override?.day ?? template.day,
+    icon: override?.icon,
     isCustom: false,
   };
 }
@@ -105,6 +109,7 @@ function customToSeed(record: CustomHolidayRecord): HolidaySeed | null {
     name: record.name,
     month: record.month,
     day: record.day,
+    icon: record.icon,
     isCustom: true,
   };
 }
@@ -168,6 +173,23 @@ export function formatHolidayName(holiday: DisplayHoliday): string {
   return `${holiday.name} ${holiday.date.getFullYear()}`;
 }
 
+export function formatHolidayLetterTitle(holidayId: string, name: string, year: number): string {
+  const season = SEASON_HOLIDAY_ACCUSATIVE[holidayId];
+  if (season) {
+    return `Как я встречала ${season} ${year}`;
+  }
+
+  return `Как я отмечала ${name} ${year}`;
+}
+
+export function formatHolidayTodayBody(name: string, holidayId: string): string {
+  if (SEASON_HOLIDAY_ACCUSATIVE[holidayId]) {
+    return `Сегодня начинается ${name.toLowerCase()}`;
+  }
+
+  return `Сегодня ${name}`;
+}
+
 export function formatHolidayDate(holiday: DisplayHoliday): string {
   return format(holiday.date, 'd MMMM yyyy', { locale: ru });
 }
@@ -201,7 +223,7 @@ export function buildHolidayLetterTheme(holiday: DisplayHoliday, date: Date): Le
   const year = startOfDay(date).getFullYear();
   return {
     id: holidayThemeId(holiday.id, year),
-    title: `Как я отмечала ${holiday.name} ${year}`,
+    title: formatHolidayLetterTitle(holiday.id, holiday.name, year),
     sortOrder: 0,
   };
 }
@@ -230,9 +252,11 @@ export function resolveHolidayThemeTitle(
   const holidayId = rest.slice(0, separator);
   const year = Number(rest.slice(separator + 1));
   const holiday = holidays.find((item) => item.id === holidayId);
-  if (!holiday || !Number.isFinite(year)) {
+  const template = PREDEFINED_HOLIDAYS.find((item) => item.id === holidayId);
+  const name = holiday?.name ?? template?.defaultName ?? LEGACY_HOLIDAY_NAMES[holidayId];
+  if (!name || !Number.isFinite(year)) {
     return Number.isFinite(year) ? `Как я отмечала этот день ${year}` : undefined;
   }
 
-  return `Как я отмечала ${holiday.name} ${year}`;
+  return formatHolidayLetterTitle(holidayId, name, year);
 }

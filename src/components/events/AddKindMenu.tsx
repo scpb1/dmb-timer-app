@@ -1,6 +1,6 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 interface AddKindMenuProps {
@@ -16,29 +16,43 @@ export function AddKindMenu({
   onChooseEvent,
   onChooseHoliday,
 }: AddKindMenuProps) {
+  const theme = useAppTheme();
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={styles.sheet}>
-          <Text style={styles.title}>Что добавить?</Text>
+        <View style={[styles.sheet, { backgroundColor: theme.background.start }]}>
+          <Text style={[styles.title, { color: theme.text.primary }]}>Что добавить?</Text>
           <Pressable
-            style={styles.option}
+            style={[
+              styles.option,
+              {
+                backgroundColor: theme.overlay.fill,
+                borderColor: theme.overlay.border,
+              },
+            ]}
             onPress={onChooseEvent}
             accessibilityRole="button"
             accessibilityLabel="Добавить событие"
           >
-            <Text style={styles.optionTitle}>Событие</Text>
-            <Text style={styles.optionHint}>День службы: ддд или точная дата</Text>
+            <Text style={[styles.optionTitle, { color: theme.text.primary }]}>Событие</Text>
+            <Text style={[styles.optionHint, { color: theme.text.secondary }]}>Один раз за службу</Text>
           </Pressable>
           <Pressable
-            style={[styles.option, styles.optionHoliday]}
+            style={[
+              styles.option,
+              {
+                backgroundColor: theme.holiday.cardBackground,
+                borderColor: theme.holiday.cardBorder,
+              },
+            ]}
             onPress={onChooseHoliday}
             accessibilityRole="button"
             accessibilityLabel="Добавить праздник"
           >
-            <Text style={styles.optionTitle}>Праздник</Text>
-            <Text style={styles.optionHint}>Появится на все годы службы и даёт тему письма в этот день</Text>
+            <Text style={[styles.optionTitle, { color: theme.text.primary }]}>Праздник</Text>
+            <Text style={[styles.optionHint, { color: theme.text.secondary }]}>Каждый год</Text>
           </Pressable>
         </View>
       </View>
@@ -53,9 +67,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#FCF7DF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 32,
@@ -65,31 +78,22 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 18,
-    color: colors.light.text.primary,
     marginBottom: 6,
   },
   option: {
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
-    borderRadius: 8,
+    borderRadius: 4,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.25)',
-  },
-  optionHoliday: {
-    backgroundColor: colors.light.holiday.cardBackground,
-    borderColor: colors.light.holiday.cardBorder,
   },
   optionTitle: {
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 16,
-    color: colors.light.text.primary,
     marginBottom: 4,
   },
   optionHint: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 13,
-    color: colors.light.text.secondary,
     lineHeight: 18,
   },
 });

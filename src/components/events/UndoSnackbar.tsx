@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 interface UndoSnackbarProps {
@@ -14,16 +14,23 @@ export function UndoSnackbar({
   message = 'Событие удалено',
   onUndo,
 }: UndoSnackbarProps) {
+  const theme = useAppTheme();
+
   if (!visible) {
     return null;
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.snackbar}>
-        <Text style={styles.message}>{message}</Text>
-        <Pressable onPress={onUndo} hitSlop={8} accessibilityRole="button">
-          <Text style={styles.action}>Отменить удаление</Text>
+      <View style={[styles.snackbar, { backgroundColor: theme.text.primary }]}>
+        <Text style={[styles.message, { color: theme.text.inverse }]}>{message}</Text>
+        <Pressable
+          onPress={onUndo}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Отменить удаление"
+        >
+          <Text style={[styles.action, { color: theme.text.inverse }]}>Отменить удаление</Text>
         </Pressable>
       </View>
     </View>
@@ -42,8 +49,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.light.text.primary,
-    borderRadius: 6,
+    borderRadius: 4,
     paddingVertical: 14,
     paddingHorizontal: 16,
     shadowColor: '#000',
@@ -55,7 +61,6 @@ const styles = StyleSheet.create({
   message: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
-    color: '#FCF7DF',
     flex: 1,
     marginRight: 12,
   },
@@ -63,7 +68,6 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
     fontWeight: '600',
-    color: '#FCF7DF',
     textDecorationLine: 'underline',
   },
 });

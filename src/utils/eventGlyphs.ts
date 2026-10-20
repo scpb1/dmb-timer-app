@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import {
   parseDddMilestoneValue,
@@ -8,41 +8,125 @@ import {
   PREDEFINED_EVENT_IDS,
   type DisplayEvent,
 } from '@/types/events';
-import { PREDEFINED_HOLIDAY_IDS, type DisplayHoliday } from '@/types/holidays';
+import { PREDEFINED_HOLIDAYS, type DisplayHoliday } from '@/types/holidays';
 
 export type MaterialIconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
+export type FeatherIconName = ComponentProps<typeof Feather>['name'];
 
 export type EventGlyph =
-  | { type: 'icon'; name: MaterialIconName; color?: string }
+  | { type: 'icon'; name: MaterialIconName; color?: string; set?: 'material'; size?: number }
+  | { type: 'icon'; name: FeatherIconName; color?: string; set: 'feather'; size?: number }
   | { type: 'label'; text: string; color?: string };
 
-const HOLIDAY_ICONS: Record<string, MaterialIconName> = {
-  [PREDEFINED_HOLIDAY_IDS.NEW_YEAR]: 'pine-tree',
-  [PREDEFINED_HOLIDAY_IDS.CHRISTMAS]: 'star-four-points',
-  [PREDEFINED_HOLIDAY_IDS.OLD_NEW_YEAR]: 'snowflake',
-  [PREDEFINED_HOLIDAY_IDS.EPIPHANY]: 'waves',
-  [PREDEFINED_HOLIDAY_IDS.VALENTINE]: 'heart-outline',
-  [PREDEFINED_HOLIDAY_IDS.DEFENDER_DAY]: 'shield-outline',
-  [PREDEFINED_HOLIDAY_IDS.WOMENS_DAY]: 'flower-tulip',
-  [PREDEFINED_HOLIDAY_IDS.VICTORY_DAY]: 'medal',
-  [PREDEFINED_HOLIDAY_IDS.FAMILY_DAY]: 'ring',
-  [PREDEFINED_HOLIDAY_IDS.KNOWLEDGE_DAY]: 'school',
-};
+export interface EventIconOption {
+  name: MaterialIconName;
+  label: string;
+}
 
-export function getEventGlyph(event: DisplayEvent): EventGlyph {
+export const DEFAULT_EVENT_ICON: MaterialIconName = 'star';
+export const DEFAULT_HOLIDAY_ICON: MaterialIconName = 'star-outline';
+export const MILESTONE_ICON: MaterialIconName = 'star';
+
+/**
+ * Каталог иконок для событий и праздников.
+ * Содержит прежние глифы карточек и набор для дней рождения, годовщин, встреч и ожидания.
+ */
+export const EVENT_ICON_CATALOG: EventIconOption[] = [
+  { name: 'star', label: 'Звезда' },
+  { name: 'star-outline', label: 'Звезда контур' },
+  { name: 'star-four-points', label: 'Искра' },
+  { name: 'auto-fix', label: 'Волшебство' },
+  { name: 'heart', label: 'Сердце' },
+  { name: 'heart-outline', label: 'Сердце контур' },
+  { name: 'heart-multiple', label: 'Два сердца' },
+  { name: 'hand-heart', label: 'Рука и сердце' },
+  { name: 'account-heart', label: 'Человек и сердце' },
+  { name: 'ring', label: 'Кольцо' },
+  { name: 'emoticon-kiss-outline', label: 'Поцелуй' },
+  { name: 'home-heart', label: 'Дом с сердцем' },
+  { name: 'home-outline', label: 'Дом' },
+  { name: 'flag-variant', label: 'Флаг' },
+  { name: 'calendar-outline', label: 'Календарь' },
+  { name: 'calendar-heart', label: 'Календарь с сердцем' },
+  { name: 'pine-tree', label: 'Ёлка' },
+  { name: 'snowflake', label: 'Снежинка' },
+  { name: 'weather-sunny', label: 'Солнце' },
+  { name: 'weather-night', label: 'Ночь' },
+  { name: 'moon-waning-crescent', label: 'Луна' },
+  { name: 'flower-tulip', label: 'Тюльпан' },
+  { name: 'flower', label: 'Цветок' },
+  { name: 'sprout', label: 'Росток' },
+  { name: 'leaf', label: 'Лист' },
+  { name: 'butterfly', label: 'Бабочка' },
+  { name: 'waves', label: 'Волны' },
+  { name: 'cake-variant', label: 'Торт' },
+  { name: 'gift-outline', label: 'Подарок' },
+  { name: 'balloon', label: 'Шарик' },
+  { name: 'crown', label: 'Корона' },
+  { name: 'candle', label: 'Свеча' },
+  { name: 'shield-outline', label: 'Щит' },
+  { name: 'shield-star', label: 'Щит со звездой' },
+  { name: 'medal', label: 'Медаль' },
+  { name: 'trophy', label: 'Кубок' },
+  { name: 'school', label: 'Школа' },
+  { name: 'briefcase-outline', label: 'Портфель' },
+  { name: 'airplane', label: 'Самолёт' },
+  { name: 'train', label: 'Поезд' },
+  { name: 'car', label: 'Машина' },
+  { name: 'map-marker-outline', label: 'Метка' },
+  { name: 'phone-outline', label: 'Телефон' },
+  { name: 'email-outline', label: 'Письмо' },
+  { name: 'camera-outline', label: 'Камера' },
+  { name: 'music-note', label: 'Музыка' },
+  { name: 'book-open-outline', label: 'Книга' },
+  { name: 'coffee', label: 'Кофе' },
+  { name: 'paw', label: 'Лапка' },
+  { name: 'baby-face-outline', label: 'Малыш' },
+  { name: 'infinity', label: 'Бесконечность' },
+  { name: 'circle', label: 'Круг' },
+  { name: 'circle-half-full', label: 'Половина' },
+  { name: 'fire', label: 'Огонь' },
+];
+
+const CATALOG_NAMES = new Set<string>(EVENT_ICON_CATALOG.map((item) => item.name));
+
+export function isCatalogIcon(name: string | undefined): name is MaterialIconName {
+  return typeof name === 'string' && CATALOG_NAMES.has(name);
+}
+
+export function resolveCatalogIcon(
+  name: string | undefined,
+  fallback: MaterialIconName,
+): MaterialIconName {
+  return isCatalogIcon(name) ? name : fallback;
+}
+
+function fractionGlyph(event: DisplayEvent): EventGlyph | null {
   switch (event.id) {
-    case PREDEFINED_EVENT_IDS.ENLISTMENT:
-      return { type: 'icon', name: 'flag-outline' };
-    case PREDEFINED_EVENT_IDS.EQUATOR:
-      return { type: 'icon', name: 'circle-half-full' };
     case PREDEFINED_EVENT_IDS.QUARTER_PASSED:
       return { type: 'label', text: '1/4' };
+    case PREDEFINED_EVENT_IDS.EQUATOR:
+      return { type: 'label', text: '1/2' };
     case PREDEFINED_EVENT_IDS.QUARTER_REMAINING:
-      return { type: 'label', text: '1/4' };
+      return { type: 'label', text: '3/4' };
     case PREDEFINED_EVENT_IDS.THIRD_PASSED:
       return { type: 'label', text: '1/3' };
     case PREDEFINED_EVENT_IDS.THIRD_REMAINING:
-      return { type: 'label', text: '1/3' };
+      return { type: 'label', text: '2/3' };
+    default:
+      return null;
+  }
+}
+
+function automaticEventGlyph(event: DisplayEvent): EventGlyph {
+  const fraction = fractionGlyph(event);
+  if (fraction) {
+    return fraction;
+  }
+
+  switch (event.id) {
+    case PREDEFINED_EVENT_IDS.ENLISTMENT:
+      return { type: 'icon', name: 'flag', set: 'feather', size: 22 };
     case PREDEFINED_EVENT_IDS.TRAFFIC_RED:
       return { type: 'icon', name: 'circle', color: '#C44536' };
     case PREDEFINED_EVENT_IDS.TRAFFIC_YELLOW:
@@ -55,30 +139,43 @@ export function getEventGlyph(event: DisplayEvent): EventGlyph {
       break;
   }
 
-  const monthIndex = parseMonthEventIndex(event.id);
-  if (monthIndex !== null) {
-    const withinYear = ((monthIndex - 1) % 12) + 1;
-    return { type: 'label', text: `${withinYear}/12` };
+  if (parseMonthEventIndex(event.id) !== null) {
+    return { type: 'icon', name: MILESTONE_ICON };
   }
 
-  const dppValue = parseDppMilestoneValue(event.id);
-  if (dppValue !== null) {
-    return { type: 'label', text: String(dppValue) };
+  if (parseDppMilestoneValue(event.id) !== null || parseDddMilestoneValue(event.id) !== null) {
+    return { type: 'icon', name: MILESTONE_ICON };
   }
 
-  const dddValue = parseDddMilestoneValue(event.id);
-  if (dddValue !== null) {
-    return { type: 'label', text: String(dddValue) };
+  return { type: 'icon', name: event.isCustom ? DEFAULT_EVENT_ICON : 'calendar-outline' };
+}
+
+/** Глиф по умолчанию, без пользовательской иконки. Нужен для пункта «Авто» в форме. */
+export function getAutomaticEventGlyph(event: DisplayEvent): EventGlyph {
+  return automaticEventGlyph(event);
+}
+
+export function getEventGlyph(event: DisplayEvent): EventGlyph {
+  if (isCatalogIcon(event.icon)) {
+    return { type: 'icon', name: event.icon };
   }
 
-  return { type: 'icon', name: 'calendar-outline' };
+  return automaticEventGlyph(event);
+}
+
+export function getAutomaticHolidayGlyph(holiday: DisplayHoliday): EventGlyph {
+  const template = PREDEFINED_HOLIDAYS.find((item) => item.id === holiday.id);
+  return {
+    type: 'icon',
+    name: resolveCatalogIcon(template?.defaultIcon, DEFAULT_HOLIDAY_ICON),
+    size: template?.iconSize,
+  };
 }
 
 export function getHolidayGlyph(holiday: DisplayHoliday): EventGlyph {
-  const iconName = HOLIDAY_ICONS[holiday.id];
-  if (iconName) {
-    return { type: 'icon', name: iconName };
+  if (isCatalogIcon(holiday.icon)) {
+    return { type: 'icon', name: holiday.icon };
   }
 
-  return { type: 'icon', name: 'star-outline' };
+  return getAutomaticHolidayGlyph(holiday);
 }

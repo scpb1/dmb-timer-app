@@ -12,10 +12,12 @@ import {
 } from 'react-native';
 
 import { DatePicker } from '@/components/common/DatePicker';
+import { IconPicker } from '@/components/events/IconPicker';
 import type { DisplayEvent } from '@/types/events';
 import { EVENT_NAME_MAX_LENGTH, type EventDateFormat } from '@/types/events';
 import type { EventFormData } from '@/hooks/useEvents';
-import { colors } from '@/theme/colors';
+import { DEFAULT_EVENT_ICON, getAutomaticEventGlyph, isCatalogIcon } from '@/utils/eventGlyphs';
+import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 interface EventFormModalProps {
@@ -28,6 +30,7 @@ interface EventFormModalProps {
 
 const DATE_FORMAT_OPTIONS: Array<{ value: EventDateFormat; label: string }> = [
   { value: 'ddd', label: 'ддд' },
+  { value: 'dpp', label: 'дпп' },
   { value: 'date', label: 'Дата' },
 ];
 
@@ -37,24 +40,25 @@ function buildInitialForm(event: DisplayEvent | null): EventFormData {
       name: '',
       dateFormat: 'ddd',
       dddValue: '',
+      dppValue: '',
       dateValue: null,
+      icon: DEFAULT_EVENT_ICON,
     };
   }
 
-  if (event.dateFormat === 'dpp') {
-    return {
-      name: event.name,
-      dateFormat: 'date',
-      dddValue: '',
-      dateValue: event.date,
-    };
-  }
+  const storedIcon = isCatalogIcon(event.icon)
+    ? event.icon
+    : event.isCustom
+      ? DEFAULT_EVENT_ICON
+      : undefined;
 
   return {
     name: event.name,
-    dateFormat: event.dateFormat === 'date' ? 'date' : 'ddd',
+    dateFormat: event.dateFormat,
     dddValue: event.dddValue !== undefined ? String(event.dddValue) : '',
+    dppValue: event.dppValue !== undefined ? String(event.dppValue) : '',
     dateValue: event.dateValue ? new Date(event.dateValue) : event.date,
+    icon: storedIcon,
   };
 }
 
@@ -62,9 +66,12 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
   const [name, setName] = useState('');
   const [dateFormat, setDateFormat] = useState<EventDateFormat>('ddd');
   const [dddValue, setDddValue] = useState('');
+  const [dppValue, setDppValue] = useState('');
   const [dateValue, setDateValue] = useState<Date | null>(null);
+  const [icon, setIcon] = useState<string | undefined>(DEFAULT_EVENT_ICON);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const theme = useAppTheme();
 
   useEffect(() => {
     if (visible) {
@@ -72,14 +79,16 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
       setName(initial.name);
       setDateFormat(initial.dateFormat);
       setDddValue(initial.dddValue);
+      setDppValue(initial.dppValue);
       setDateValue(initial.dateValue);
+      setIcon(initial.icon);
       setError(null);
       setIsSaving(false);
     }
   }, [visible, event]);
 
   const handleSave = async () => {
-    const form: EventFormData = { name, dateFormat, dddValue, dateValue };
+    const form: EventFormData = { name, dateFormat, dddValue, dppValue, dateValue, icon };
 
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -94,6 +103,12 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
       const parsed = Number(dddValue.trim());
       if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
         setError('Введите целое число ддд (дней до дембеля) от 0');
+        return;
+      }
+    } else if (dateFormat === 'dpp') {
+      const parsed = Number(dppValue.trim());
+      if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
+        setError('Введите целое число дпп (дней после призыва) от 0');
         return;
       }
     } else if (!dateValue) {
@@ -122,14 +137,14 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
       >
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        <View style={styles.sheet}>
-          <View style={styles.header}>
-            <Pressable onPress={onClose} hitSlop={8}>
-              <Text style={styles.headerAction}>Отмена</Text>
+        <View style={[styles.sheet, { backgroundColor: theme.background.start }]}>
+          <View style={[styles.header, { borderBottomColor: theme.overlay.border }]}>
+            <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Отмена">
+              <Text style={[styles.headerAction, { color: theme.text.secondary }]}>Отмена</Text>
             </Pressable>
-            <Text style={styles.headerTitle}>{title}</Text>
+            <Text style={[styles.headerTitle, { color: theme.text.primary }]}>{title}</Text>
             <Pressable onPress={handleSave} hitSlop={8} disabled={isSaving}>
-              <Text style={[styles.headerAction, styles.headerConfirm]}>
+              <Text style={[styles.headerAction, styles.headerConfirm, { color: theme.text.primary }]}>
                 {isSaving ? '...' : 'Готово'}
               </Text>
             </Pressable>
@@ -140,7 +155,7 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.fieldLabel}>Название</Text>
+            <Text style={[styles.fieldLabel, { color: theme.text.primary }]}>Название</Text>
             <TextInput
               value={name}
               onChangeText={(text) => {
@@ -148,28 +163,57 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
                 setError(null);
               }}
               placeholder="Название события"
-              placeholderTextColor={colors.light.input.placeholder}
-              style={styles.textInput}
+              placeholderTextColor={theme.input.placeholder}
+              style={[
+                styles.textInput,
+                {
+                  color: theme.text.primary,
+                  borderColor: theme.overlay.border,
+                  backgroundColor: theme.overlay.fill,
+                },
+              ]}
               maxLength={EVENT_NAME_MAX_LENGTH}
             />
-            <Text style={styles.charCount}>
+            <Text style={[styles.charCount, { color: theme.text.secondary }]}>
               {name.length}/{EVENT_NAME_MAX_LENGTH}
             </Text>
 
-            <Text style={styles.fieldLabel}>Формат даты</Text>
+            <IconPicker
+              value={icon}
+              onChange={setIcon}
+              autoGlyph={event && !event.isCustom ? getAutomaticEventGlyph(event) : undefined}
+            />
+
+            <Text style={[styles.fieldLabel, { color: theme.text.primary }]}>Формат даты</Text>
             <View style={styles.formatRow}>
               {DATE_FORMAT_OPTIONS.map((option) => {
                 const isActive = dateFormat === option.value;
                 return (
                   <Pressable
                     key={option.value}
-                    style={[styles.formatButton, isActive && styles.formatButtonActive]}
+                    style={[
+                      styles.formatButton,
+                      {
+                        borderColor: theme.overlay.border,
+                        backgroundColor: theme.overlay.fill,
+                      },
+                      isActive && {
+                        borderColor: theme.text.primary,
+                        backgroundColor: theme.overlay.muted,
+                      },
+                    ]}
                     onPress={() => {
                       setDateFormat(option.value);
                       setError(null);
                     }}
                   >
-                    <Text style={[styles.formatButtonText, isActive && styles.formatButtonTextActive]}>
+                    <Text
+                      style={[
+                        styles.formatButtonText,
+                        { color: theme.text.secondary },
+                        isActive && { color: theme.text.primary, fontWeight: '600' },
+                      ]}
+                    >
                       {option.label}
                     </Text>
                   </Pressable>
@@ -179,7 +223,7 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
 
             {dateFormat === 'ddd' ? (
               <>
-                <Text style={styles.fieldLabel}>Дней до дембеля (ддд)</Text>
+                <Text style={[styles.fieldLabel, { color: theme.text.primary }]}>Дней до дембеля (ддд)</Text>
                 <TextInput
                   value={dddValue}
                   onChangeText={(text) => {
@@ -187,8 +231,37 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
                     setError(null);
                   }}
                   placeholder="Например, 303"
-                  placeholderTextColor={colors.light.input.placeholder}
-                  style={styles.textInput}
+                  placeholderTextColor={theme.input.placeholder}
+                  style={[
+                    styles.textInput,
+                    {
+                      color: theme.text.primary,
+                      borderColor: theme.overlay.border,
+                      backgroundColor: theme.overlay.fill,
+                    },
+                  ]}
+                  keyboardType="number-pad"
+                />
+              </>
+            ) : dateFormat === 'dpp' ? (
+              <>
+                <Text style={[styles.fieldLabel, { color: theme.text.primary }]}>Дней после призыва (дпп)</Text>
+                <TextInput
+                  value={dppValue}
+                  onChangeText={(text) => {
+                    setDppValue(text.replace(/[^0-9]/g, ''));
+                    setError(null);
+                  }}
+                  placeholder="Например, 100"
+                  placeholderTextColor={theme.input.placeholder}
+                  style={[
+                    styles.textInput,
+                    {
+                      color: theme.text.primary,
+                      borderColor: theme.overlay.border,
+                      backgroundColor: theme.overlay.fill,
+                    },
+                  ]}
                   keyboardType="number-pad"
                 />
               </>
@@ -205,7 +278,7 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
               />
             )}
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? <Text style={[styles.error, { color: theme.text.accent }]}>{error}</Text> : null}
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -223,9 +296,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   sheet: {
-    backgroundColor: '#FCF7DF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
     maxHeight: '85%',
     paddingBottom: Platform.OS === 'ios' ? 24 : 16,
   },
@@ -236,22 +308,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(167, 154, 138, 0.4)',
   },
   headerTitle: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 16,
     fontWeight: '600',
-    color: colors.light.text.primary,
   },
   headerAction: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 16,
-    color: colors.light.text.secondary,
     minWidth: 64,
   },
   headerConfirm: {
-    color: colors.light.text.primary,
     fontWeight: '600',
     textAlign: 'right',
   },
@@ -264,16 +332,13 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
     fontWeight: '600',
-    color: colors.light.text.primary,
     marginBottom: 8,
   },
   textInput: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 16,
-    color: colors.light.text.primary,
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.4)',
-    borderRadius: 6,
+    borderRadius: 4,
     paddingVertical: 12,
     paddingHorizontal: 14,
     marginBottom: 4,
@@ -281,7 +346,6 @@ const styles = StyleSheet.create({
   charCount: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 12,
-    color: colors.light.text.secondary,
     textAlign: 'right',
     marginBottom: 20,
   },
@@ -293,24 +357,13 @@ const styles = StyleSheet.create({
   formatButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 6,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.4)',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-  },
-  formatButtonActive: {
-    borderColor: colors.light.text.primary,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
   },
   formatButtonText: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 15,
-    color: colors.light.text.secondary,
-  },
-  formatButtonTextActive: {
-    color: colors.light.text.primary,
-    fontWeight: '600',
   },
   datePickerLabel: {
     fontSize: 14,
@@ -324,7 +377,6 @@ const styles = StyleSheet.create({
   error: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
-    color: colors.light.text.accent,
     marginTop: 8,
     textAlign: 'center',
   },

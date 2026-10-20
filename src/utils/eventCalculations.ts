@@ -102,7 +102,7 @@ function generatePredefinedTemplates(
     });
     events.push({
       id: PREDEFINED_EVENT_IDS.QUARTER_REMAINING,
-      defaultName: 'Осталась 1/4 службы',
+      defaultName: 'Прошло 3/4 службы',
       date: addDays(demob, -quarterDays),
       dateFormat: 'ddd',
       dddValue: quarterDays,
@@ -120,7 +120,7 @@ function generatePredefinedTemplates(
     });
     events.push({
       id: PREDEFINED_EVENT_IDS.THIRD_REMAINING,
-      defaultName: 'Осталась 1/3 службы',
+      defaultName: 'Прошло 2/3 службы',
       date: addDays(demob, -thirdDays),
       dateFormat: 'ddd',
       dddValue: thirdDays,
@@ -219,6 +219,7 @@ function applyOverride(
     dddValue,
     dppValue,
     dateValue,
+    icon: override?.icon,
     isCustom: false,
     isPast: false,
   };
@@ -250,6 +251,7 @@ function customRecordToDisplay(
     dddValue: record.dddValue,
     dppValue: record.dppValue,
     dateValue: record.dateValue,
+    icon: record.icon,
     isCustom: true,
     isPast: false,
   };
@@ -289,6 +291,8 @@ export function formatEventDate(date: Date): string {
   return format(date, 'd MMMM yyyy', { locale: ru });
 }
 
+export const DEMOBILIZATION_COUNTDOWN_CAPTION = 'Финишная прямая';
+
 export function formatDaysUntilDate(date: Date, now: Date = new Date()): string | null {
   const days = differenceInCalendarDays(startOfDay(date), startOfDay(now));
   if (days < 0) {
@@ -298,7 +302,26 @@ export function formatDaysUntilDate(date: Date, now: Date = new Date()): string 
     return 'Сегодня';
   }
 
-  return `Осталось ${formatCount(days, 'day')} до даты`;
+  return `До даты ${formatCount(days, 'day')}`;
+}
+
+/** Подпись «до даты» в списке событий; для дембеля без дублирования счётчика дней */
+export function formatEventDaysUntilCaption(event: DisplayEvent, now: Date = new Date()): string | null {
+  if (event.id === PREDEFINED_EVENT_IDS.DEMOBILIZATION) {
+    const days = differenceInCalendarDays(startOfDay(event.date), startOfDay(now));
+    if (days < 0) {
+      return null;
+    }
+    if (days === 0) {
+      return 'Сегодня';
+    }
+    return DEMOBILIZATION_COUNTDOWN_CAPTION;
+  }
+  return formatDaysUntilDate(event.date, now);
+}
+
+export function isCalendarToday(date: Date, now: Date = new Date()): boolean {
+  return differenceInCalendarDays(startOfDay(date), startOfDay(now)) === 0;
 }
 
 export function parseEventsStorage(raw: string | null): EventsStorage {
