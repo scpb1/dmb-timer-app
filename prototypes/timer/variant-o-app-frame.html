@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>O · Как в приложении — рамка</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <style>
+    .app-stack { --app-gap: 24px; }
+    .app-frame { max-width: 320px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack">
+      <div class="app-frame">
+        <div class="num">287</div>
+        <div class="unit">дней до дембеля</div>
+        <div class="upcoming-line">
+          <span>🎖</span>
+          <span>23 фев · День защитника · 12 дн.</span>
+        </div>
+      </div>
+      <div class="app-stat-row">
+        <div class="app-stat-card">
+          <div class="title">ПРОШЛО</div>
+          <div class="val">78</div>
+          <div class="unit-label">дней</div>
+        </div>
+        <div class="app-stat-card">
+          <div class="title">ОСТАЛОСЬ</div>
+          <div class="val">287</div>
+          <div class="unit-label">дней</div>
+        </div>
+      </div>
+      <div class="app-upcoming">
+        <div class="glyph">🎖</div>
+        <div>
+          <div class="name">День защитника Отечества</div>
+          <div class="meta">23 февраля</div>
+          <div class="sub">через 12 дней</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>W · Плитки вех</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <link rel="stylesheet" href="_viz.css" />
+  <link rel="stylesheet" href="_milestones-proto.css" />
+  <style>
+    .chip-rail {
+      width: 100%;
+      overflow-x: auto;
+      padding: 4px 0 6px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .chip-rail::-webkit-scrollbar { display: none; }
+    .chip-track {
+      display: flex;
+      gap: 8px;
+      min-width: min-content;
+      padding: 0 2px;
+    }
+    .chip-track::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 0;
+    }
+    .m-chip {
+      flex: 0 0 auto;
+      width: 108px;
+      padding: 10px 10px 11px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.42);
+      border: 1px solid rgba(167, 154, 138, 0.35);
+      scroll-snap-align: center;
+    }
+    .m-chip.done {
+      border-color: rgba(229, 57, 53, 0.25);
+      background: rgba(229, 57, 53, 0.06);
+    }
+    .m-chip.here {
+      border-color: rgba(229, 57, 53, 0.55);
+      background: rgba(255, 255, 255, 0.62);
+      box-shadow: 0 4px 14px rgba(62, 54, 48, 0.08);
+    }
+    .m-chip.future { opacity: 0.72; }
+    .m-chip .pct {
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .m-chip .title {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+    .m-chip .sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 5px;
+      line-height: 1.3;
+    }
+    .chip-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 2px;
+    }
+    .chip-rail { scroll-snap-type: x mandatory; position: relative; }
+    .connector {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin: -2px 0 8px;
+      padding: 0 8px;
+    }
+    .connector .seg {
+      flex: 1;
+      height: 3px;
+      background: rgba(167, 154, 138, 0.28);
+      border-radius: 99px;
+      position: relative;
+    }
+    .connector .seg.on {
+      background: var(--accent);
+    }
+    .connector .tick {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 2px solid var(--text-muted);
+      background: var(--bg-start);
+      flex-shrink: 0;
+      margin: 0 -1px;
+    }
+    .connector .tick.on {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .connector .tick.you {
+      width: 10px;
+      height: 10px;
+      border-color: var(--text);
+      box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.18);
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz" style="--app-gap:14px;">
+      <div class="ms-summary">
+        <div class="row-top">
+          <div class="weeks">
+            <div class="n">287</div>
+            <div class="l">дней до дембеля</div>
+          </div>
+          <div class="meta">
+            <strong>21%</strong>
+            <span>службы</span>
+          </div>
+        </div>
+        <div class="bar"><span></span></div>
+        <div class="badge">🎖 до 23 фев — 12 дней</div>
+      </div>
+
+      <div class="connector" aria-hidden="true">
+        <span class="tick on"></span>
+        <span class="seg on" style="flex:0.15"></span>
+        <span class="tick on"></span>
+        <span class="seg on" style="flex:0.06"></span>
+        <span class="tick you"></span>
+        <span class="seg" style="flex:0.29"></span>
+        <span class="tick"></span>
+        <span class="seg" style="flex:0.5"></span>
+        <span class="tick"></span>
+      </div>
+
+      <div class="chip-rail">
+        <div class="chip-track">
+          <article class="m-chip done">
+            <div class="pct">0%</div>
+            <div class="title">Призыв</div>
+            <div class="sub">78 дн. назад</div>
+          </article>
+          <article class="m-chip done">
+            <div class="pct">~14%</div>
+            <div class="title">100 дней</div>
+            <div class="sub">пройдено</div>
+          </article>
+          <article class="m-chip here">
+            <div class="pct">21% · вы здесь</div>
+            <div class="title">Сейчас</div>
+            <div class="sub">78 / 365 дн.</div>
+          </article>
+          <article class="m-chip future">
+            <div class="pct">50%</div>
+            <div class="title">Половина</div>
+            <div class="sub">≈ 5 мес.</div>
+          </article>
+          <article class="m-chip future">
+            <div class="pct">100%</div>
+            <div class="title">Дембель</div>
+            <div class="sub">12 мар 2027</div>
+          </article>
+        </div>
+      </div>
+      <p class="chip-hint">Свайп по вехам · «сейчас» по центру экрана</p>
+
+      <div class="app-stat-unified-viz">
+        <div class="col"><div class="t-toggle">прошло</div><div class="val">78</div><div class="det">дней</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-toggle">осталось</div><div class="val">287</div><div class="det">дней</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

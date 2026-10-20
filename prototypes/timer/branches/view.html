@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Вид войск · прототип</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="../_app.css" />
+  <link rel="stylesheet" href="_branch.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Все виды войск</a>
+  <p class="branch-title" id="branchTitle">…</p>
+  <p class="branch-sub" id="branchSub"></p>
+
+  <div class="phone app branch-phone">
+    <div class="branch-scene" id="branchScene" aria-hidden="true"></div>
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">
+        Алексей
+        <small>служба ▾</small>
+      </div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack">
+      <div class="app-ring-block">
+        <div class="app-toggle">
+          <span class="left">прошло</span>
+          <span></span>
+          <span class="right">осталось</span>
+        </div>
+        <svg data-app-ring data-size="280" data-thickness="32" data-count="100" data-filled="21" aria-hidden="true"></svg>
+        <div class="app-ring-center">
+          <span class="pct">21,00%</span>
+          <span class="num">287</span>
+          <span class="unit">дней до дембеля</span>
+        </div>
+      </div>
+      <div class="app-stat-row">
+        <div class="app-stat-card">
+          <div class="title">ПРОШЛО</div>
+          <div class="val">78</div>
+          <div class="unit-label">дней</div>
+        </div>
+        <div class="app-stat-card">
+          <div class="title">ОСТАЛОСЬ</div>
+          <div class="val">287</div>
+          <div class="unit-label">дней</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="proto-controls">
+    <label>
+      <span>Прогресс службы</span>
+      <strong id="progressValue">21,00%</strong>
+    </label>
+    <input type="range" id="progressSlider" min="0" max="100" value="21" step="0.5" />
+    <p class="hint" id="branchHint"></p>
+  </div>
+
+  <script src="_branch.js"></script>
+  <script src="_branch-boot.js"></script>
+</body>
+</html>

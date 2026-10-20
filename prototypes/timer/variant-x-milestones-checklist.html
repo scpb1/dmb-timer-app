@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>X · Чеклист вех</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <link rel="stylesheet" href="_viz.css" />
+  <link rel="stylesheet" href="_milestones-proto.css" />
+  <style>
+    .check-card {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.48);
+      border: 1px solid rgba(167, 154, 138, 0.35);
+      border-radius: 8px;
+      padding: 12px 14px 10px;
+    }
+    .check-card h3 {
+      margin: 0 0 10px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .check-row {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 0;
+      border-top: 1px solid rgba(167, 154, 138, 0.2);
+    }
+    .check-row:first-of-type { border-top: none; padding-top: 0; }
+    .check-row.here {
+      margin: 0 -6px;
+      padding: 10px 6px;
+      border-radius: 6px;
+      background: rgba(229, 57, 53, 0.07);
+      border-top-color: transparent;
+    }
+    .check-row.here + .check-row { border-top: none; }
+    .mark {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1.5px solid rgba(167, 154, 138, 0.45);
+      color: var(--text-muted);
+      background: var(--bg-start);
+    }
+    .check-row.done .mark {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .check-row.here .mark {
+      border-color: var(--text);
+      color: var(--accent);
+      font-size: 14px;
+      background: rgba(255, 255, 255, 0.7);
+    }
+    .check-row.future .mark { opacity: 0.5; }
+    .check-row.future .body { opacity: 0.75; }
+    .check-row .body .name { font-size: 14px; font-weight: 600; }
+    .check-row .body .sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .check-row .when {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .check-row.here .when { color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz" style="--app-gap:14px;">
+      <div class="ms-summary">
+        <div class="row-top">
+          <div class="weeks">
+            <div class="n">41</div>
+            <div class="l">недель осталось</div>
+          </div>
+          <div class="meta">
+            <strong>1/5 службы</strong>
+            <span>дембель 12.03.27</span>
+          </div>
+        </div>
+        <div class="bar"><span></span></div>
+        <div class="badge">🎖 до 23 фев — 12 дней</div>
+      </div>
+
+      <div class="check-card">
+        <h3>Вехи службы</h3>
+        <div class="check-row done">
+          <span class="mark">✓</span>
+          <div class="body">
+            <div class="name">Старт · призыв</div>
+            <div class="sub">день 0</div>
+          </div>
+          <span class="when">−78 дн.</span>
+        </div>
+        <div class="check-row done">
+          <span class="mark">✓</span>
+          <div class="body">
+            <div class="name">100 дней</div>
+            <div class="sub">отметка пройдена</div>
+          </div>
+          <span class="when">−22 дн.</span>
+        </div>
+        <div class="check-row here">
+          <span class="mark">●</span>
+          <div class="body">
+            <div class="name">Сейчас</div>
+            <div class="sub">78 дней · 287 до дембеля</div>
+          </div>
+          <span class="when">сегодня</span>
+        </div>
+        <div class="check-row future">
+          <span class="mark"></span>
+          <div class="body">
+            <div class="name">1/2 службы</div>
+            <div class="sub">середина срока</div>
+          </div>
+          <span class="when">≈ 5 мес.</span>
+        </div>
+        <div class="check-row future">
+          <span class="mark"></span>
+          <div class="body">
+            <div class="name">Дембель</div>
+            <div class="sub">конец службы</div>
+          </div>
+          <span class="when">12 мар</span>
+        </div>
+      </div>
+
+      <div class="app-stat-unified-viz">
+        <div class="col"><div class="t-toggle">прошло</div><div class="val">78</div><div class="det">дней</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-toggle">осталось</div><div class="val">287</div><div class="det">дней</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

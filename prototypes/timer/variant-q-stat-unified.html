@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Q · Одна плашка — два столбца</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <style>
+    .app-stack { --app-gap: 24px; }
+    .compare-label {
+      width: 100%;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: -12px;
+    }
+    .compare-label.after { margin-top: 8px; }
+
+    /* Одна плашка, два столбца */
+    .app-stat-unified {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      align-items: stretch;
+      border-radius: 8px;
+      padding: 16px 8px;
+      background: rgba(255, 255, 255, 0.48);
+      border: 1px solid rgba(167, 154, 138, 0.35);
+      box-sizing: border-box;
+    }
+    .app-stat-unified .divider {
+      background: rgba(167, 154, 138, 0.35);
+      margin: 4px 0;
+    }
+    .app-stat-unified .col {
+      text-align: center;
+      padding: 0 8px;
+    }
+    .app-stat-unified .title {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .app-stat-unified .val {
+      font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+      font-size: 36px;
+      line-height: 40px;
+      color: var(--text);
+    }
+    .app-stat-unified .unit-label {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .app-stat-unified .detail {
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 18px;
+      color: var(--text-muted);
+    }
+
+    /* Вариант с radius 4px — из corners */
+    .app-stat-unified.soft-4 { border-radius: 4px; }
+
+    .was-row {
+      width: 100%;
+      opacity: 0.55;
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack">
+      <div class="app-ring-block compact">
+        <div class="app-toggle">
+          <span class="left">прошло</span>
+          <span></span>
+          <span class="right">осталось</span>
+        </div>
+        <svg data-app-ring data-size="232" data-thickness="26" data-count="100" data-filled="21" aria-hidden="true"></svg>
+        <div class="app-ring-center">
+          <span class="pct">21,37%</span>
+          <span class="num">287</span>
+          <span class="unit">дней до дембеля</span>
+        </div>
+      </div>
+
+      <p class="compare-label">Было · две плашки</p>
+      <div class="app-stat-row was-row">
+        <div class="app-stat-card">
+          <div class="title">ПРОШЛО</div>
+          <div class="val">78</div>
+          <div class="unit-label">дней</div>
+          <div class="detail">2 месяца</div>
+        </div>
+        <div class="app-stat-card">
+          <div class="title">ОСТАЛОСЬ</div>
+          <div class="val">287</div>
+          <div class="unit-label">дней</div>
+          <div class="detail">9 месяцев</div>
+        </div>
+      </div>
+
+      <p class="compare-label after">Стало · одна плашка</p>
+      <div class="app-stat-unified soft-4">
+        <div class="col">
+          <div class="title">ПРОШЛО</div>
+          <div class="val">78</div>
+          <div class="unit-label">дней</div>
+          <div class="detail">2 месяца</div>
+        </div>
+        <div class="divider" aria-hidden="true"></div>
+        <div class="col">
+          <div class="title">ОСТАЛОСЬ</div>
+          <div class="val">287</div>
+          <div class="unit-label">дней</div>
+          <div class="detail">9 месяцев</div>
+        </div>
+      </div>
+
+      <div class="app-upcoming">
+        <div class="glyph">🎖</div>
+        <div>
+          <div class="name">День защитника Отечества</div>
+          <div class="meta">23 февраля</div>
+          <div class="sub">через 12 дней</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="app-setup.js"></script>
+</body>
+</html>

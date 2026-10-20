@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ддд / дпп — клик и подсказки</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <style>
+    body.page {
+      align-items: stretch;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 1rem 1rem 3rem;
+      background: #d4cdc0;
+    }
+    .page-head { max-width: 390px; margin: 0 auto 1rem; }
+    .page-head h1 {
+      font-family: "dmb-timer-sans", sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0 0 0.35rem;
+    }
+    .page-head p { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin: 0; }
+    .board {
+      max-width: 390px;
+      margin: 0 auto;
+      background: linear-gradient(168deg, var(--bg-start) 0%, var(--bg-mid) 42%, var(--bg-end) 100%);
+      border-radius: 28px;
+      padding: 16px 14px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .sketch-ref {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      padding: 10px 12px;
+      border: 1px dashed var(--overlay-border);
+      border-radius: 8px;
+      line-height: 1.4;
+    }
+    .variant .tag {
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .variant .hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+      line-height: 1.35;
+    }
+    .mock-center {
+      text-align: center;
+      padding: 12px 8px 8px;
+    }
+    .mock-center .pct {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .mock-center .num {
+      font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+      font-size: 48px;
+      line-height: 1;
+      color: var(--text);
+    }
+    .mock-center .unit-row {
+      margin-top: 4px;
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Базовая подпись — цвет как обычный текст (не «ссылка») */
+    .unit-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 10px;
+      margin: 0;
+      cursor: pointer;
+      font-family: "dmb-timer-sans", sans-serif;
+      font-size: 16px;
+      color: var(--text);
+      line-height: 1.25;
+    }
+    .unit-btn.secondary { color: var(--text-muted); }
+    .unit-btn:active { opacity: 0.65; }
+
+    /* ✦ как на скетче — у правого верхнего угла последней буквы */
+    .with-star {
+      position: relative;
+      display: inline-block;
+      padding-right: 0.15em;
+    }
+    .with-star .star {
+      position: absolute;
+      top: -0.55em;
+      right: -0.65em;
+      font-size: 0.42em;
+      line-height: 1;
+      color: var(--text);
+      pointer-events: none;
+      font-weight: 400;
+    }
+    .with-star .star.muted { color: var(--text-muted); opacity: 0.85; }
+    .with-star .star.accent { color: var(--accent); font-size: 0.48em; top: -0.5em; }
+
+    .u-dotted {
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      text-underline-offset: 3px;
+      text-decoration-color: var(--text-muted);
+    }
+    .u-solid {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: rgba(62, 54, 48, 0.35);
+    }
+    .u-dashed {
+      text-decoration: underline;
+      text-decoration-style: dashed;
+      text-underline-offset: 4px;
+    }
+    .suffix {
+      margin-left: 0.35em;
+      font-size: 0.75em;
+      opacity: 0.45;
+      vertical-align: middle;
+    }
+    .pill-hit {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(167, 154, 138, 0.35);
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .ring-hint {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      margin-left: 6px;
+      border-radius: 50%;
+      border: 1px solid rgba(167, 154, 138, 0.4);
+      font-size: 11px;
+      opacity: 0.6;
+      vertical-align: middle;
+    }
+    .pick {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body class="page">
+  <div class="page-head">
+    <a class="back" href="index.html" style="max-width:none;margin-bottom:0.5rem;">← Прототипы</a>
+    <h1>Подпись ддд / дпп — что нажимается</h1>
+    <p>
+      В кликабельном режиме текст <strong>того же цвета</strong>, что и остальной (не «ссылка»).
+      Эталон по скетчу: <strong>✦</strong> сверху справа у подписи.
+    </p>
+  </div>
+
+  <div class="board">
+    <p class="sketch-ref">
+      Сейчас в коде уже есть <code>CenterUnitLabel</code> + «✦» в строке.
+      Здесь — позиция звезды как на рисунке и другие способы показать нажатие.
+    </p>
+
+    <!-- A: sketch -->
+    <div class="variant pick">
+      <div class="tag">A · по скетчу (рекомендуем)</div>
+      <div class="mock-center">
+        <div class="pct">21,37%</div>
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn">
+            <span class="with-star">ддд<span class="star" aria-hidden="true">✦</span></span>
+          </button>
+        </div>
+      </div>
+      <p class="hint">Primary-цвет текста, звезда у «правого верхнего» угла. Без подчёркивания.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">B · длинная подпись + ✦</div>
+      <div class="mock-center">
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn">
+            <span class="with-star">дней до дембеля<span class="star">✦</span></span>
+          </button>
+        </div>
+      </div>
+      <p class="hint">То же, если в UI полная фраза, а не аббревиатура.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">C · secondary + ✦ (как «дней» сейчас)</div>
+      <div class="mock-center">
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn secondary">
+            <span class="with-star">ддд<span class="star muted">✦</span></span>
+          </button>
+        </div>
+      </div>
+      <p class="hint">Подпись приглушённая — звезда тоже muted. Слабее, чем A.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">D · ✦ accent</div>
+      <div class="mock-center">
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn">
+            <span class="with-star">дпп<span class="star accent">✦</span></span>
+          </button>
+        </div>
+      </div>
+      <p class="hint">Только звезда красная — акцент на «переключи», текст обычный.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">E · пунктир (старый прототип)</div>
+      <div class="mock-center">
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn u-dotted">дней до дембеля</button>
+        </div>
+      </div>
+      <p class="hint">Выглядит как ссылка; ты просил без «особого» цвета — обычно хуже A.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">F · ✦ + лёгкий пунктир</div>
+      <div class="mock-center">
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn u-dotted">
+            <span class="with-star">ддд<span class="star">✦</span></span>
+          </button>
+        </div>
+      </div>
+      <p class="hint">Два сигнала сразу — можно перебор.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">G · сплошное подчёркивание</div>
+      <div class="mock-center">
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn u-solid">ддд</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant">
+      <div class="tag">H · штриховое подчёркивание</div>
+      <div class="mock-center">
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn u-dashed">дпп</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant">
+      <div class="tag">I · суффикс ⇄</div>
+      <div class="mock-center">
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn">
+            ддд<span class="suffix">⇄</span>
+          </button>
+        </div>
+      </div>
+      <p class="hint">Понятно «переключение», без звезды.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">J · суффикс ▾</div>
+      <div class="mock-center">
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn">
+            дней до дембеля<span class="suffix">▾</span>
+          </button>
+        </div>
+      </div>
+      <p class="hint">Как у выпадающего списка — осторожно, может путать с меню.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">K · мягкая «pill»-зона</div>
+      <div class="mock-center">
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn pill-hit">
+            <span class="with-star">ддд<span class="star">✦</span></span>
+          </button>
+        </div>
+      </div>
+      <p class="hint">Видна область нажатия; чуть тяжелее визуально.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">L · круг ↻ рядом</div>
+      <div class="mock-center">
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn">
+            ддд<span class="ring-hint">↻</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant">
+      <div class="tag">M · только звезда, без смещения (как в RN сейчас)</div>
+      <div class="mock-center">
+        <div class="num">287</div>
+        <div class="unit-row">
+          <button type="button" class="unit-btn">ддд<span style="font-size:9px;vertical-align:super;">✦</span></button>
+        </div>
+      </div>
+      <p class="hint">«✦» в потоке текста — для сравнения с позицией из A.</p>
+    </div>
+  </div>
+</body>
+</html>

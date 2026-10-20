@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>B · Рельс</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <style>
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 36px;
+      padding-bottom: 40px;
+    }
+    .hero-num {
+      font-size: 5rem;
+      font-weight: 300;
+      letter-spacing: -0.03em;
+      line-height: 0.95;
+    }
+    .hero-sub {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .rail-block { width: 100%; }
+    .rail-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .rail {
+      height: 8px;
+      border-radius: 99px;
+      background: var(--ring-track);
+      overflow: hidden;
+    }
+    .rail-fill {
+      height: 100%;
+      width: 21.4%;
+      background: var(--ring-fill);
+      border-radius: 99px;
+    }
+    .rail-foot {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .rail-foot b { color: var(--text); font-weight: 600; }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+    }
+    .toolbar button {
+      flex: 1;
+      border: 1px solid var(--overlay-border);
+      background: var(--overlay);
+      border-radius: var(--radius);
+      padding: 10px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center">Алексей<span>▾</span></div>
+      <div style="display:flex; gap:0;">
+        <button class="icon-btn" type="button" title="Плашки">👁</button>
+        <button class="icon-btn" type="button">↗</button>
+      </div>
+    </header>
+    <div class="screen main">
+      <div>
+        <div class="caption" style="margin-bottom:12px;">осталось</div>
+        <div class="hero-num">287</div>
+        <div class="hero-sub"><span class="label-tap">дней до дембеля</span> · 21% службы</div>
+      </div>
+      <div class="rail-block">
+        <div class="rail-labels"><span>призыв</span><span>дембель</span></div>
+        <div class="rail"><div class="rail-fill"></div></div>
+        <div class="rail-foot">
+          <span><b>78</b> дн. прошло</span>
+          <span><b>287</b> дн. осталось</span>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button type="button">🎂 12 дн.</button>
+        <button type="button">ддд ↔ дпп</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

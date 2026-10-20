@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>K · Панель-лист</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <style>
+    .main { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .panel-head-inline {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+    .panel-head-inline .pct { font-size: 0.85rem; color: var(--text-muted); }
+    .unit-block { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center">Алексей<span>▾</span></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen main">
+      <article class="panel">
+        <div class="panel-holiday">
+          <span class="glyph">🎖</span>
+          <div>
+            <strong>День защитника Отечества</strong>
+            <span>23 фев · через 12 дней</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="panel-head-inline">
+            <span class="caption">служба</span>
+            <span class="pct">21%</span>
+          </div>
+          <div class="panel-row">
+            <div>
+              <div class="big">287</div>
+              <div class="unit-block"><span class="label-tap">дней до дембеля</span></div>
+            </div>
+            <div class="mini-ring" aria-hidden="true"></div>
+          </div>
+          <div class="segments" style="margin-bottom:0;">
+            <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span>
+            <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+            <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+            <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+            <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+          </div>
+          <div class="panel-cols">
+            <div>
+              <div class="caption">прошло</div>
+              <div class="val">78</div>
+              <div class="sub">дней · 2 мес.</div>
+            </div>
+            <div>
+              <div class="caption">осталось</div>
+              <div class="val">287</div>
+              <div class="sub">дней · 9 мес.</div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</body>
+</html>

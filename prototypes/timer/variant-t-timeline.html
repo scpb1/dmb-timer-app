@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>T · Лента вех</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <link rel="stylesheet" href="_timer-alt.css" />
+  <style>
+    .screen { overflow-y: auto; }
+    .app-stack.tight { padding-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack tight">
+      <div class="app-banner">
+        <div class="row1">102 дня прошло · <strong style="color:var(--text)">вы здесь</strong></div>
+        <div class="mini-bar"><i style="width:21%"></i></div>
+      </div>
+
+      <div class="timeline">
+        <svg viewBox="0 0 40 340" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M20 8 Q 36 80 20 120 T 20 220 T 28 332" fill="none" stroke="rgba(167,154,138,0.35)" stroke-width="3" stroke-dasharray="6 5" />
+          <path d="M20 8 Q 36 80 20 120" fill="none" stroke="#E53935" stroke-width="3" />
+          <path d="M20 120 Q 4 170 20 220" fill="none" stroke="#3E3630" stroke-width="3" opacity="0.35" />
+        </svg>
+
+        <div class="node past">
+          <span class="dot-node"></span>
+          <div class="title">Призыв</div>
+          <div class="sub">78 дней назад</div>
+        </div>
+        <div class="node past">
+          <span class="dot-node"></span>
+          <div class="title">100 дней</div>
+          <div class="sub">пройдено</div>
+        </div>
+        <div class="node here">
+          <span class="dot-node"></span>
+          <div class="title">Сейчас</div>
+          <div class="sub">78 дней · 21% службы</div>
+        </div>
+        <div class="node future">
+          <span class="dot-node"></span>
+          <div class="title">1/5 пути · 23 фев</div>
+          <div class="sub">День защитника · 12 дней</div>
+        </div>
+        <div class="node future">
+          <span class="dot-node"></span>
+          <div class="title">Половина</div>
+          <div class="sub">≈ через 5 мес.</div>
+        </div>
+        <div class="node future">
+          <span class="dot-node"></span>
+          <div class="title">Дембель</div>
+          <div class="sub">287 дней · 12 авг. 2026</div>
+        </div>
+      </div>
+
+      <div class="app-stat-unified">
+        <div class="col"><div class="t-micro">прошло</div><div class="val">78</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-micro">осталось</div><div class="val">287</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Z · Шкала по времени</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <link rel="stylesheet" href="_viz.css" />
+  <link rel="stylesheet" href="_milestones-proto.css" />
+  <style>
+    .scale-card {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.48);
+      border: 1px solid rgba(167, 154, 138, 0.35);
+      border-radius: 8px;
+      padding: 14px 12px 16px;
+      position: relative;
+    }
+    .scale-rail {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      bottom: 18px;
+      width: 8px;
+      border-radius: 99px;
+      background: rgba(167, 154, 138, 0.22);
+      overflow: hidden;
+    }
+    .scale-rail .fill {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 21.4%;
+      background: var(--accent);
+      border-radius: 99px 99px 0 0;
+    }
+    .scale-rail .now-cap {
+      position: absolute;
+      left: -4px;
+      right: -4px;
+      top: 21.4%;
+      height: 4px;
+      background: var(--text);
+      border-radius: 99px;
+      box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.2);
+      transform: translateY(-50%);
+    }
+    .scale-list {
+      margin-left: 36px;
+      position: relative;
+      min-height: 280px;
+    }
+    .scale-pin {
+      position: absolute;
+      left: -28px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--text-muted);
+      background: var(--bg-start);
+      transform: translate(-50%, -50%);
+    }
+    .scale-pin.past { background: var(--accent); border-color: var(--accent); }
+    .scale-pin.here {
+      width: 16px;
+      height: 16px;
+      border-color: var(--text);
+      z-index: 2;
+    }
+    .scale-pin.future { opacity: 0.45; }
+    .scale-item {
+      position: absolute;
+      left: 0;
+      right: 0;
+      transform: translateY(-50%);
+    }
+    .scale-item .name { font-size: 14px; font-weight: 600; }
+    .scale-item .sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .scale-item.future .name,
+    .scale-item.future .sub { opacity: 0.78; }
+    .scale-item.here .name { color: var(--accent); }
+    .scale-foot {
+      margin-top: 8px;
+      margin-left: 36px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz" style="--app-gap:14px;">
+      <div class="ms-summary">
+        <div class="row-top">
+          <div class="weeks">
+            <div class="n">41</div>
+            <div class="l">недель осталось</div>
+          </div>
+          <div class="meta">
+            <strong>1/5 службы</strong>
+            <span>12 мар 2027</span>
+          </div>
+        </div>
+        <div class="bar"><span></span></div>
+        <div class="badge">🎖 до 23 фев — 12 дней</div>
+      </div>
+
+      <div class="scale-card">
+        <div class="scale-rail" aria-hidden="true">
+          <div class="fill"></div>
+          <div class="now-cap"></div>
+        </div>
+        <div class="scale-list">
+          <!-- top 0% -->
+          <div class="scale-item past" style="top:0%;">
+            <span class="scale-pin past" style="top:0%;left:-28px;"></span>
+            <div class="name">Старт · призыв</div>
+            <div class="sub">78 дней назад</div>
+          </div>
+          <!-- ~27% = 100/365 -->
+          <div class="scale-item past" style="top:27%;">
+            <span class="scale-pin past" style="top:27%;left:-28px;"></span>
+            <div class="name">100 дней</div>
+            <div class="sub">пройдено</div>
+          </div>
+          <!-- 21.4% now -->
+          <div class="scale-item here" style="top:21.4%;">
+            <span class="scale-pin here" style="top:21.4%;left:-28px;"></span>
+            <div class="name">Сейчас</div>
+            <div class="sub">78 дней · 287 до дембеля</div>
+          </div>
+          <!-- 50% half -->
+          <div class="scale-item future" style="top:50%;">
+            <span class="scale-pin future" style="top:50%;left:-28px;"></span>
+            <div class="name">1/2 службы</div>
+            <div class="sub">≈ через 5 мес.</div>
+          </div>
+          <!-- 100% end -->
+          <div class="scale-item future" style="top:100%;">
+            <span class="scale-pin future" style="top:100%;left:-28px;"></span>
+            <div class="name">Дембель</div>
+            <div class="sub">12 мар 2027</div>
+          </div>
+        </div>
+        <p class="scale-foot">Расстояние между вехами ≈ доля срока (не равные шаги списка).</p>
+      </div>
+
+      <div class="app-stat-unified-viz">
+        <div class="col"><div class="t-toggle">прошло</div><div class="val">78</div><div class="det">дней</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-toggle">осталось</div><div class="val">287</div><div class="det">дней</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

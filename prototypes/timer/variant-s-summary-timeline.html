@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>S · Шапка + лента</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <link rel="stylesheet" href="_viz.css" />
+  <style>
+    .timeline { min-height: 320px; }
+    .path-line { stroke: rgba(167, 154, 138, 0.35); stroke-width: 3; fill: none; }
+    .path-line.past { stroke: var(--accent); }
+    .path-line.future { stroke-dasharray: 6 5; opacity: 0.6; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz">
+      <div class="summary-card">
+        <div class="row-top">
+          <div class="weeks">
+            <div class="n">41</div>
+            <div class="l">недель осталось</div>
+          </div>
+          <div class="meta">
+            <strong>1/5 службы</strong>
+            <span>12 мар 2027</span>
+          </div>
+        </div>
+        <div class="bar"><span></span></div>
+        <div class="badge">🎖 до 23 фев — 12 дней</div>
+      </div>
+
+      <div class="timeline">
+        <svg viewBox="0 0 24 340" preserveAspectRatio="none" aria-hidden="true">
+          <path class="path-line past" d="M12 8 L12 120 Q12 140 20 155 L20 175 Q12 190 12 210" />
+          <path class="path-line past" d="M12 210 L12 230" />
+          <path class="path-line future" d="M12 230 Q20 250 20 270 L12 290 Q12 310 12 332" />
+        </svg>
+
+        <div class="tl-item past">
+          <span class="dot-node"></span>
+          <div class="name">Старт · призыв</div>
+          <div class="sub">78 дней назад</div>
+        </div>
+        <div class="tl-item past">
+          <span class="dot-node"></span>
+          <div class="name">100 дней</div>
+          <div class="sub">пройдено</div>
+        </div>
+        <div class="tl-item here">
+          <span class="dot-node"></span>
+          <div class="name">Сейчас</div>
+          <div class="sub">78 дней · 287 до дембеля</div>
+        </div>
+        <div class="tl-item future">
+          <span class="dot-node"></span>
+          <div class="name">1/2 службы</div>
+          <div class="sub">≈ через 5 мес.</div>
+        </div>
+        <div class="tl-item future">
+          <span class="dot-node"></span>
+          <div class="name">Дембель</div>
+          <div class="sub">12 мар 2027</div>
+        </div>
+      </div>
+
+      <div class="app-stat-unified-viz">
+        <div class="col">
+          <div class="t-toggle">прошло</div>
+          <div class="val">78</div>
+          <div class="det">дней</div>
+        </div>
+        <div class="div"></div>
+        <div class="col">
+          <div class="t-toggle">осталось</div>
+          <div class="val">287</div>
+          <div class="det">дней</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

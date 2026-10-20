@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>M · Приложение — компакт</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <style>
+    .app-stack { --app-gap: 22px; }
+    .app-ring-block.compact svg { --ring-size: 232px; }
+    .app-stat-card { padding: 12px 10px; }
+    .app-stat-card .title { font-size: 16px; margin-bottom: 10px; }
+    .app-stat-card .val { font-size: 30px; line-height: 34px; }
+    .app-stat-card .detail { margin-top: 10px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack">
+      <div class="app-ring-block compact">
+        <div class="app-toggle">
+          <span class="left">прошло</span>
+          <span></span>
+          <span class="right">осталось</span>
+        </div>
+        <svg data-app-ring data-size="232" data-thickness="26" data-count="100" data-filled="21" aria-hidden="true"></svg>
+        <div class="app-ring-center">
+          <span class="pct">21,37%</span>
+          <span class="num">287</span>
+          <span class="unit">дней до дембеля</span>
+        </div>
+      </div>
+      <div class="app-stat-row">
+        <div class="app-stat-card">
+          <div class="title">ПРОШЛО</div>
+          <div class="val">78</div>
+          <div class="unit-label">дней</div>
+        </div>
+        <div class="app-stat-card">
+          <div class="title">ОСТАЛОСЬ</div>
+          <div class="val">287</div>
+          <div class="unit-label">дней</div>
+        </div>
+      </div>
+      <div class="app-upcoming">
+        <div class="glyph">🎖</div>
+        <div>
+          <div class="name">День защитника Отечества</div>
+          <div class="meta">23 февраля · через 12 дней</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="app-setup.js"></script>
+</body>
+</html>

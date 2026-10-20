@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Y · Зигзаг</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <link rel="stylesheet" href="_viz.css" />
+  <link rel="stylesheet" href="_milestones-proto.css" />
+  <style>
+    .zig {
+      width: 100%;
+      position: relative;
+      min-height: 300px;
+      padding: 8px 0;
+    }
+    .zig svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .zig-step {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      min-height: 56px;
+      margin-bottom: 4px;
+    }
+    .zig-step.left { justify-content: flex-end; padding-right: calc(50% + 18px); text-align: right; }
+    .zig-step.right { justify-content: flex-start; padding-left: calc(50% + 18px); }
+    .zig-step .name { font-size: 14px; font-weight: 600; }
+    .zig-step .sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .zig-step.future .name,
+    .zig-step.future .sub { opacity: 0.75; }
+    .zig-step.here .name { color: var(--accent); }
+    .node-center {
+      position: absolute;
+      left: 50%;
+      top: 8px;
+      transform: translate(-50%, 0);
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--text-muted);
+      background: var(--bg-start);
+      z-index: 1;
+    }
+    .zig-step.past .node-center {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .zig-step.here .node-center {
+      width: 16px;
+      height: 16px;
+      top: 6px;
+      border-color: var(--text);
+      box-shadow: 0 0 0 4px rgba(229, 57, 53, 0.15);
+    }
+    .zig-step.future .node-center { opacity: 0.45; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz" style="--app-gap:14px;">
+      <div class="ms-summary">
+        <div class="row-top">
+          <div class="weeks">
+            <div class="n">41</div>
+            <div class="l">недель осталось</div>
+          </div>
+          <div class="meta">
+            <strong>1/5 службы</strong>
+            <span>12 мар 2027</span>
+          </div>
+        </div>
+        <div class="bar"><span></span></div>
+        <div class="badge">🎖 до 23 фев — 12 дней</div>
+      </div>
+
+      <div class="zig">
+        <svg viewBox="0 0 320 320" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M160 12 L160 52 L48 52 L48 92 L160 92 L160 132 L272 132 L272 172 L160 172 L160 212 L48 212 L48 252 L160 252 L160 292"
+            fill="none" stroke="rgba(167,154,138,0.35)" stroke-width="3" stroke-linejoin="round" />
+          <path d="M160 12 L160 52 L48 52 L48 92 L160 92 L160 132"
+            fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" />
+          <path d="M160 132 L272 132 L272 172 L160 172 L160 212 L48 212 L48 252 L160 252 L160 292"
+            fill="none" stroke="rgba(167,154,138,0.45)" stroke-width="3" stroke-dasharray="7 6" stroke-linejoin="round" />
+        </svg>
+
+        <div class="zig-step left past" style="min-height:52px;">
+          <span class="node-center"></span>
+          <div>
+            <div class="name">Старт · призыв</div>
+            <div class="sub">78 дней назад</div>
+          </div>
+        </div>
+        <div class="zig-step right past" style="min-height:52px;">
+          <span class="node-center"></span>
+          <div>
+            <div class="name">100 дней</div>
+            <div class="sub">пройдено</div>
+          </div>
+        </div>
+        <div class="zig-step left here" style="min-height:52px;">
+          <span class="node-center"></span>
+          <div>
+            <div class="name">Сейчас</div>
+            <div class="sub">78 дн. · 287 до дембеля</div>
+          </div>
+        </div>
+        <div class="zig-step right future" style="min-height:52px;">
+          <span class="node-center"></span>
+          <div>
+            <div class="name">1/2 службы</div>
+            <div class="sub">≈ через 5 мес.</div>
+          </div>
+        </div>
+        <div class="zig-step left future" style="min-height:44px;">
+          <span class="node-center"></span>
+          <div>
+            <div class="name">Дембель</div>
+            <div class="sub">12 мар 2027</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-stat-unified-viz">
+        <div class="col"><div class="t-toggle">прошло</div><div class="val">78</div><div class="det">дней</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-toggle">осталось</div><div class="val">287</div><div class="det">дней</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

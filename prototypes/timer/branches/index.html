@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Таймер — виды войск</title>
+  <link rel="stylesheet" href="_branch.css" />
+</head>
+<body class="branch-index">
+  <a class="back-main" href="../index.html">← Все прототипы таймера</a>
+  <h1>Метафоры по видам и родам войск</h1>
+  <p class="lead">
+    HTML-прототипы из <code>docs/military-branches.md</code>. Приложение не меняется.
+    На экране — кольцо как на главной и фоновая сцена; ползунок двигает <strong>% службы</strong> (100% = дембель).
+  </p>
+
+  <div id="sections"></div>
+
+  <script src="_branch.js"></script>
+  <script>
+    const order = [
+      'Виды ВС',
+      'Вне Минобороны',
+      'Боевые рода',
+      'Спецвойска',
+      'ВКС · уточнения',
+    ];
+    const root = document.getElementById('sections');
+    const meta = window.BranchScenes.BRANCH_META;
+
+    order.forEach((group) => {
+      const entries = Object.entries(meta).filter(([, m]) => m.group === group);
+      if (!entries.length) return;
+      const h2 = document.createElement('h2');
+      h2.textContent = group;
+      root.appendChild(h2);
+      const grid = document.createElement('div');
+      grid.className = 'grid';
+      entries.forEach(([id, m]) => {
+        const a = document.createElement('a');
+        a.className = 'card';
+        a.href = 'view.html?id=' + encodeURIComponent(id);
+        a.innerHTML =
+          '<span class="tag">' + id + '</span>' +
+          '<h3>' + m.title + '</h3>' +
+          '<p>' + m.hint + '</p>';
+        grid.appendChild(a);
+      });
+      root.appendChild(grid);
+    });
+  </script>
+</body>
+</html>

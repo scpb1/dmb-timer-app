@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>I · Панель-кольцо</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <style>
+    .main { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .panel-body { padding-top: 18px; }
+    .panel-center { margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center">Алексей<span>▾</span></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen main">
+      <article class="panel">
+        <div class="panel-holiday compact">
+          <span class="glyph">🎖</span>
+          <div>
+            <strong>День защитника Отечества</strong>
+            <span>через 12 дней</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="ring-thin">
+            <div class="ring-thin-inner">
+              <div class="big">287</div>
+              <div class="unit"><span class="label-tap">ддд</span></div>
+            </div>
+          </div>
+          <div class="panel-stats">
+            <div class="side">
+              <div class="caption">прошло</div>
+              <div class="val">78</div>
+            </div>
+            <div class="mid">21%</div>
+            <div class="side">
+              <div class="caption">осталось</div>
+              <div class="val">287</div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Подписи прошло / осталось</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <style>
+    body.page {
+      align-items: stretch;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 1rem 1rem 3rem;
+      background: #d4cdc0;
+    }
+    .page-head { max-width: 390px; margin: 0 auto 1rem; }
+    .page-head h1 {
+      font-family: "dmb-timer-sans", sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 0 0 0.4rem;
+    }
+    .page-head p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin: 0; }
+    .board {
+      max-width: 390px;
+      margin: 0 auto;
+      background: linear-gradient(168deg, var(--bg-start) 0%, var(--bg-mid) 42%, var(--bg-end) 100%);
+      border-radius: 28px;
+      padding: 18px 16px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .variant .tag {
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .variant .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+    .u {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      border-radius: 4px;
+      padding: 14px 6px;
+      background: rgba(255, 255, 255, 0.48);
+      border: 1px solid rgba(167, 154, 138, 0.35);
+      box-sizing: border-box;
+    }
+    .u .div { background: rgba(167, 154, 138, 0.35); margin: 2px 0; }
+    .u .col { text-align: center; padding: 0 6px; }
+    .u .val {
+      font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+      font-size: 32px;
+      line-height: 36px;
+      color: var(--text);
+    }
+    .u .unit { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .u .det { font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+
+    /* стили подписей */
+    .t-now {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .t-toggle {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-muted);
+      opacity: 0.55;
+      margin-bottom: 8px;
+      text-transform: lowercase;
+    }
+    .t-micro {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .t-under {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      opacity: 0.85;
+    }
+    .t-letter {
+      font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      opacity: 0.7;
+    }
+    .strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      opacity: 0.45;
+      margin-bottom: 6px;
+      text-transform: lowercase;
+    }
+    .u.no-top { padding-top: 18px; }
+    .u.left .col { text-align: left; padding-left: 12px; }
+  </style>
+</head>
+<body class="page">
+  <div class="page-head">
+    <a class="back" href="index.html" style="max-width:none;margin-bottom:0.5rem;">← Прототипы</a>
+    <h1>Подписи «прошло / осталось»</h1>
+    <p>Одна плашка, два столбца. Сравни, как читаются заголовки — сейчас в app и Q: <strong>ПРОШЛО</strong> 18px bold.</p>
+  </div>
+
+  <div class="board">
+    <div class="variant">
+      <div class="tag">1 · как сейчас (Q / app)</div>
+      <div class="u">
+        <div class="col"><div class="t-now">ПРОШЛО</div><div class="val">78</div><div class="unit">дней</div><div class="det">2 месяца</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-now">ОСТАЛОСЬ</div><div class="val">287</div><div class="unit">дней</div><div class="det">9 месяцев</div></div>
+      </div>
+      <p class="hint">Крупно, капс — часто выглядит тяжело и дублирует toggle над кольцом.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">2 · как toggle кольца</div>
+      <div class="u">
+        <div class="col"><div class="t-toggle">прошло</div><div class="val">78</div><div class="unit">дней</div><div class="det">2 месяца</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-toggle">осталось</div><div class="val">287</div><div class="unit">дней</div><div class="det">9 месяцев</div></div>
+      </div>
+      <p class="hint">Строчные, 14px, приглушённые — в одной системе с «прошло / осталось» над таймером.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">3 · микро-капс</div>
+      <div class="u">
+        <div class="col"><div class="t-micro">прошло</div><div class="val">78</div><div class="unit">дней</div><div class="det">2 месяца</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-micro">осталось</div><div class="val">287</div><div class="unit">дней</div><div class="det">9 месяцев</div></div>
+      </div>
+      <p class="hint">Мелкая подпись, цифра главная — спокойнее, чем 18px bold.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">4 · без слов, только цифры</div>
+      <div class="u no-top">
+        <div class="col"><div class="val">78</div><div class="unit">дней</div><div class="det">2 месяца · прошло</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="val">287</div><div class="unit">дней</div><div class="det">9 месяцев · осталось</div></div>
+      </div>
+      <p class="hint">Смысл в нижней строке — плашка легче, но текст длиннее.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">5 · подпись под числом</div>
+      <div class="u no-top">
+        <div class="col"><div class="val">78</div><div class="unit">дней</div><div class="t-under">прошло</div><div class="det">2 месяца</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="val">287</div><div class="unit">дней</div><div class="t-under">осталось</div><div class="det">9 месяцев</div></div>
+      </div>
+      <p class="hint">Иерархия: число → единица → тихая подпись.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">6 · полоска над плашкой</div>
+      <div class="strip"><span>прошло</span><span>осталось</span></div>
+      <div class="u no-top">
+        <div class="col"><div class="val">78</div><div class="unit">дней</div><div class="det">2 месяца</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="val">287</div><div class="unit">дней</div><div class="det">9 месяцев</div></div>
+      </div>
+      <p class="hint">Подписи вне карточки, внутри только данные.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">7 · буквы П / О</div>
+      <div class="u">
+        <div class="col"><div class="t-letter">П</div><div class="val">78</div><div class="unit">дней</div><div class="det">2 месяца</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-letter">О</div><div class="val">287</div><div class="unit">дней</div><div class="det">9 месяцев</div></div>
+      </div>
+      <p class="hint">Максимально компактно; нужна привычка или подсказка.</p>
+    </div>
+
+    <div class="variant">
+      <div class="tag">8 · выравнивание влево</div>
+      <div class="u left">
+        <div class="col"><div class="t-micro">прошло</div><div class="val">78</div><div class="unit">дней</div><div class="det">2 месяца</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-micro">осталось</div><div class="val">287</div><div class="unit">дней</div><div class="det">9 месяцев</div></div>
+      </div>
+      <p class="hint">Микро-капс + левый край — меньше «табличности по центру».</p>
+    </div>
+  </div>
+</body>
+</html>

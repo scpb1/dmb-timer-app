@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>V · Прямой шток</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <link rel="stylesheet" href="_viz.css" />
+  <link rel="stylesheet" href="_milestones-proto.css" />
+  <style>
+    .spine-wrap {
+      width: 100%;
+      position: relative;
+      padding: 4px 0 4px 28px;
+    }
+    .spine-wrap::before {
+      content: "";
+      position: absolute;
+      left: 11px;
+      top: 12px;
+      bottom: 12px;
+      width: 3px;
+      border-radius: 99px;
+      background: linear-gradient(
+        to bottom,
+        var(--accent) 0%,
+        var(--accent) 38%,
+        rgba(167, 154, 138, 0.35) 38%,
+        rgba(167, 154, 138, 0.35) 100%
+      );
+    }
+    .spine-wrap::after {
+      content: "";
+      position: absolute;
+      left: 11px;
+      top: 38%;
+      bottom: 12px;
+      width: 3px;
+      border-radius: 99px;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(167, 154, 138, 0.5) 0 6px,
+        transparent 6px 11px
+      );
+      pointer-events: none;
+    }
+    .spine-item {
+      position: relative;
+      padding: 9px 0 11px 14px;
+      min-height: 48px;
+    }
+    .spine-item .dot {
+      position: absolute;
+      left: -21px;
+      top: 13px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--text-muted);
+      background: var(--bg-start);
+      box-sizing: border-box;
+    }
+    .spine-item.past .dot {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .spine-item.here .dot {
+      width: 16px;
+      height: 16px;
+      left: -23px;
+      top: 11px;
+      border-color: var(--text);
+      box-shadow: 0 0 0 4px rgba(229, 57, 53, 0.15);
+    }
+    .spine-item.future .dot { opacity: 0.45; }
+    .spine-item.future .name,
+    .spine-item.future .sub { opacity: 0.78; }
+    .spine-item .name { font-size: 14px; font-weight: 600; }
+    .spine-item .sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .proto-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.45;
+      padding: 0 4px 8px;
+      border-left: 2px solid rgba(229, 57, 53, 0.35);
+      margin-left: 2px;
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz" style="--app-gap:14px;">
+      <p class="proto-note">Без изгибов SVG — один вертикальный шток, заливка «пройдено» + штрих «впереди».</p>
+
+      <div class="ms-summary">
+        <div class="row-top">
+          <div class="weeks">
+            <div class="n">41</div>
+            <div class="l">недель осталось</div>
+          </div>
+          <div class="meta">
+            <strong>1/5 службы</strong>
+            <span>12 мар 2027</span>
+          </div>
+        </div>
+        <div class="bar"><span></span></div>
+        <div class="badge">🎖 до 23 фев — 12 дней</div>
+      </div>
+
+      <div class="spine-wrap">
+        <div class="spine-item past">
+          <span class="dot"></span>
+          <div class="name">Старт · призыв</div>
+          <div class="sub">78 дней назад</div>
+        </div>
+        <div class="spine-item past">
+          <span class="dot"></span>
+          <div class="name">100 дней</div>
+          <div class="sub">пройдено</div>
+        </div>
+        <div class="spine-item here">
+          <span class="dot"></span>
+          <div class="name">Сейчас</div>
+          <div class="sub">78 дней · 287 до дембеля</div>
+        </div>
+        <div class="spine-item future">
+          <span class="dot"></span>
+          <div class="name">1/2 службы</div>
+          <div class="sub">≈ через 5 мес.</div>
+        </div>
+        <div class="spine-item future">
+          <span class="dot"></span>
+          <div class="name">Дембель</div>
+          <div class="sub">12 мар 2027</div>
+        </div>
+      </div>
+
+      <div class="app-stat-unified-viz">
+        <div class="col"><div class="t-toggle">прошло</div><div class="val">78</div><div class="det">дней</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-toggle">осталось</div><div class="val">287</div><div class="det">дней</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

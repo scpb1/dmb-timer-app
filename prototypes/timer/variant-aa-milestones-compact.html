@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AA · Компакт: сводка + полоска</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <link rel="stylesheet" href="_viz.css" />
+  <link rel="stylesheet" href="_milestones-proto.css" />
+  <style>
+    .mega {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.48);
+      border: 1px solid rgba(167, 154, 138, 0.35);
+      border-radius: 8px;
+      padding: 14px 14px 16px;
+    }
+    .mega-track {
+      position: relative;
+      height: 10px;
+      border-radius: 99px;
+      background: rgba(167, 154, 138, 0.28);
+      margin: 14px 0 28px;
+    }
+    .mega-track .fill {
+      height: 100%;
+      width: 21.4%;
+      background: var(--accent);
+      border-radius: 99px;
+    }
+    .mega-pin {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid var(--text-muted);
+      background: var(--bg-start);
+    }
+    .mega-pin.on { background: var(--accent); border-color: var(--accent); }
+    .mega-pin.you {
+      width: 14px;
+      height: 14px;
+      border-color: var(--text);
+      box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.18);
+      z-index: 1;
+    }
+    .mega-labels {
+      position: relative;
+      height: 42px;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .mega-labels span {
+      position: absolute;
+      transform: translateX(-50%);
+      text-align: center;
+      max-width: 72px;
+      line-height: 1.25;
+    }
+    .mega-labels span strong {
+      display: block;
+      font-size: 11px;
+      color: var(--text);
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .mega-labels span.here strong { color: var(--accent); }
+    .mega-next {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(167, 154, 138, 0.25);
+      font-size: 13px;
+    }
+    .mega-next .lbl { color: var(--text-muted); }
+    .mega-next .val { font-weight: 600; text-align: right; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz" style="--app-gap:14px;">
+      <div class="mega">
+        <div class="row-top">
+          <div class="weeks">
+            <div class="n">287</div>
+            <div class="l">дней до дембеля</div>
+          </div>
+          <div class="meta">
+            <strong>21%</strong>
+            <span>службы пройдено</span>
+          </div>
+        </div>
+        <div class="badge" style="margin-top:10px;">🎖 до 23 фев — 12 дней</div>
+
+        <div class="mega-track">
+          <div class="fill"></div>
+          <span class="mega-pin on" style="left:0%;"></span>
+          <span class="mega-pin on" style="left:27.4%;" title="100 дней"></span>
+          <span class="mega-pin you" style="left:21.4%;"></span>
+          <span class="mega-pin" style="left:50%;"></span>
+          <span class="mega-pin" style="left:100%;"></span>
+        </div>
+        <div class="mega-labels">
+          <span style="left:0%;"><strong>призыв</strong>−78 дн.</span>
+          <span class="here" style="left:21.4%;"><strong>сейчас</strong>78 дн.</span>
+          <span style="left:27.4%;"><strong>100</strong>✓</span>
+          <span style="left:50%;"><strong>½</strong>≈5 мес.</span>
+          <span style="left:100%;"><strong>дембель</strong>03.27</span>
+        </div>
+
+        <div class="mega-next">
+          <span class="lbl">Следующая веха</span>
+          <span class="val">1/2 службы · ≈ 5 месяцев</span>
+        </div>
+      </div>
+
+      <div class="app-stat-unified-viz">
+        <div class="col"><div class="t-toggle">прошло</div><div class="val">78</div><div class="det">дней</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-toggle">осталось</div><div class="val">287</div><div class="det">дней</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

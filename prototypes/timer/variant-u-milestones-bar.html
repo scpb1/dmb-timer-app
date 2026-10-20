@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>U · Веха на полоске</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <link rel="stylesheet" href="_viz.css" />
+  <style>
+    .track-card {
+      width: 100%;
+      padding: 16px 14px 20px;
+      background: rgba(255, 255, 255, 0.48);
+      border: 1px solid rgba(167, 154, 138, 0.35);
+      border-radius: 8px;
+    }
+    .track-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .track-rail {
+      position: relative;
+      height: 8px;
+      border-radius: 99px;
+      background: rgba(167, 154, 138, 0.28);
+    }
+    .track-rail .fill {
+      height: 100%;
+      width: 21.4%;
+      background: var(--accent);
+      border-radius: 99px;
+    }
+    .pin {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--bg-start);
+      border: 2px solid var(--text-muted);
+    }
+    .pin.on { background: var(--accent); border-color: var(--accent); }
+    .pin.you {
+      border-color: var(--text);
+      box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.2);
+      width: 16px;
+      height: 16px;
+    }
+    .pin-hints {
+      position: relative;
+      height: 36px;
+      margin-top: 6px;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .pin-hints span {
+      position: absolute;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+    .hero-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 14px;
+    }
+    .hero-row .big {
+      font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+      font-size: 42px;
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz">
+      <div class="track-card">
+        <div class="hero-row">
+          <div>
+            <div class="big">287</div>
+            <div style="font-size:14px;color:var(--text-muted);">дней до дембеля</div>
+          </div>
+          <div style="text-align:right;font-size:13px;color:var(--text-muted);">
+            <strong style="color:var(--text);font-size:15px;">21%</strong><br />службы
+          </div>
+        </div>
+        <div class="track-labels"><span>призыв</span><span>1/2</span><span>дембель</span></div>
+        <div class="track-rail">
+          <div class="fill"></div>
+          <span class="pin on" style="left:0%;" title="старт"></span>
+          <span class="pin you" style="left:21.4%;" title="сейчас"></span>
+          <span class="pin" style="left:50%;"></span>
+          <span class="pin" style="left:100%;"></span>
+        </div>
+        <div class="pin-hints">
+          <span style="left:0%;">старт</span>
+          <span style="left:21.4%;">сейчас</span>
+          <span style="left:50%;">половина</span>
+          <span style="left:100%;">дембель</span>
+        </div>
+      </div>
+
+      <div class="app-stat-unified-viz">
+        <div class="col"><div class="t-toggle">прошло</div><div class="val">78</div><div class="det">2 мес.</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-toggle">осталось</div><div class="val">287</div><div class="det">9 мес.</div></div>
+      </div>
+
+      <div class="app-upcoming">
+        <div class="glyph">🎖</div>
+        <div>
+          <div class="name">День защитника Отечества</div>
+          <div class="meta">23 фев · через 12 дней</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

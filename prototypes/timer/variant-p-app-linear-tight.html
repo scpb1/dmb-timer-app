@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>P · Линия + плашки плотнее</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <style>
+    .app-stack { --app-gap: 20px; justify-content: center; }
+    .bundle {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .app-linear-bar { height: 20px; }
+    .app-stat-row { gap: 10px; }
+    .app-stat-card {
+      padding: 10px 8px;
+      background: rgba(255, 255, 255, 0.35);
+      border-color: rgba(167, 154, 138, 0.25);
+    }
+    .app-stat-card .title { font-size: 14px; margin-bottom: 8px; }
+    .app-stat-card .val { font-size: 28px; line-height: 32px; }
+    .hero-inline {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 10px;
+    }
+    .hero-inline .num {
+      font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+      font-size: 44px;
+    }
+    .hero-inline .unit { font-size: 15px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack">
+      <div class="bundle">
+        <div class="app-toggle">
+          <span class="left">прошло</span>
+          <span></span>
+          <span class="right">осталось</span>
+        </div>
+        <div class="hero-inline">
+          <span class="num">287</span>
+          <span class="unit">дней до дембеля</span>
+        </div>
+        <div class="app-linear-bar" data-app-linear data-count="100" data-filled="21"></div>
+        <div class="app-stat-row">
+          <div class="app-stat-card">
+            <div class="title">ПРОШЛО</div>
+            <div class="val">78</div>
+          </div>
+          <div class="app-stat-card">
+            <div class="title">ОСТАЛОСЬ</div>
+            <div class="val">287</div>
+          </div>
+        </div>
+      </div>
+      <div class="app-upcoming">
+        <div class="glyph">🎖</div>
+        <div>
+          <div class="name">День защитника Отечества</div>
+          <div class="meta">23 февраля · через 12 дней</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="app-setup.js"></script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>R · Сетка дней</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <link rel="stylesheet" href="_viz.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz">
+      <div class="summary-card">
+        <p class="title-line" style="margin:0 0 8px;text-align:left;">
+          Прошла <strong style="color:var(--text)">1/5</strong> службы · дембель 12 мар 2027
+        </p>
+        <div class="row-top">
+          <div class="weeks">
+            <div class="n">41</div>
+            <div class="l">недель осталось</div>
+          </div>
+          <div class="meta">
+            <strong>21%</strong>
+            <span>до праздника 12 дн.</span>
+          </div>
+        </div>
+        <div class="bar"><span></span></div>
+      </div>
+
+      <div class="dot-section">
+        <p class="title-line">Каждая точка — день службы (365)</p>
+        <div class="dot-grid-wrap">
+          <div class="dot-side">
+            <div>мар</div><div style="margin-top:48px">июл</div><div style="margin-top:48px">ноя</div>
+          </div>
+          <div class="dot-grid" data-dot-grid data-passed="78" data-total="365" data-cols="20"></div>
+          <div class="dot-side right">
+            <div>апр</div><div style="margin-top:48px">авг</div><div style="margin-top:48px">дек</div>
+          </div>
+        </div>
+        <div class="dot-legend">
+          <span class="on">Прошло (78)</span>
+          <span class="off">Осталось (287)</span>
+        </div>
+      </div>
+
+      <div class="split-hero">
+        <div>
+          <div class="n">78</div>
+          <div class="l">дней прошло</div>
+          <div class="sub">2 месяца</div>
+        </div>
+        <div>
+          <div class="n">287</div>
+          <div class="l">дней осталось</div>
+          <div class="sub">9 месяцев</div>
+        </div>
+      </div>
+
+      <div class="app-upcoming">
+        <div class="glyph">🎖</div>
+        <div>
+          <div class="name">День защитника Отечества</div>
+          <div class="meta">23 фев · через 12 дней</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="viz-setup.js"></script>
+</body>
+</html>

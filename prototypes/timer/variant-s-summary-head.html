@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>S · Шапка-сводка</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <link rel="stylesheet" href="_timer-alt.css" />
+  <style>
+    .center-ddd { text-align: center; width: 100%; margin: 4px 0; }
+    .center-ddd .num {
+      font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+      font-size: 52px;
+      line-height: 1;
+    }
+    .center-ddd .unit { font-size: 16px; color: var(--text-muted); margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack tight">
+      <div class="app-banner">
+        <div class="row2" style="align-items:center">
+          <div>
+            <div class="weeks">41</div>
+            <div class="weeks-sub">недель осталось</div>
+          </div>
+          <div class="side">
+            <div class="frac">1/5 службы</div>
+            <div class="date">12 августа 2026</div>
+            <div class="mini-bar"><i></i></div>
+            <span class="app-badge">! до праздника 12 дн.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="center-ddd">
+        <div class="num">287</div>
+        <div class="unit">дней до дембеля</div>
+      </div>
+
+      <div class="app-linear-wrap" style="width:100%">
+        <div class="app-linear-bar" data-app-linear data-count="100" data-filled="21"></div>
+      </div>
+
+      <div class="app-stat-unified">
+        <div class="col">
+          <div class="t-micro">прошло</div>
+          <div class="val">78</div>
+          <div class="det">2 месяца</div>
+        </div>
+        <div class="div"></div>
+        <div class="col">
+          <div class="t-micro">осталось</div>
+          <div class="val">287</div>
+          <div class="det">9 месяцев</div>
+        </div>
+      </div>
+
+      <div class="app-upcoming">
+        <div class="glyph">🎖</div>
+        <div>
+          <div class="name">День защитника Отечества</div>
+          <div class="meta">23 февраля</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="app-setup.js"></script>
+</body>
+</html>

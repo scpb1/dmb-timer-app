@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Таймер — прототипы</title>
+  <style>
+    :root {
+      --text: #3e3630;
+      --muted: #a79a8a;
+      --card: rgba(255, 255, 255, 0.55);
+      --border: rgba(167, 154, 138, 0.35);
+      --pick: rgba(229, 57, 53, 0.12);
+      --pick-border: rgba(229, 57, 53, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: linear-gradient(165deg, #fcf7df 0%, #ede8d5 45%, #c7d3db 100%);
+      min-height: 100vh;
+      color: var(--text);
+      padding: 2rem 1.5rem 3rem;
+    }
+    h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.35rem; }
+    h2.section {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin: 2rem 0 0.75rem;
+      max-width: 1100px;
+    }
+    p.lead {
+      margin: 0 0 1rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+      max-width: 44rem;
+      line-height: 1.55;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.1rem;
+      max-width: 1100px;
+    }
+    a.card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.15rem 1.25rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    a.card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(62, 54, 48, 0.08);
+    }
+    a.card.pick {
+      background: var(--pick);
+      border-color: var(--pick-border);
+    }
+    a.card h2 { margin: 0 0 0.45rem; font-size: 1.02rem; }
+    a.card .tag {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    a.card .chips { margin-top: 0.55rem; display: flex; flex-wrap: wrap; gap: 5px; }
+    a.card .chip {
+      font-size: 0.62rem;
+      padding: 3px 7px;
+      border-radius: 99px;
+      background: rgba(62, 54, 48, 0.06);
+      color: var(--muted);
+    }
+    a.card p { margin: 0; font-size: 0.86rem; color: var(--muted); line-height: 1.45; }
+  </style>
+</head>
+<body>
+  <h1>Прототипы экрана таймера</h1>
+  <p class="lead">
+    HTML-макеты, приложение не меняется. Блок <strong>L–P</strong> — шрифты и цвета как в «Счётчик ДДД»:
+    Black Ops в центре, красные сегменты, плашки и праздник как на главной. F5 — обновить.
+  </p>
+
+  <div class="grid" style="max-width:1100px;margin-bottom:0.5rem;">
+    <a class="card" href="corners.html" style="border-style:dashed;">
+      <span class="tag">UI</span>
+      <h2>Углы и смягчение</h2>
+      <p>Прямой угол, скос 15°–60°, radius 0–24px (в т.ч. 2 и 4), на плашках.</p>
+    </a>
+    <a class="card" href="stat-labels.html" style="border-style:dashed;">
+      <span class="tag">UI</span>
+      <h2>Подписи прошло / осталось</h2>
+      <p>8 вариантов заголовков на объединённой плашке (Q).</p>
+    </a>
+    <a class="card" href="unit-label-click.html" style="border-style:dashed;">
+      <span class="tag">UI</span>
+      <h2>ддд / дпп — клик</h2>
+      <p>✦ как на скетче, подчёркивания, ⇄, pill — affordance без «ссылочного» цвета.</p>
+    </a>
+  </div>
+
+  <h2 class="section">Виды и рода войск (метафора прогресса)</h2>
+  <div class="grid" style="max-width:1100px;margin-bottom:0.5rem;">
+    <a class="card" href="branches/index.html" style="border-style:dashed;">
+      <span class="tag">branch</span>
+      <h2>Якорь, небо, связь…</h2>
+      <p>31 сцены: ВМФ, ВКС, связь, РВСН, Росгвардия и др. Ползунок % службы, кольцо как в приложении.</p>
+      <div class="chips"><span class="chip">docs/military-branches.md</span></div>
+    </a>
+  </div>
+
+  <h2 class="section">Как на референсе (наш стиль)</h2>
+  <div class="grid">
+    <a class="card" href="variant-r-dot-grid.html">
+      <span class="tag">R</span>
+      <h2>Сетка дней</h2>
+      <p>Шапка-сводка, 365 точек (красные/контур), две цифры, праздник.</p>
+      <div class="chips"><span class="chip">реф. точки</span></div>
+    </a>
+    <a class="card" href="variant-s-summary-timeline.html" style="opacity:0.85;">
+      <span class="tag">S · было</span>
+      <h2>Лента вех (извилина)</h2>
+      <p>Текущий референс в приложении: SVG-изгиб. См. альтернативы V–AA ниже.</p>
+      <div class="chips"><span class="chip">legacy</span></div>
+    </a>
+    <a class="card" href="variant-t-dot-compact.html">
+      <span class="tag">T</span>
+      <h2>Точки + число</h2>
+      <p>287 и сетка компактнее, одна плашка 2×1, праздник.</p>
+      <div class="chips"><span class="chip">гибрид</span></div>
+    </a>
+    <a class="card" href="variant-u-milestones-bar.html">
+      <span class="tag">U</span>
+      <h2>Вехи на полоске</h2>
+      <p>Линейный трек с пинами: старт, сейчас, половина, дембель.</p>
+      <div class="chips"><span class="chip">проще ленты</span></div>
+    </a>
+  </div>
+
+  <h2 class="section">Лента вех — альтернативы (V–AA)</h2>
+  <p class="lead" style="max-width:1100px;margin-top:-0.35rem;">
+    Те же вехи (призыв, 100 дней, сейчас, половина, дембель) и сводка с бейджем праздника — другая визуализация без «змеиной» линии S.
+  </p>
+  <div class="grid">
+    <a class="card pick" href="variant-v-milestones-spine.html">
+      <span class="tag">V</span>
+      <h2>Прямой шток</h2>
+      <p>Вертикальная линия без SVG-изгибов: заливка пройденного + штрих впереди.</p>
+      <div class="chips"><span class="chip">близко к S</span><span class="chip">проще в RN</span></div>
+    </a>
+    <a class="card pick" href="variant-x-milestones-checklist.html">
+      <span class="tag">X</span>
+      <h2>Чеклист</h2>
+      <p>Галочки и строки в одной карточке — без декоративной линии.</p>
+      <div class="chips"><span class="chip">компакт</span><span class="chip">читаемость</span></div>
+    </a>
+    <a class="card" href="variant-w-milestones-chips.html">
+      <span class="tag">W</span>
+      <h2>Плитки</h2>
+      <p>Горизонтальный скролл карточек вех + мини-коннектор сверху.</p>
+      <div class="chips"><span class="chip">свайп</span></div>
+    </a>
+    <a class="card" href="variant-z-milestones-scale.html">
+      <span class="tag">Z</span>
+      <h2>Шкала по времени</h2>
+      <p>Вехи на разной высоте пропорционально сроку, полоска «сейчас».</p>
+      <div class="chips"><span class="chip">честный %</span></div>
+    </a>
+    <a class="card" href="variant-aa-milestones-compact.html">
+      <span class="tag">AA</span>
+      <h2>Всё в одной карточке</h2>
+      <p>Сводка + трек + подписи + «следующая веха» — минимум высоты.</p>
+      <div class="chips"><span class="chip">плотно</span></div>
+    </a>
+    <a class="card" href="variant-y-milestones-zigzag.html">
+      <span class="tag">Y</span>
+      <h2>Зигзаг</h2>
+      <p>Текст чередуется слева/справа, ломаная линия по центру (не плавная S).</p>
+      <div class="chips"><span class="chip">эксперимент</span></div>
+    </a>
+  </div>
+
+  <h2 class="section">Как в приложении (без панели)</h2>
+  <div class="grid">
+    <a class="card" href="variant-l-app-ring.html">
+      <span class="tag">L</span>
+      <h2>Кольцо 1:1</h2>
+      <p>Текущий круговой таймер: toggle, %, 100 сегментов, ПРОШЛО/ОСТАЛОСЬ, праздник.</p>
+      <div class="chips"><span class="chip">app style</span></div>
+    </a>
+    <a class="card" href="variant-m-app-compact.html">
+      <span class="tag">M</span>
+      <h2>Кольцо компакт</h2>
+      <p>Тот же стиль, меньше кольцо и отступы — меньше «громоздко».</p>
+      <div class="chips"><span class="chip">app style</span></div>
+    </a>
+    <a class="card" href="variant-n-app-linear.html">
+      <span class="tag">N</span>
+      <h2>Линейный</h2>
+      <p>Режим linear из настроек: сегментная полоска, подпись, плашки, праздник.</p>
+      <div class="chips"><span class="chip">app style</span></div>
+    </a>
+    <a class="card" href="variant-o-app-frame.html">
+      <span class="tag">O</span>
+      <h2>Рамка</h2>
+      <p>Тип «frame»: число в рамке, плашки и карточка праздника отдельно.</p>
+      <div class="chips"><span class="chip">app style</span></div>
+    </a>
+    <a class="card" href="variant-p-app-linear-tight.html">
+      <span class="tag">P</span>
+      <h2>Линия плотная</h2>
+      <p>Число над полоской, плашки сразу под баром — один визуальный блок.</p>
+      <div class="chips"><span class="chip">app style</span></div>
+    </a>
+    <a class="card" href="variant-q-stat-unified.html">
+      <span class="tag">Q</span>
+      <h2>Плашка 2×1</h2>
+      <p>Прошло и осталось в одной карточке, два столбца и разделитель.</p>
+      <div class="chips"><span class="chip">app style</span></div>
+    </a>
+  </div>
+
+  <h2 class="section">Панель (выбран G + вариации)</h2>
+  <div class="grid">
+    <a class="card pick" href="variant-g-panel.html">
+      <span class="tag">G</span>
+      <h2>Панель</h2>
+      <p>Базовый единый блок.</p>
+    </a>
+    <a class="card" href="variant-h-panel-rail.html">
+      <span class="tag">H</span>
+      <h2>Панель-рельс</h2>
+      <p>G + гладкая полоска.</p>
+    </a>
+    <a class="card" href="variant-i-panel-ring.html">
+      <span class="tag">I</span>
+      <h2>Панель-кольцо</h2>
+      <p>G + тонкое кольцо.</p>
+    </a>
+    <a class="card" href="variant-j-panel-foot.html">
+      <span class="tag">J</span>
+      <h2>Панель-снизу</h2>
+      <p>Праздник внизу панели.</p>
+    </a>
+    <a class="card" href="variant-k-panel-sheet.html">
+      <span class="tag">K</span>
+      <h2>Панель-лист</h2>
+      <p>G + мини-кольцо и колонки.</p>
+    </a>
+  </div>
+
+  <h2 class="section">Ранние эскизы</h2>
+  <div class="grid">
+    <a class="card" href="variant-a-whisper.html">
+      <span class="tag">A</span>
+      <h2>Шёпот</h2>
+      <p>Тонкое кольцо, строка статистики.</p>
+    </a>
+    <a class="card" href="variant-b-rail.html">
+      <span class="tag">B</span>
+      <h2>Рельс</h2>
+      <p>Гладкая полоска, крупное число.</p>
+    </a>
+    <a class="card" href="variant-c-sheet.html">
+      <span class="tag">C</span>
+      <h2>Лист</h2>
+      <p>Одна карточка, мини-кольцо.</p>
+    </a>
+  </div>
+</body>
+</html>

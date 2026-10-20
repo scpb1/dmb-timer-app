@@ -1,0 +1,61 @@
+/* Общие блоки для прототипов «Лента вех» (V–Z) */
+.ms-summary {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.48);
+  border: 1px solid rgba(167, 154, 138, 0.35);
+  border-radius: 8px;
+  padding: 14px 14px 12px;
+}
+.ms-summary .row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ms-summary .weeks .n {
+  font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+  font-size: 36px;
+  line-height: 1;
+}
+.ms-summary .weeks .l {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.ms-summary .meta {
+  text-align: right;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.ms-summary .meta strong {
+  display: block;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+}
+.ms-summary .bar {
+  margin-top: 12px;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(167, 154, 138, 0.28);
+  overflow: hidden;
+}
+.ms-summary .bar > span {
+  display: block;
+  height: 100%;
+  width: 21.4%;
+  background: var(--accent);
+  border-radius: 99px;
+}
+.ms-summary .badge {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(232, 168, 152, 0.55);
+  border: 1px solid rgba(176, 96, 82, 0.38);
+  color: var(--text);
+}

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>T · Точки компакт</title>
+  <link rel="stylesheet" href="_shared.css" />
+  <link rel="stylesheet" href="_app.css" />
+  <link rel="stylesheet" href="_viz.css" />
+  <style>
+    .dot-grid { gap: 3px 2px; }
+    .dot-grid .dot { max-width: 10px; }
+    .center-num {
+      text-align: center;
+      margin: 4px 0 8px;
+    }
+    .center-num .n {
+      font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+      font-size: 44px;
+    }
+    .center-num .u { font-size: 15px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все прототипы</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz">
+      <div class="center-num">
+        <div class="n">287</div>
+        <div class="u"><span class="with-star" style="position:relative;display:inline-block;">ддд<span style="position:absolute;top:-0.5em;right:-0.6em;font-size:0.42em;">✦</span></span></div>
+      </div>
+      <div class="dot-grid" data-dot-grid data-passed="78" data-total="365" style="width:100%;"></div>
+      <div class="dot-legend">
+        <span class="on">78</span>
+        <span class="off">287</span>
+      </div>
+      <div class="app-stat-unified-viz">
+        <div class="col"><div class="t-toggle">прошло</div><div class="val">78</div></div>
+        <div class="div"></div>
+        <div class="col"><div class="t-toggle">осталось</div><div class="val">287</div></div>
+      </div>
+      <div class="app-upcoming">
+        <div class="glyph">🎖</div>
+        <div>
+          <div class="name">День защитника Отечества</div>
+          <div class="meta">через 12 дней</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="viz-setup.js"></script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+.branch-title {
+  max-width: var(--phone-w);
+  width: 100%;
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #3e3630;
+}
+.branch-sub {
+  max-width: var(--phone-w);
+  width: 100%;
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  color: #a79a8a;
+  line-height: 1.45;
+}
+
+.phone.branch-phone {
+  position: relative;
+  isolation: isolate;
+}
+.branch-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.branch-scene svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.phone.branch-phone .topbar,
+.phone.branch-phone .screen {
+  position: relative;
+  z-index: 1;
+}
+.phone.branch-phone .screen.app-stack {
+  justify-content: flex-start;
+  padding-top: 12px;
+  gap: 20px;
+}
+.phone.branch-phone .app-ring-center .num,
+.phone.branch-phone .app-ring-center .pct,
+.phone.branch-phone .app-ring-center .unit {
+  text-shadow: 0 0 12px rgba(252, 247, 223, 0.85), 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+.phone.branch-phone .app-stat-row {
+  opacity: 0.92;
+}
+
+.proto-controls {
+  max-width: var(--phone-w);
+  width: 100%;
+  margin-top: 1rem;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(167, 154, 138, 0.35);
+  border-radius: 14px;
+}
+.proto-controls label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a79a8a;
+  margin-bottom: 8px;
+}
+.proto-controls label strong {
+  color: #3e3630;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 0.85rem;
+}
+.proto-controls input[type="range"] {
+  width: 100%;
+  accent-color: #e53935;
+}
+.proto-controls .hint {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #a79a8a;
+  line-height: 1.4;
+}
+
+.branch-index body {
+  background: linear-gradient(165deg, #fcf7df 0%, #ede8d5 45%, #c7d3db 100%);
+  min-height: 100vh;
+  padding: 2rem 1.5rem 3rem;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: #3e3630;
+}
+.branch-index h1 { font-size: 1.35rem; margin: 0 0 0.35rem; }
+.branch-index .lead {
+  max-width: 44rem;
+  color: #a79a8a;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin-bottom: 1.25rem;
+}
+.branch-index h2 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #a79a8a;
+  margin: 2rem 0 0.75rem;
+  max-width: 1100px;
+}
+.branch-index .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  max-width: 1100px;
+}
+.branch-index a.card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(167, 154, 138, 0.35);
+  border-radius: 16px;
+  padding: 1rem 1.15rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.branch-index a.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(62, 54, 48, 0.08);
+}
+.branch-index a.card .tag {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #a79a8a;
+}
+.branch-index a.card h3 {
+  margin: 0.35rem 0 0.4rem;
+  font-size: 1rem;
+}
+.branch-index a.card p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #a79a8a;
+  line-height: 1.45;
+}
+.branch-index .back-main {
+  display: inline-block;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: #5a524a;
+}
