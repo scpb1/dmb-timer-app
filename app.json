@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Счётчик ДДД",
-    "slug": "schetchik-ddd",
+    "slug": "zhdi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,7 +20,7 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png",
-        "backgroundColor": "#4F5139"
+        "backgroundColor": "#FCF7DF"
       },
       "package": "com.zhdi.app",
       "permissions": [

@@ -1,0 +1,8 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Android adaptive foreground · safe zone ~66% -->
+<g transform="translate(512 512) scale(0.68) translate(-512 -512)">
+    <text x="512" y="580" text-anchor="middle" font-size="300" font-weight="800" fill="#3E3630"
+        font-family="Segoe UI, system-ui, -apple-system, BlinkMacSystemFont, sans-serif" letter-spacing="-0.04em">ддд</text>
+    <rect x="328" y="650" width="368" height="18" rx="9" fill="#e53935"/>
+  </g>
+</svg>
