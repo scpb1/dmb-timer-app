@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Призыв / Дембель — тон карточек</title>
+  <style>
+    :root {
+      --text: #3e3630;
+      --muted: #a79a8a;
+      --enlist-bg: rgba(107, 58, 58, 0.09);
+      --enlist-border: rgba(139, 58, 58, 0.35);
+      --enlist-tag: #8b3a3a;
+      --demob-bg: rgba(76, 140, 74, 0.1);
+      --demob-border: rgba(76, 140, 74, 0.45);
+      --demob-tag: #3d7a44;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: linear-gradient(165deg, #fcf7df 0%, #ede8d5 45%, #c7d3db 100%);
+      min-height: 100vh;
+      color: var(--text);
+      padding: 2rem 1.25rem 3rem;
+    }
+    h1 { font-size: 1.25rem; margin: 0 0 0.35rem; }
+    p.lead { color: var(--muted); font-size: 0.92rem; line-height: 1.55; max-width: 36rem; }
+    .grid {
+      display: grid;
+      gap: 1rem;
+      max-width: 420px;
+      margin-top: 1.25rem;
+    }
+    .card {
+      border-radius: 8px;
+      border: 1px solid;
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .card.enlist {
+      background: var(--enlist-bg);
+      border-color: var(--enlist-border);
+    }
+    .card.demob {
+      background: var(--demob-bg);
+      border-color: var(--demob-border);
+      border-width: 1.5px;
+      box-shadow: 0 0 0 1px rgba(76, 140, 74, 0.08);
+    }
+    .glyph {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      font-size: 1.1rem;
+      background: rgba(255, 255, 255, 0.45);
+    }
+    .name { font-weight: 600; font-size: 1rem; }
+    .tag {
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .tag.enlist { color: var(--enlist-tag); }
+    .tag.demob { color: var(--demob-tag); }
+    .date { font-size: 0.86rem; color: var(--muted); margin-top: 4px; }
+    .sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .spine {
+      margin-top: 2rem;
+      max-width: 420px;
+      padding-left: 28px;
+      position: relative;
+    }
+    .spine::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 12px;
+      bottom: 12px;
+      width: 3px;
+      border-radius: 99px;
+      background: rgba(167, 154, 138, 0.28);
+    }
+    .row {
+      position: relative;
+      padding: 9px 0 9px 14px;
+      border-radius: 8px;
+      margin-bottom: 2px;
+    }
+    .row.enlist { background: var(--enlist-bg); }
+    .row.demob { background: var(--demob-bg); }
+    .dot {
+      position: absolute;
+      left: -2px;
+      top: 14px;
+      width: 12px;
+      height: 12px;
+      border-radius: 99px;
+      border: 2px solid;
+    }
+    .row.enlist .dot { border-color: var(--enlist-tag); background: rgba(139, 58, 58, 0.25); }
+    .row.demob .dot {
+      border-color: #4c8c4a;
+      background: rgba(76, 140, 74, 0.35);
+      box-shadow: 0 0 8px rgba(76, 140, 74, 0.35);
+    }
+    .row.mid .dot { border-color: var(--muted); background: transparent; opacity: 0.5; }
+    .legend {
+      margin-top: 1.5rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      max-width: 36rem;
+      line-height: 1.5;
+    }
+    a.back { color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Прототипы событий</a>
+  <h1>Призыв vs Дембель</h1>
+  <p class="lead">
+    Идея: <strong>призыв</strong> — холодный, «тяжёлый» старт (бordo, приглушённый фон).
+    <strong>Дембель</strong> — тёплый зелёный, лёгкое свечение, «долгожданный финиш».
+    Так же в ленте вех на таймере.
+  </p>
+
+  <div class="grid">
+    <div class="card enlist">
+      <div class="glyph">🚩</div>
+      <div>
+        <div class="name">Призыв</div>
+        <div class="tag enlist">Старт службы · тяжёлый</div>
+        <div class="date">15 марта 2025</div>
+        <div class="sub">78 дней назад</div>
+      </div>
+    </div>
+    <div class="card demob">
+      <div class="glyph">🏠</div>
+      <div>
+        <div class="name">Дембель</div>
+        <div class="tag demob">Долгожданный финиш</div>
+        <div class="date">12 марта 2027</div>
+        <div class="sub">Финишная прямая</div>
+      </div>
+    </div>
+  </div>
+
+  <h2 style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin:2rem 0 0.75rem;">
+    Лента (шток)
+  </h2>
+  <div class="spine">
+    <div class="row enlist">
+      <span class="dot"></span>
+      <div class="name">Призыв</div>
+      <div class="tag enlist">Тяжёлый старт</div>
+      <div class="sub">78 дней назад</div>
+    </div>
+    <div class="row mid">
+      <span class="dot"></span>
+      <div class="name">100 дней</div>
+      <div class="sub">через 22 дня</div>
+    </div>
+    <div class="row demob">
+      <span class="dot"></span>
+      <div class="name">Дембель</div>
+      <div class="tag demob">Долгожданный финиш</div>
+      <div class="sub">через 287 дней</div>
+    </div>
+  </div>
+
+  <p class="legend">
+    В списке «События → Все» дембель всегда последний (даже если есть пользовательские даты позже по календарю).
+    Призыв — всегда первый.
+  </p>
+</body>
+</html>
