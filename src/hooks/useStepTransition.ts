@@ -13,12 +13,19 @@ interface UseStepTransitionResult {
   setContentVisible: (visible: boolean) => void;
 }
 
-/** Управляет плавными переходами: fade-out 0.4s → пауза 0.3s → fade-in */
+/** Управляет плавными переходами: fade-out → fade-in (без паузы на пустом экране) */
 export function useStepTransition(initialStep: OnboardingStep): UseStepTransitionResult {
   const [displayStep, setDisplayStep] = useState(initialStep);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const contentOpacity = useSharedValue(1);
+  const contentOpacity = useSharedValue(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    contentOpacity.value = withTiming(1, {
+      duration: typography.animation.onboardingFadeInMs,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [contentOpacity]);
 
   const clearTimers = useCallback(() => {
     if (timerRef.current) {
@@ -33,7 +40,7 @@ export function useStepTransition(initialStep: OnboardingStep): UseStepTransitio
     (visible: boolean) => {
       contentOpacity.value = withTiming(visible ? 1 : 0, {
         duration: visible
-          ? typography.animation.textAppearMs
+          ? typography.animation.onboardingFadeInMs
           : typography.animation.stepFadeOutMs,
         easing: visible ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
       });
@@ -56,7 +63,7 @@ export function useStepTransition(initialStep: OnboardingStep): UseStepTransitio
 
         timerRef.current = setTimeout(() => {
           contentOpacity.value = withTiming(1, {
-            duration: typography.animation.textAppearMs,
+            duration: typography.animation.onboardingFadeInMs,
             easing: Easing.out(Easing.cubic),
           });
           setIsTransitioning(false);

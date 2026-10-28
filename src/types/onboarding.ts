@@ -6,7 +6,8 @@ export type OnboardingStep =
   | 'value_text'
   | 'name_input'
   | 'partner_name_input'
-  | 'dates_input';
+  | 'dates_input'
+  | 'notifications_prompt';
 
 export type ThemeMode = 'dark' | 'light';
 

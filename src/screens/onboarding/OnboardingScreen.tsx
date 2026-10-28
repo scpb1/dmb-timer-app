@@ -1,5 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
+  ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,15 +12,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import type { StackScreenProps } from '@react-navigation/stack';
 
-import { AnimatedButton } from '@/components/common/AnimatedButton';
-import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { AnimatedText } from '@/components/common/AnimatedText';
+import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { DatePicker } from '@/components/common/DatePicker';
 import { InputField } from '@/components/common/InputField';
 import { PulsingHint } from '@/components/common/PulsingHint';
 import { ServiceDurationPresets } from '@/components/common/ServiceDurationPresets';
 import { ShakeView } from '@/components/common/ShakeView';
+import { TELEGRAM_CHANNEL_TITLE, TELEGRAM_CHANNEL_URL } from '@/constants';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { useOnboardingAudio } from '@/hooks/useOnboardingAudio';
 import { useStepTransition } from '@/hooks/useStepTransition';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
@@ -36,13 +39,21 @@ const TAP_STEPS = new Set([
   'value_text',
 ]);
 
-const CONTINUE_HINT = 'нажмите, чтобы продолжить';
+const CONTINUE_HINT = 'нажми, чтобы продолжить';
+
+const BODY_TEXT_COLOR = (themeMode: 'dark' | 'light') => colors[themeMode].text.primary;
 
 export function OnboardingScreen({ onComplete }: Props) {
   const { displayStep, contentOpacity, isTransitioning, transitionTo, transitionContent } =
     useStepTransition('welcome');
 
-  const onboarding = useOnboarding({ onComplete, transitionTo });
+  const stopAmbientRef = useRef<() => Promise<void>>(() => Promise.resolve());
+
+  const onboarding = useOnboarding({
+    onComplete,
+    transitionTo,
+    stopOnboardingAmbient: () => stopAmbientRef.current(),
+  });
   const {
     step,
     themeMode,
@@ -73,9 +84,22 @@ export function OnboardingScreen({ onComplete }: Props) {
     submitDates,
     applyServiceDuration,
     clearShakeError,
+    beginLightTheme,
+    confirmNotificationsChoice,
   } = onboarding;
 
+  const { stopOnboardingAmbient } = useOnboardingAudio(step);
+
+  useEffect(() => {
+    stopAmbientRef.current = stopOnboardingAmbient;
+  }, [stopOnboardingAmbient]);
+
   const theme = colors[themeMode];
+  const bodyColor = BODY_TEXT_COLOR(themeMode);
+  const hintTextStyle = {
+    color:
+      themeMode === 'dark' ? 'rgba(255, 255, 255, 0.55)' : colors.light.text.secondary,
+  };
   const activeStep = isTransitioning ? displayStep : step;
 
   useEffect(() => {
@@ -90,20 +114,26 @@ export function OnboardingScreen({ onComplete }: Props) {
   }));
 
   const isTapStep = TAP_STEPS.has(activeStep);
-  const showSkip = activeStep === 'welcome';
+  const showSkip = TAP_STEPS.has(activeStep);
 
   const handlePress = () => {
     if (isTransitioning) {
       return;
     }
 
-    if (activeStep === 'reasons' && reasonLineIndex < reasons.length) {
+    if (activeStep === 'reasons' && reasonLineIndex < reasons.length - 1) {
       transitionContent(() => setReasonLineIndex(reasonLineIndex + 1));
       return;
     }
 
     if (activeStep === 'help_text' && helpLineIndex < helpLines.length - 1) {
-      transitionContent(() => setHelpLineIndex(helpLineIndex + 1));
+      transitionContent(() => {
+        const nextIndex = helpLineIndex + 1;
+        setHelpLineIndex(nextIndex);
+        if (nextIndex === 2) {
+          beginLightTheme();
+        }
+      });
       return;
     }
 
@@ -117,75 +147,73 @@ export function OnboardingScreen({ onComplete }: Props) {
     }
   };
 
-  const renderSingleLine = (
-    text: string,
-    options?: {
-      style?: typeof styles.mainText;
-      highlightWord?: string;
-      textColor?: string;
-    },
-  ) => (
+  const renderSingleLine = (text: string, options?: { highlightWord?: string }) => (
     <AnimatedText
       key={text}
-      style={[
-        options?.style ?? styles.paragraphText,
-        { color: options?.textColor ?? theme.text.primary },
-      ]}
+      style={[styles.bodyText, { color: bodyColor }]}
       highlightWord={options?.highlightWord}
       highlightStyle={{ color: theme.text.accent }}
-      highlightDelay={typography.animation.highlightDelayMs}
-      initialColor={options?.textColor ?? theme.text.primary}
+      highlightDelay={
+        typography.animation.highlightDelayMs + typography.animation.onboardingFadeInMs
+      }
+      initialColor={bodyColor}
+      skipEntranceAnimation
     >
       {text}
     </AnimatedText>
   );
 
-  const renderReasons = () => {
-    if (reasonLineIndex === 0) {
-      return renderSingleLine('Ты здесь, потому что…', {
-        style: styles.subText,
-      });
-    }
-
-    const reason = reasons[reasonLineIndex - 1];
-    const isLast = reasonLineIndex === reasons.length;
-
-    return renderSingleLine(reason, {
-      style: styles.reasonText,
-      highlightWord: isLast ? 'любишь' : undefined,
-      textColor: isLast ? theme.text.primary : theme.text.secondary,
+  const renderReasons = () =>
+    renderSingleLine(reasons[reasonLineIndex], {
+      highlightWord: reasonLineIndex === reasons.length - 1 ? 'любишь' : undefined,
     });
-  };
 
   const renderStepContent = () => {
     switch (activeStep) {
       case 'welcome':
-        return (
-          <AnimatedText style={[styles.mainText, { color: theme.text.primary }]}>
-            Привет, дорогая
-          </AnimatedText>
-        );
+        return renderSingleLine('Привет, милая!');
 
       case 'service_question':
-        return (
-          <AnimatedText style={[styles.mainText, { color: theme.text.primary }]}>
-            Твой любимый сейчас проходит службу?
-          </AnimatedText>
+        return renderSingleLine(
+          'Ты здесь, потому что вам пришлось столкнуться с армией',
+          { highlightWord: 'армией' },
         );
 
       case 'reasons':
         return renderReasons();
 
-      case 'help_text':
-        return renderSingleLine(helpLines[helpLineIndex], {
-          highlightWord:
-            helpLineIndex === helpLines.length - 1 ? 'мимолётное свидание' : undefined,
-        });
+      case 'help_text': {
+        const line = helpLines[helpLineIndex];
+        if (helpLineIndex === 2) {
+          return renderSingleLine(line, { highlightWord: 'любовь навсегда' });
+        }
+        if (helpLineIndex === helpLines.length - 1) {
+          return renderSingleLine(line, { highlightWord: 'мимолётное свидание' });
+        }
+        return renderSingleLine(line);
+      }
 
       case 'value_text':
-        return renderSingleLine(valueLines[valueLineIndex], {
-          highlightWord: valueLineIndex === valueLines.length - 1 ? 'любовь' : undefined,
-        });
+        if (valueLineIndex === 0) {
+          return (
+            <Text style={[styles.bodyText, { color: bodyColor }]}>
+              Я ещё молодое приложение, но я развиваюсь! Следи за мной в тгк{' '}
+              <Text
+                style={[
+                  styles.bodyText,
+                  styles.channelLink,
+                  { color: bodyColor },
+                ]}
+                onPress={() => void Linking.openURL(TELEGRAM_CHANNEL_URL)}
+                accessibilityRole="link"
+                accessibilityLabel={`Telegram-канал ${TELEGRAM_CHANNEL_TITLE}`}
+              >
+                {TELEGRAM_CHANNEL_TITLE}
+              </Text>
+            </Text>
+          );
+        }
+        return renderSingleLine(valueLines[valueLineIndex]);
 
       case 'name_input':
         return (
@@ -194,7 +222,6 @@ export function OnboardingScreen({ onComplete }: Props) {
               label="Как зовут тебя?"
               value={userName}
               onChangeText={setUserName}
-              placeholder="Твоё имя"
               error={error}
               autoFocus
               onSubmitEditing={submitName}
@@ -207,10 +234,9 @@ export function OnboardingScreen({ onComplete }: Props) {
         return (
           <ShakeView trigger={shakeError} style={styles.shakeWrapper}>
             <InputField
-              label={`Здравствуй, ${userName.trim()}. Расскажи мне, как зовут твоего любимого?`}
+              label="Как зовут твоего любимого?"
               value={partnerName}
               onChangeText={setPartnerName}
-              placeholder="Его имя"
               error={error}
               autoFocus
               onSubmitEditing={submitPartnerName}
@@ -221,48 +247,114 @@ export function OnboardingScreen({ onComplete }: Props) {
 
       case 'dates_input':
         return (
-          <ShakeView trigger={shakeError} style={styles.shakeWrapper}>
+          <ShakeView trigger={shakeError} style={[styles.shakeWrapper, styles.datesShakeWrapper]}>
             <ScrollView
-              contentContainerStyle={styles.datesContent}
+              contentContainerStyle={styles.datesScrollContent}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <AnimatedText style={[styles.mainText, { color: theme.text.primary }]}>
-                Давай продолжим. Дорогая, назовёшь мне дату призыва и дату дембеля?
-              </AnimatedText>
+              <View style={styles.datesBlock}>
+                <AnimatedText
+                  style={[styles.bodyText, styles.datesPrompt, { color: bodyColor }]}
+                  initialColor={bodyColor}
+                  skipEntranceAnimation
+                >
+                  {'Милая, укажи даты\nпризыва и дембеля:'}
+                </AnimatedText>
 
-              <DatePicker
-                label="Дата призыва"
-                value={enlistmentDate}
-                onChange={setEnlistmentDate}
-                themeMode={themeMode}
-              />
+                <DatePicker
+                  label="Дата призыва"
+                  value={enlistmentDate}
+                  onChange={setEnlistmentDate}
+                  themeMode={themeMode}
+                />
 
-              <DatePicker
-                label="Дата дембеля"
-                value={demobilizationDate}
-                onChange={setDemobilizationDate}
-                minimumDate={enlistmentDate ?? undefined}
-                themeMode={themeMode}
-              />
+                <DatePicker
+                  label="Дата дембеля"
+                  value={demobilizationDate}
+                  onChange={setDemobilizationDate}
+                  minimumDate={enlistmentDate ?? undefined}
+                  themeMode={themeMode}
+                />
 
-              <ServiceDurationPresets
-                themeMode={themeMode}
-                onSelect={applyServiceDuration}
-              />
+                <ServiceDurationPresets
+                  themeMode={themeMode}
+                  onSelect={applyServiceDuration}
+                />
 
-              {error ? (
-                <Text style={[styles.errorText, { color: theme.text.accent }]}>{error}</Text>
-              ) : null}
+                {error ? (
+                  <Text style={[styles.errorText, { color: theme.text.accent }]}>{error}</Text>
+                ) : null}
 
-              <AnimatedButton
-                label="Начать отсчёт"
-                onPress={submitDates}
-                loading={isSubmitting}
-                disabled={isSubmitting}
-              />
+                <Pressable
+                  style={[
+                    styles.saveButton,
+                    { backgroundColor: theme.text.primary },
+                    isSubmitting && styles.saveButtonDisabled,
+                  ]}
+                  onPress={submitDates}
+                  disabled={isSubmitting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Начать отсчёт"
+                  accessibilityState={{ disabled: isSubmitting, busy: isSubmitting }}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color={theme.text.inverse} />
+                  ) : (
+                    <Text style={[styles.saveButtonText, { color: theme.text.inverse }]}>
+                      Начать отсчёт
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
             </ScrollView>
           </ShakeView>
+        );
+
+      case 'notifications_prompt':
+        return (
+          <View style={styles.shakeWrapper}>
+            <AnimatedText
+              style={[styles.bodyText, { color: bodyColor }]}
+              initialColor={bodyColor}
+              skipEntranceAnimation
+            >
+              Хочешь получать уведомления о праздниках и событиях?
+            </AnimatedText>
+
+            {error ? (
+              <Text style={[styles.errorText, { color: theme.text.accent }]}>{error}</Text>
+            ) : null}
+
+            <View style={styles.notificationsActions}>
+              <Pressable
+                style={[
+                  styles.saveButton,
+                  styles.notificationsButton,
+                  { backgroundColor: theme.text.primary },
+                ]}
+                onPress={() => confirmNotificationsChoice(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Да, включить уведомления"
+              >
+                <Text style={[styles.saveButtonText, { color: theme.text.inverse }]}>Да</Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.notificationsSecondaryButton,
+                  { borderColor: theme.text.primary },
+                ]}
+                onPress={() => confirmNotificationsChoice(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Нет, без уведомлений"
+              >
+                <Text style={[styles.notificationsSecondaryText, { color: theme.text.primary }]}>
+                  Нет
+                </Text>
+              </Pressable>
+            </View>
+          </View>
         );
 
       default:
@@ -271,18 +363,11 @@ export function OnboardingScreen({ onComplete }: Props) {
   };
 
   const renderBottomHint = () => {
-    const hint = (
-      <PulsingHint
-        style={{
-          color:
-            themeMode === 'dark'
-              ? 'rgba(255, 255, 255, 0.55)'
-              : colors.light.text.secondary,
-        }}
-      >
-        {CONTINUE_HINT}
-      </PulsingHint>
-    );
+    if (activeStep === 'dates_input' || activeStep === 'notifications_prompt') {
+      return null;
+    }
+
+    const hint = <PulsingHint style={hintTextStyle}>{CONTINUE_HINT}</PulsingHint>;
 
     if (activeStep === 'name_input') {
       return <Pressable onPress={submitName}>{hint}</Pressable>;
@@ -302,7 +387,7 @@ export function OnboardingScreen({ onComplete }: Props) {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {showSkip ? (
           <Pressable style={styles.skipButton} onPress={handleSkip} hitSlop={12}>
-            <Text style={styles.skipText}>Пропустить</Text>
+            <PulsingHint style={[hintTextStyle, styles.skipHint]}>Пропустить</PulsingHint>
           </Pressable>
         ) : null}
       </SafeAreaView>
@@ -349,10 +434,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     paddingVertical: 8,
   },
-  skipText: {
-    fontFamily: typography.fontFamily.primary,
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.5)',
+  skipHint: {
+    textAlign: 'right',
   },
   centerContent: {
     ...StyleSheet.absoluteFillObject,
@@ -371,36 +454,67 @@ const styles = StyleSheet.create({
   shakeWrapper: {
     width: '100%',
   },
-  textBlock: {
-    width: '100%',
-    gap: 12,
+  datesShakeWrapper: {
+    flex: 1,
+    alignSelf: 'stretch',
   },
-  mainText: {
-    fontSize: 28,
-    lineHeight: 38,
-  },
-  subText: {
-    fontSize: 22,
-    lineHeight: 32,
-  },
-  reasonText: {
-    fontSize: 20,
-    lineHeight: 30,
-  },
-  paragraphText: {
-    fontSize: 22,
-    lineHeight: 34,
-  },
-  datesContent: {
+  datesScrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingVertical: 24,
+  },
+  datesBlock: {
+    width: '100%',
     gap: 8,
+  },
+  datesPrompt: {
+    marginBottom: 16,
+  },
+  bodyText: {
+    width: '100%',
+    fontFamily: typography.fontFamily.primary,
+    fontSize: 22,
+    lineHeight: 34,
+    textAlign: 'center',
+  },
+  channelLink: {
+    fontFamily: typography.fontFamily.sansBold,
+  },
+  saveButton: {
+    alignItems: 'center',
+    marginTop: 12,
+    borderRadius: 4,
+    paddingVertical: 13,
+  },
+  saveButtonDisabled: {
+    opacity: 0.55,
+  },
+  saveButtonText: {
+    fontFamily: typography.fontFamily.sansBold,
+    fontSize: 15,
   },
   errorText: {
     textAlign: 'center',
     marginTop: 8,
     fontSize: 14,
     fontFamily: typography.fontFamily.primary,
+  },
+  notificationsActions: {
+    width: '100%',
+    marginTop: 28,
+    gap: 12,
+  },
+  notificationsButton: {
+    marginTop: 0,
+  },
+  notificationsSecondaryButton: {
+    alignItems: 'center',
+    borderRadius: 4,
+    borderWidth: 1,
+    paddingVertical: 13,
+  },
+  notificationsSecondaryText: {
+    fontFamily: typography.fontFamily.sansBold,
+    fontSize: 15,
   },
 });

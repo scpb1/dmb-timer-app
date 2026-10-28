@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { OnboardingAtmosphere } from '@/components/common/OnboardingAtmosphere';
 import { colors } from '@/theme/colors';
 import { useColorTheme } from '@/theme';
 import { typography } from '@/theme/typography';
@@ -31,38 +32,48 @@ interface ThemeGradientProps extends GradientSize {
   sheenEndY: string;
 }
 
+function hasVisibleSheen(tokens: ColorTokens): boolean {
+  const { sheen } = tokens.background;
+  return sheen.startOpacity > 0 || sheen.midOpacity > 0 || sheen.endOpacity > 0;
+}
+
 function ThemeGradient({ tokens, width, height, gradientId, sheenEndY }: ThemeGradientProps) {
   const baseId = `${gradientId}Base`;
   const sheenId = `${gradientId}Sheen`;
+  const showSheen = hasVisibleSheen(tokens);
 
   return (
     <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
       <Defs>
-        <LinearGradient id={baseId} x1="0%" y1="0%" x2="100%" y2="100%">
+        <LinearGradient id={baseId} x1="0%" y1="0%" x2="0%" y2="100%">
           <Stop offset="0%" stopColor={tokens.background.start} />
-          <Stop offset="45%" stopColor={tokens.background.mid} />
+          <Stop offset="50%" stopColor={tokens.background.mid} />
           <Stop offset="100%" stopColor={tokens.background.end} />
         </LinearGradient>
-        <LinearGradient id={sheenId} x1="100%" y1="0%" x2="0%" y2={sheenEndY}>
-          <Stop
-            offset="0%"
-            stopColor={tokens.background.sheen.start}
-            stopOpacity={tokens.background.sheen.startOpacity}
-          />
-          <Stop
-            offset="50%"
-            stopColor={tokens.background.sheen.mid}
-            stopOpacity={tokens.background.sheen.midOpacity}
-          />
-          <Stop
-            offset="100%"
-            stopColor={tokens.background.sheen.end}
-            stopOpacity={tokens.background.sheen.endOpacity}
-          />
-        </LinearGradient>
+        {showSheen ? (
+          <LinearGradient id={sheenId} x1="100%" y1="0%" x2="0%" y2={sheenEndY}>
+            <Stop
+              offset="0%"
+              stopColor={tokens.background.sheen.start}
+              stopOpacity={tokens.background.sheen.startOpacity}
+            />
+            <Stop
+              offset="50%"
+              stopColor={tokens.background.sheen.mid}
+              stopOpacity={tokens.background.sheen.midOpacity}
+            />
+            <Stop
+              offset="100%"
+              stopColor={tokens.background.sheen.end}
+              stopOpacity={tokens.background.sheen.endOpacity}
+            />
+          </LinearGradient>
+        ) : null}
       </Defs>
       <Rect x={0} y={0} width={width} height={height} fill={`url(#${baseId})`} />
-      <Rect x={0} y={0} width={width} height={height} fill={`url(#${sheenId})`} />
+      {showSheen ? (
+        <Rect x={0} y={0} width={width} height={height} fill={`url(#${sheenId})`} />
+      ) : null}
     </Svg>
   );
 }
@@ -134,13 +145,16 @@ function OnboardingBackground({ themeMode }: { themeMode: ThemeMode }) {
         style={[styles.layer, { backgroundColor: colors.dark.background.start }, darkLayerStyle]}
       >
         {size.width > 0 ? (
-          <ThemeGradient
-            tokens={colors.dark}
-            gradientId="onboarding-dark"
-            sheenEndY="100%"
-            width={size.width}
-            height={size.height}
-          />
+          <>
+            <ThemeGradient
+              tokens={colors.dark}
+              gradientId="onboarding-dark"
+              sheenEndY="100%"
+              width={size.width}
+              height={size.height}
+            />
+            <OnboardingAtmosphere width={size.width} height={size.height} />
+          </>
         ) : null}
       </Animated.View>
       <Animated.View

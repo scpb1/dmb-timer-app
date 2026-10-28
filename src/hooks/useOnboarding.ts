@@ -6,28 +6,32 @@ import { CONFIG_KEYS } from '@/types/config';
 import type { OnboardingFormData, OnboardingStep, ThemeMode } from '@/types/onboarding';
 import { getConfig, setConfig } from '@/services/database';
 import { logger } from '@/utils/logger';
-import { rescheduleHolidayNotifications } from '@/services/holidayNotifications';
+import { applyAppNotificationsPreference } from '@/services/holidayNotifications';
 
 const REASONS = [
-  '…ждёшь его каждый день.',
-  '…считаешь минуты до встречи.',
-  '…хочешь сохранить чувства.',
-  '…веришь, что это скоро закончится.',
-  '…просто любишь.',
+  'Рано или поздно это бы случилось, понимаешь?',
+  'Я знаю, как это тяжело',
+  'Как тяжело не видеть и не слышать его каждый день',
+  'Как тяжело проживать моменты своей жизни без него',
+  'Как тяжело сохранить яркие чувства на расстоянии',
+  'Но ты всё равно решилась его ждать, потому что любишь',
 ] as const;
 
 const HELP_LINES = [
-  'Моя хорошая... Я помогу тебе.',
-  'Здесь мы ведём счёт дням,',
-  'сохраняем каждый момент службы,',
-  'поддерживаем огонёк любви даже на расстоянии,',
-  'превращая ожидание в мимолётное свидание.',
+  'Сейчас я скажу одну фразу',
+  'Держи её в голове',
+  'Армия закончится, а ваша любовь навсегда',
+  'Берегите друг друга',
+  'А я буду верным помощником\nна период армии',
+  'Подскажу сколько дней\nпрошло и осталось',
+  'Напомню о праздниках',
+  'Сохраню воспоминания о службе',
+  'Превращу ожидание в мимолётное свидание',
 ] as const;
 
 const VALUE_LINES = [
-  'Я покажу тебе, насколько ценен каждый миг,',
-  'насколько быстротечно время,',
-  'насколько сильна ваша любовь',
+  'Я ещё молодое приложение, но я развиваюсь! Следи за мной в тгк Девичья служба',
+  'А теперь познакомимся поближе',
 ] as const;
 
 interface UseOnboardingResult {
@@ -60,17 +64,21 @@ interface UseOnboardingResult {
   submitDates: () => Promise<boolean>;
   applyServiceDuration: (days: number) => void;
   clearShakeError: () => void;
+  beginLightTheme: () => void;
+  confirmNotificationsChoice: (enabled: boolean) => void;
 }
 
 interface UseOnboardingOptions {
   onComplete: () => void;
   transitionTo: (nextStep: OnboardingStep, onMidTransition?: () => void) => void;
+  stopOnboardingAmbient: () => Promise<void>;
 }
 
 /** Управляет шагами онбординга UC-01 и сохранением профиля в SQLite */
 export function useOnboarding({
   onComplete,
   transitionTo,
+  stopOnboardingAmbient,
 }: UseOnboardingOptions): UseOnboardingResult {
   const [step, setStep] = useState<OnboardingStep>('welcome');
   const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
@@ -84,10 +92,11 @@ export function useOnboarding({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shakeError, setShakeError] = useState(false);
+  const [notificationsOptIn, setNotificationsOptIn] = useState(false);
 
   const validateDates = useCallback((): string | null => {
     if (!enlistmentDate || !demobilizationDate) {
-      return 'Укажите обе даты';
+      return 'Укажи обе даты';
     }
 
     const enlistment = startOfDay(enlistmentDate);
@@ -163,7 +172,6 @@ export function useOnboarding({
       case 'help_text':
         transitionTo('value_text', () => {
           setStep('value_text');
-          setThemeMode('light');
           resetHelpLines();
           resetValueLines();
         });
@@ -182,7 +190,7 @@ export function useOnboarding({
   const handleSkip = useCallback(() => {
     Alert.alert(
       'Пропустить знакомство?',
-      'Ты сможешь вернуться к этим шагам позже, но сейчас мы сразу перейдём к вводу твоего имени.',
+      'Ты сможешь вернуться к этим шагам позже, но сейчас мы сразу перейдём к вводу твоего имени',
       [
         { text: 'Отмена', style: 'cancel' },
         {
@@ -206,7 +214,7 @@ export function useOnboarding({
     const trimmed = userName.trim();
 
     if (!trimmed) {
-      setError('Введите ваше имя');
+      setError('Введи имя');
       setShakeError(true);
       return;
     }
@@ -219,14 +227,23 @@ export function useOnboarding({
     const trimmed = partnerName.trim();
 
     if (!trimmed) {
-      setError('Введите имя вашего любимого');
+      setError('Введи имя');
       setShakeError(true);
       return;
     }
 
     setError(null);
-    transitionTo('dates_input', () => setStep('dates_input'));
+    transitionTo('notifications_prompt', () => setStep('notifications_prompt'));
   }, [partnerName, transitionTo]);
+
+  const confirmNotificationsChoice = useCallback(
+    (enabled: boolean) => {
+      setNotificationsOptIn(enabled);
+      setError(null);
+      transitionTo('dates_input', () => setStep('dates_input'));
+    },
+    [transitionTo],
+  );
 
   const submitDates = useCallback(async (): Promise<boolean> => {
     const validationError = validateDates();
@@ -248,13 +265,22 @@ export function useOnboarding({
         demobilizationDate,
       });
 
+      const permission = await applyAppNotificationsPreference(notificationsOptIn);
+      if (notificationsOptIn && permission === 'denied') {
+        Alert.alert(
+          'Уведомления выключены',
+          'Разрешение не дано. Включить напоминания можно позже в настройках таймера',
+        );
+      }
+
+      await stopOnboardingAmbient();
+
       logger.info('Онбординг завершён, профиль сохранён');
-      void rescheduleHolidayNotifications();
       onComplete();
       return true;
     } catch (err) {
       logger.error('Ошибка сохранения профиля', err);
-      setError('Не удалось сохранить данные. Попробуйте ещё раз.');
+      setError('Не удалось сохранить данные. Попробуй ещё раз');
       setShakeError(true);
       return false;
     } finally {
@@ -267,13 +293,15 @@ export function useOnboarding({
     partnerName,
     enlistmentDate,
     demobilizationDate,
+    notificationsOptIn,
+    stopOnboardingAmbient,
     onComplete,
   ]);
 
   const applyServiceDuration = useCallback(
     (days: number) => {
       if (!enlistmentDate) {
-        setError('Сначала укажите дату призыва');
+        setError('Сначала укажи дату призыва');
         setShakeError(true);
         return;
       }
@@ -286,6 +314,10 @@ export function useOnboarding({
 
   const clearShakeError = useCallback(() => {
     setShakeError(false);
+  }, []);
+
+  const beginLightTheme = useCallback(() => {
+    setThemeMode('light');
   }, []);
 
   return {
@@ -318,6 +350,8 @@ export function useOnboarding({
     submitDates,
     applyServiceDuration,
     clearShakeError,
+    beginLightTheme,
+    confirmNotificationsChoice,
   };
 }
 
