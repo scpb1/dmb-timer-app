@@ -12,6 +12,7 @@ import {
   getMeetingStats,
   type TrackerStatItem,
 } from '@/utils/trackerCalculations';
+import { getTimerVisitCount } from '@/utils/timerVisitCount';
 
 export const SERVICE_SUMMARY_DATE_KEY_FORMAT = 'yyyy-MM-dd';
 
@@ -25,6 +26,7 @@ export interface ServiceSummary {
   callStats: TrackerStatItem[];
   meetingStats: TrackerStatItem[];
   diaryStats: TrackerStatItem[];
+  timerVisitCount: number;
 }
 
 export function toDateKey(date: Date): string {
@@ -87,11 +89,12 @@ export async function loadServiceSummary(input: {
   enlistmentDate: Date | null;
   demobilizationDate: Date | null;
 }): Promise<ServiceSummary> {
-  const [callsRaw, meetingsRaw, diaryCounts, userNameRaw] = await Promise.all([
+  const [callsRaw, meetingsRaw, diaryCounts, userNameRaw, timerVisitCount] = await Promise.all([
     getConfig(CONFIG_KEYS.TRACKERS_CALLS_DATA),
     getConfig(CONFIG_KEYS.TRACKERS_MEETINGS_DATA),
     countDiaryEntriesByKind(),
     input.userName == null ? getConfig(CONFIG_KEYS.USER_NAME) : Promise.resolve(input.userName),
+    getTimerVisitCount(),
   ]);
 
   const callEntries = parseTrackerEntries<CallEntry>(callsRaw);
@@ -133,6 +136,7 @@ export async function loadServiceSummary(input: {
         subValue: pluralize(diaryCounts.letter, 'письмо', 'письма', 'писем'),
       },
     ],
+    timerVisitCount,
   };
 }
 
