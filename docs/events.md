@@ -12,7 +12,7 @@
 | UUID пользовательских записей | `expo-crypto` (`randomUUID`) |
 | Даты | `date-fns` + `@react-native-community/datetimepicker`, спиннер `DatePicker` |
 | Навигация | вкладка `Events` в `MainTabNavigator` |
-| Пуши в 00:00 | `expo-notifications` ~0.28 (локальный `scheduleNotificationAsync`, DATE trigger) |
+| Пуши в 00:00 (полночь) | `expo-notifications` ~0.28 (локальный `scheduleNotificationAsync`, DATE trigger) |
 
 Праздничные пуши — только локальные уведомления. Модуль `ExpoPushTokenManager` не загружается: импортируются отдельные файлы `expo-notifications/build/…`. Если нативных модулей планировщика нет, приложение стартует без пушей (`isHolidayNotificationsAvailable`).
 

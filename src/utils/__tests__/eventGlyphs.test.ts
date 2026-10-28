@@ -8,6 +8,7 @@ import {
 import { PREDEFINED_HOLIDAY_IDS, type DisplayHoliday } from '@/types/holidays';
 import {
   getAutomaticEventGlyph,
+  getEventFormIconDefaults,
   getEventGlyph,
   getHolidayGlyph,
 } from '@/utils/eventGlyphs';
@@ -36,58 +37,59 @@ function holiday(partial: Partial<DisplayHoliday> & Pick<DisplayHoliday, 'id'>):
 }
 
 describe('eventGlyphs', () => {
-  it('для долей службы показывает 1/4, 1/2, 3/4, 1/3 и 2/3', () => {
-    expect(getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.QUARTER_PASSED }))).toEqual({
-      type: 'label',
-      text: '1/4',
-    });
-    expect(getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.EQUATOR }))).toEqual({
-      type: 'label',
-      text: '1/2',
-    });
-    expect(getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.QUARTER_REMAINING }))).toEqual({
-      type: 'label',
-      text: '3/4',
-    });
-    expect(getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.THIRD_PASSED }))).toEqual({
-      type: 'label',
-      text: '1/3',
-    });
-    expect(getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.THIRD_REMAINING }))).toEqual({
-      type: 'label',
-      text: '2/3',
-    });
+  it('для долей службы показывает звезду-штамп вместо дроби', () => {
+    const stamp = { type: 'custom' as const, id: 'split-star' as const };
+    expect(getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.QUARTER_PASSED }))).toEqual(stamp);
+    expect(getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.EQUATOR }))).toEqual(stamp);
+    expect(getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.QUARTER_REMAINING }))).toEqual(stamp);
+    expect(getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.THIRD_PASSED }))).toEqual(stamp);
+    expect(getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.THIRD_REMAINING }))).toEqual(stamp);
   });
 
-  it('призыв рисует ровным флагом Feather, не квадратным material', () => {
+  it('призыв рисует флагом из каталога иконок', () => {
     expect(getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.ENLISTMENT }))).toEqual({
       type: 'icon',
-      name: 'flag',
-      set: 'feather',
-      size: 22,
+      name: 'flag-variant',
     });
   });
 
-  it('месяцы и 100/200/300 дней рисует звездой, а не дробью или числом', () => {
-    expect(getEventGlyph(event({ id: monthEventId(1) }))).toEqual({ type: 'icon', name: 'star' });
-    expect(getEventGlyph(event({ id: monthEventId(13) }))).toEqual({ type: 'icon', name: 'star' });
-    expect(getEventGlyph(event({ id: dppMilestoneEventId(100) }))).toEqual({
-      type: 'icon',
-      name: 'star',
+  it('месяцы и 100/200/300 дней рисует звездой-штампом, а не дробью или числом', () => {
+    const stamp = { type: 'custom' as const, id: 'split-star' as const };
+    expect(getEventGlyph(event({ id: monthEventId(1) }))).toEqual(stamp);
+    expect(getEventGlyph(event({ id: monthEventId(13) }))).toEqual(stamp);
+    expect(getEventGlyph(event({ id: dppMilestoneEventId(100) }))).toEqual(stamp);
+    expect(getEventGlyph(event({ id: dddMilestoneEventId(300) }))).toEqual(stamp);
+  });
+
+  it('форма светофора подставляет круг и цвет из пресета', () => {
+    expect(getEventFormIconDefaults(event({ id: PREDEFINED_EVENT_IDS.TRAFFIC_RED }))).toEqual({
+      icon: 'circle',
+      iconColor: '#C44536',
     });
-    expect(getEventGlyph(event({ id: dddMilestoneEventId(300) }))).toEqual({
-      type: 'icon',
-      name: 'star',
+    expect(getEventFormIconDefaults(event({ id: PREDEFINED_EVENT_IDS.TRAFFIC_YELLOW }))).toEqual({
+      icon: 'circle',
+      iconColor: '#E0A106',
+    });
+    expect(getEventFormIconDefaults(event({ id: PREDEFINED_EVENT_IDS.TRAFFIC_GREEN }))).toEqual({
+      icon: 'circle',
+      iconColor: '#4C8C4A',
     });
   });
 
-  it('пользовательская иконка перекрывает автоматический глиф', () => {
+  it('пользовательская иконка и цвет перекрывают автоматический глиф', () => {
     expect(
-      getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.EQUATOR, icon: 'heart' })),
-    ).toEqual({ type: 'icon', name: 'heart' });
+      getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.EQUATOR, icon: 'heart', iconColor: '#AABBCC' })),
+    ).toEqual({ type: 'icon', name: 'heart', color: '#AABBCC' });
     expect(getAutomaticEventGlyph(event({ id: PREDEFINED_EVENT_IDS.EQUATOR, icon: 'heart' }))).toEqual({
-      type: 'label',
-      text: '1/2',
+      type: 'custom',
+      id: 'split-star',
+    });
+  });
+
+  it('legacy auto-fix мапится на split-star', () => {
+    expect(getEventGlyph(event({ id: 'custom', isCustom: true, icon: 'auto-fix' }))).toEqual({
+      type: 'custom',
+      id: 'split-star',
     });
   });
 

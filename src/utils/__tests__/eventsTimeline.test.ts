@@ -6,6 +6,7 @@ import type { DisplayHoliday } from '@/types/holidays';
 import {
   buildEventsTimelineItems,
   getEventsTimelineFillRatio,
+  getEventsTimelineVisualFillRatio,
 } from '@/utils/eventsTimeline';
 
 const enlist = startOfDay(new Date(2025, 0, 1));
@@ -36,7 +37,7 @@ function holiday(id: string, name: string, date: Date): DisplayHoliday {
 }
 
 describe('buildEventsTimelineItems', () => {
-  it('собирает события и праздники с подписью «N дней назад» / «через N дней»', () => {
+  it('всегда начинается с Призыва и заканчивается Дембелём', () => {
     const items = buildEventsTimelineItems(
       [
         event(PREDEFINED_EVENT_IDS.ENLISTMENT, 'Призыв', enlist),
@@ -47,32 +48,37 @@ describe('buildEventsTimelineItems', () => {
       now,
     );
 
+    expect(items[0].title).toBe('Призыв');
+    expect(items[items.length - 1].title).toBe('Дембель');
+    expect(items.find((i) => i.title.startsWith('Новый год'))).toBeUndefined();
     expect(items.find((i) => i.title === 'Призыв')?.subtitle).toMatch(/назад/);
     expect(items.find((i) => i.title === 'Дембель')?.subtitle).toMatch(/^через /);
-    expect(items.some((i) => i.title.startsWith('Новый год'))).toBe(true);
   });
 
-  it('считает долю пройденного времени между первой и последней вехой', () => {
+  it('заливка по вехам: между прошлой и следующей, не по календарю', () => {
+    const mid = startOfDay(new Date(2025, 3, 1));
     const items = buildEventsTimelineItems(
-      [
-        event(PREDEFINED_EVENT_IDS.ENLISTMENT, 'Призыв', enlist),
-        event(PREDEFINED_EVENT_IDS.DEMOBILIZATION, 'Дембель', demob),
-      ],
+      [event('mid', '100 дней', mid)],
       [],
       { start: enlist, end: demob },
       now,
     );
-    const ratio = getEventsTimelineFillRatio(items, now);
-    expect(ratio).toBeGreaterThan(0.4);
-    expect(ratio).toBeLessThan(0.6);
+    const visual = getEventsTimelineVisualFillRatio(items);
+    expect(visual).toBeGreaterThan(0);
+    expect(visual).toBeLessThan(1);
+    expect(getEventsTimelineFillRatio(items, now)).toBe(visual);
   });
 
   it('в день праздника ставит «Сегодня» и состояние here', () => {
     const todayHoliday = holiday('test', 'Именины', now);
     const items = buildEventsTimelineItems([], [todayHoliday], { start: enlist, end: demob }, now);
-    const row = items[0];
-    expect(row.state).toBe('here');
-    expect(row.subtitle).toBe('Сегодня');
-    expect(row.title).toContain('Именины');
+    const row = items.find((i) => i.title.includes('Именины'));
+    expect(row?.state).toBe('here');
+    expect(row?.subtitle).toBe('Сегодня');
+    expect(items[0].title).toBe('Призыв');
+    expect(items[items.length - 1].title).toBe('Дембель');
+    expect(getEventsTimelineVisualFillRatio(items)).toBe(
+      items.findIndex((i) => i.title.includes('Именины')) / (items.length - 1),
+    );
   });
 });

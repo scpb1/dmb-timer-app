@@ -19,7 +19,33 @@ import {
   dppMilestoneEventId,
   PREDEFINED_EVENT_IDS,
 } from '@/types/events';
+import { SPLIT_STAR_ICON_ID } from '@/utils/eventGlyphs';
 import { formatCount } from '@/utils/inflection';
+
+/** Ключ сортировки: призыв всегда первый, дембель — последний, остальное по календарю */
+export function serviceChronologySortTime(date: Date, eventId?: string): number {
+  if (eventId === PREDEFINED_EVENT_IDS.ENLISTMENT) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  if (eventId === PREDEFINED_EVENT_IDS.DEMOBILIZATION) {
+    return Number.POSITIVE_INFINITY;
+  }
+  return startOfDay(date).getTime();
+}
+
+export function compareEventsChronologically(
+  a: { date: Date; id?: string; name?: string },
+  b: { date: Date; id?: string; name?: string },
+): number {
+  const byTime =
+    serviceChronologySortTime(a.date, a.id) - serviceChronologySortTime(b.date, b.id);
+  if (byTime !== 0) {
+    return byTime;
+  }
+  const aName = a.name ?? '';
+  const bName = b.name ?? '';
+  return aName.localeCompare(bName, 'ru');
+}
 
 interface PredefinedTemplate {
   id: string;
@@ -154,6 +180,110 @@ function generatePredefinedTemplates(
   return events;
 }
 
+/** Id всех пресетов службы (как при первой установке) */
+export function buildDefaultEventListIds(enlistment: Date, demobilization: Date): string[] {
+  return generatePredefinedTemplates(enlistment, demobilization).map((template) => template.id);
+}
+
+export function getDefaultEventListIds(
+  storage: EventsStorage,
+  enlistment: Date,
+  demobilization: Date,
+): string[] {
+  if (Array.isArray(storage.defaultListEventIds) && storage.defaultListEventIds.length > 0) {
+    return storage.defaultListEventIds;
+  }
+  return buildDefaultEventListIds(enlistment, demobilization);
+}
+
+function migrateStoredStarIcon(icon: string | undefined): string | undefined {
+  return icon === 'star' ? SPLIT_STAR_ICON_ID : icon;
+}
+
+/** Заменяет сохранённую material-звезду на «Звезда штамп» (3-я в каталоге). */
+export function migrateEventsStorageStarIcons(
+  storage: EventsStorage,
+): { storage: EventsStorage; changed: boolean } {
+  let changed = false;
+
+  const customEvents = storage.customEvents.map((record) => {
+    const icon = migrateStoredStarIcon(record.icon);
+    if (icon === record.icon) {
+      return record;
+    }
+    changed = true;
+    return { ...record, icon };
+  });
+
+  const overrides: Record<string, EventOverride> = {};
+  for (const [id, override] of Object.entries(storage.overrides)) {
+    const icon = migrateStoredStarIcon(override.icon);
+    if (icon === override.icon) {
+      overrides[id] = override;
+    } else {
+      changed = true;
+      overrides[id] = { ...override, icon };
+    }
+  }
+
+  if (!changed) {
+    return { storage, changed: false };
+  }
+
+  return {
+    storage: {
+      ...storage,
+      customEvents,
+      overrides,
+    },
+    changed: true,
+  };
+}
+
+export function migrateEventsStorageDefaultList(
+  storage: EventsStorage,
+  enlistment: Date,
+  demobilization: Date,
+): { storage: EventsStorage; changed: boolean } {
+  if (Array.isArray(storage.defaultListEventIds) && storage.defaultListEventIds.length > 0) {
+    return { storage, changed: false };
+  }
+  return {
+    storage: {
+      ...storage,
+      defaultListEventIds: buildDefaultEventListIds(enlistment, demobilization),
+    },
+    changed: true,
+  };
+}
+
+export function migrateEventsStorage(
+  storage: EventsStorage,
+  enlistment: Date,
+  demobilization: Date,
+): { storage: EventsStorage; changed: boolean } {
+  let current = storage;
+  let changed = false;
+
+  const starMigration = migrateEventsStorageStarIcons(current);
+  current = starMigration.storage;
+  changed = changed || starMigration.changed;
+
+  const listMigration = migrateEventsStorageDefaultList(current, enlistment, demobilization);
+  current = listMigration.storage;
+  changed = changed || listMigration.changed;
+
+  return { storage: current, changed };
+}
+
+export function filterEventsInDefaultList(
+  events: DisplayEvent[],
+  defaultListIds: string[],
+): DisplayEvent[] {
+  const allowed = new Set(defaultListIds);
+  return events.filter((event) => allowed.has(event.id));
+}
+
 export function resolveEventDate(
   enlistment: Date,
   demobilization: Date,
@@ -220,6 +350,9 @@ function applyOverride(
     dppValue,
     dateValue,
     icon: override?.icon,
+    iconColor: override?.iconColor,
+    boundaryDisplay: override?.boundaryDisplay,
+    boundaryIconThemeDefault: override?.boundaryIconThemeDefault,
     isCustom: false,
     isPast: false,
   };
@@ -252,6 +385,7 @@ function customRecordToDisplay(
     dppValue: record.dppValue,
     dateValue: record.dateValue,
     icon: record.icon,
+    iconColor: record.iconColor,
     isCustom: true,
     isPast: false,
   };
@@ -284,19 +418,17 @@ export function buildDisplayEvents(
       ...event,
       isPast: startOfDay(event.date) < today,
     }))
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
+    .sort((a, b) => compareEventsChronologically(a, b));
 }
 
 export function formatEventDate(date: Date): string {
   return format(date, 'd MMMM yyyy', { locale: ru });
 }
 
-export const DEMOBILIZATION_COUNTDOWN_CAPTION = 'Финишная прямая';
-
 export function formatDaysUntilDate(date: Date, now: Date = new Date()): string | null {
   const days = differenceInCalendarDays(startOfDay(date), startOfDay(now));
   if (days < 0) {
-    return null;
+    return `Прошло ${formatCount(Math.abs(days), 'day')}`;
   }
   if (days === 0) {
     return 'Сегодня';
@@ -305,18 +437,8 @@ export function formatDaysUntilDate(date: Date, now: Date = new Date()): string 
   return `До даты ${formatCount(days, 'day')}`;
 }
 
-/** Подпись «до даты» в списке событий; для дембеля без дублирования счётчика дней */
+/** Подпись «до даты» / «прошло» в списке событий (в том числе у дембеля) */
 export function formatEventDaysUntilCaption(event: DisplayEvent, now: Date = new Date()): string | null {
-  if (event.id === PREDEFINED_EVENT_IDS.DEMOBILIZATION) {
-    const days = differenceInCalendarDays(startOfDay(event.date), startOfDay(now));
-    if (days < 0) {
-      return null;
-    }
-    if (days === 0) {
-      return 'Сегодня';
-    }
-    return DEMOBILIZATION_COUNTDOWN_CAPTION;
-  }
   return formatDaysUntilDate(event.date, now);
 }
 
@@ -335,6 +457,9 @@ export function parseEventsStorage(raw: string | null): EventsStorage {
       deletedIds: Array.isArray(parsed.deletedIds) ? parsed.deletedIds : [],
       overrides: parsed.overrides && typeof parsed.overrides === 'object' ? parsed.overrides : {},
       customEvents: Array.isArray(parsed.customEvents) ? parsed.customEvents : [],
+      defaultListEventIds: Array.isArray(parsed.defaultListEventIds)
+        ? parsed.defaultListEventIds
+        : undefined,
     };
   } catch {
     return { deletedIds: [], overrides: {}, customEvents: [] };

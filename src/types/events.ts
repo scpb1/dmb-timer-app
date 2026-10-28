@@ -2,6 +2,9 @@ export const EVENT_NAME_MAX_LENGTH = 50;
 
 export type EventDateFormat = 'ddd' | 'dpp' | 'date';
 
+/** Призыв / дембель: заливка всей строки или только плашки иконки. */
+export type ServiceBoundaryDisplayMode = 'row' | 'icon';
+
 export interface EventOverride {
   name?: string;
   dateFormat?: EventDateFormat;
@@ -9,6 +12,10 @@ export interface EventOverride {
   dppValue?: number;
   dateValue?: string;
   icon?: string;
+  iconColor?: string;
+  boundaryDisplay?: ServiceBoundaryDisplayMode;
+  /** Сброс заливки на цвет иконки из темы (крестик в форме). */
+  boundaryIconThemeDefault?: boolean;
 }
 
 export interface CustomEventRecord {
@@ -19,12 +26,15 @@ export interface CustomEventRecord {
   dppValue?: number;
   dateValue?: string;
   icon?: string;
+  iconColor?: string;
 }
 
 export interface EventsStorage {
   deletedIds: string[];
   overrides: Record<string, EventOverride>;
   customEvents: CustomEventRecord[];
+  /** Id пресетов для армейского чеклиста; при отсутствии — все шаблоны на текущем сроке */
+  defaultListEventIds?: string[];
 }
 
 export interface DisplayEvent {
@@ -36,6 +46,9 @@ export interface DisplayEvent {
   dppValue?: number;
   dateValue?: string;
   icon?: string;
+  iconColor?: string;
+  boundaryDisplay?: ServiceBoundaryDisplayMode;
+  boundaryIconThemeDefault?: boolean;
   isCustom: boolean;
   isPast: boolean;
 }

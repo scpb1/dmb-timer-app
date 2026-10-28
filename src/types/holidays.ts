@@ -5,6 +5,7 @@ export interface HolidayOverride {
   month?: number;
   day?: number;
   icon?: string;
+  iconColor?: string;
 }
 
 export interface CustomHolidayRecord {
@@ -13,6 +14,7 @@ export interface CustomHolidayRecord {
   month: number;
   day: number;
   icon?: string;
+  iconColor?: string;
 }
 
 export interface HolidaysStorage {
@@ -28,6 +30,7 @@ export interface DisplayHoliday {
   day: number;
   date: Date;
   icon?: string;
+  iconColor?: string;
   isCustom: boolean;
   isPast: boolean;
 }

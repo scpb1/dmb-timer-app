@@ -51,6 +51,7 @@ interface HolidaySeed {
   month: number;
   day: number;
   icon?: string;
+  iconColor?: string;
   isCustom: boolean;
 }
 
@@ -95,6 +96,7 @@ function applyOverride(
     month: override?.month ?? template.month,
     day: override?.day ?? template.day,
     icon: override?.icon,
+    iconColor: override?.iconColor,
     isCustom: false,
   };
 }
@@ -110,6 +112,7 @@ function customToSeed(record: CustomHolidayRecord): HolidaySeed | null {
     month: record.month,
     day: record.day,
     icon: record.icon,
+    iconColor: record.iconColor,
     isCustom: true,
   };
 }

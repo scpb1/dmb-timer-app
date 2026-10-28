@@ -8,24 +8,35 @@ import {
   PREDEFINED_EVENT_IDS,
   type DisplayEvent,
 } from '@/types/events';
+import {
+  isServiceBoundaryEvent,
+  resolveServiceBoundaryColor,
+  resolveServiceBoundaryFormColor,
+  serviceBoundaryDisplayMode,
+} from '@/utils/serviceBoundaryEvents';
 import { PREDEFINED_HOLIDAYS, type DisplayHoliday } from '@/types/holidays';
 
 export type MaterialIconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 export type FeatherIconName = ComponentProps<typeof Feather>['name'];
 
+export const SPLIT_STAR_ICON_ID = 'split-star';
+
+export type CatalogIconName = MaterialIconName | typeof SPLIT_STAR_ICON_ID;
+
 export type EventGlyph =
   | { type: 'icon'; name: MaterialIconName; color?: string; set?: 'material'; size?: number }
   | { type: 'icon'; name: FeatherIconName; color?: string; set: 'feather'; size?: number }
+  | { type: 'custom'; id: typeof SPLIT_STAR_ICON_ID; color?: string; size?: number }
   | { type: 'label'; text: string; color?: string };
 
 export interface EventIconOption {
-  name: MaterialIconName;
+  name: CatalogIconName;
   label: string;
 }
 
-export const DEFAULT_EVENT_ICON: MaterialIconName = 'star';
+export const DEFAULT_EVENT_ICON: CatalogIconName = SPLIT_STAR_ICON_ID;
 export const DEFAULT_HOLIDAY_ICON: MaterialIconName = 'star-outline';
-export const MILESTONE_ICON: MaterialIconName = 'star';
+export const MILESTONE_ICON: CatalogIconName = SPLIT_STAR_ICON_ID;
 
 /**
  * Каталог иконок для событий и праздников.
@@ -34,8 +45,8 @@ export const MILESTONE_ICON: MaterialIconName = 'star';
 export const EVENT_ICON_CATALOG: EventIconOption[] = [
   { name: 'star', label: 'Звезда' },
   { name: 'star-outline', label: 'Звезда контур' },
+  { name: SPLIT_STAR_ICON_ID, label: 'Звезда штамп' },
   { name: 'star-four-points', label: 'Искра' },
-  { name: 'auto-fix', label: 'Волшебство' },
   { name: 'heart', label: 'Сердце' },
   { name: 'heart-outline', label: 'Сердце контур' },
   { name: 'heart-multiple', label: 'Два сердца' },
@@ -90,43 +101,55 @@ export const EVENT_ICON_CATALOG: EventIconOption[] = [
 
 const CATALOG_NAMES = new Set<string>(EVENT_ICON_CATALOG.map((item) => item.name));
 
-export function isCatalogIcon(name: string | undefined): name is MaterialIconName {
-  return typeof name === 'string' && CATALOG_NAMES.has(name);
+const LEGACY_ICON_ALIASES: Record<string, CatalogIconName> = {
+  'auto-fix': SPLIT_STAR_ICON_ID,
+};
+
+export function normalizeStoredIconName(name: string | undefined): CatalogIconName | undefined {
+  if (typeof name !== 'string') {
+    return undefined;
+  }
+  if (CATALOG_NAMES.has(name)) {
+    return name as CatalogIconName;
+  }
+  return LEGACY_ICON_ALIASES[name];
+}
+
+export function isCatalogIcon(name: string | undefined): name is CatalogIconName {
+  return normalizeStoredIconName(name) !== undefined;
 }
 
 export function resolveCatalogIcon(
   name: string | undefined,
   fallback: MaterialIconName,
-): MaterialIconName {
-  return isCatalogIcon(name) ? name : fallback;
+): CatalogIconName {
+  return normalizeStoredIconName(name) ?? fallback;
 }
 
-function fractionGlyph(event: DisplayEvent): EventGlyph | null {
-  switch (event.id) {
-    case PREDEFINED_EVENT_IDS.QUARTER_PASSED:
-      return { type: 'label', text: '1/4' };
-    case PREDEFINED_EVENT_IDS.EQUATOR:
-      return { type: 'label', text: '1/2' };
-    case PREDEFINED_EVENT_IDS.QUARTER_REMAINING:
-      return { type: 'label', text: '3/4' };
-    case PREDEFINED_EVENT_IDS.THIRD_PASSED:
-      return { type: 'label', text: '1/3' };
-    case PREDEFINED_EVENT_IDS.THIRD_REMAINING:
-      return { type: 'label', text: '2/3' };
-    default:
-      return null;
+function applyIconColor(glyph: EventGlyph, iconColor?: string): EventGlyph {
+  if (!iconColor) {
+    return glyph;
   }
+  return { ...glyph, color: iconColor };
+}
+
+function catalogIconToGlyph(name: CatalogIconName, color?: string): EventGlyph {
+  if (name === SPLIT_STAR_ICON_ID) {
+    return { type: 'custom', id: SPLIT_STAR_ICON_ID, color };
+  }
+  return { type: 'icon', name, color };
 }
 
 function automaticEventGlyph(event: DisplayEvent): EventGlyph {
-  const fraction = fractionGlyph(event);
-  if (fraction) {
-    return fraction;
-  }
-
   switch (event.id) {
+    case PREDEFINED_EVENT_IDS.QUARTER_PASSED:
+    case PREDEFINED_EVENT_IDS.EQUATOR:
+    case PREDEFINED_EVENT_IDS.QUARTER_REMAINING:
+    case PREDEFINED_EVENT_IDS.THIRD_PASSED:
+    case PREDEFINED_EVENT_IDS.THIRD_REMAINING:
+      return catalogIconToGlyph(MILESTONE_ICON);
     case PREDEFINED_EVENT_IDS.ENLISTMENT:
-      return { type: 'icon', name: 'flag', set: 'feather', size: 22 };
+      return catalogIconToGlyph('flag-variant');
     case PREDEFINED_EVENT_IDS.TRAFFIC_RED:
       return { type: 'icon', name: 'circle', color: '#C44536' };
     case PREDEFINED_EVENT_IDS.TRAFFIC_YELLOW:
@@ -140,14 +163,16 @@ function automaticEventGlyph(event: DisplayEvent): EventGlyph {
   }
 
   if (parseMonthEventIndex(event.id) !== null) {
-    return { type: 'icon', name: MILESTONE_ICON };
+    return catalogIconToGlyph(MILESTONE_ICON);
   }
 
   if (parseDppMilestoneValue(event.id) !== null || parseDddMilestoneValue(event.id) !== null) {
-    return { type: 'icon', name: MILESTONE_ICON };
+    return catalogIconToGlyph(MILESTONE_ICON);
   }
 
-  return { type: 'icon', name: event.isCustom ? DEFAULT_EVENT_ICON : 'calendar-outline' };
+  return event.isCustom
+    ? catalogIconToGlyph(DEFAULT_EVENT_ICON)
+    : { type: 'icon', name: 'calendar-outline' };
 }
 
 /** Глиф по умолчанию, без пользовательской иконки. Нужен для пункта «Авто» в форме. */
@@ -155,27 +180,117 @@ export function getAutomaticEventGlyph(event: DisplayEvent): EventGlyph {
   return automaticEventGlyph(event);
 }
 
-export function getEventGlyph(event: DisplayEvent): EventGlyph {
-  if (isCatalogIcon(event.icon)) {
-    return { type: 'icon', name: event.icon };
+/** Начальные icon/iconColor для формы события (в т.ч. светофор: круг + цвет). */
+export function getEventFormIconDefaults(event: DisplayEvent): {
+  icon?: string;
+  iconColor?: string;
+} {
+  if (event.isCustom) {
+    return {
+      icon: isCatalogIcon(event.icon) ? event.icon : DEFAULT_EVENT_ICON,
+      iconColor: event.iconColor,
+    };
   }
 
-  return automaticEventGlyph(event);
+  if (isCatalogIcon(event.icon)) {
+    return { icon: event.icon, iconColor: event.iconColor };
+  }
+
+  if (event.id === PREDEFINED_EVENT_IDS.ENLISTMENT) {
+    return {
+      icon: 'flag-variant',
+      iconColor: resolveServiceBoundaryFormColor(event),
+    };
+  }
+  if (event.id === PREDEFINED_EVENT_IDS.DEMOBILIZATION) {
+    return {
+      icon: 'home-outline',
+      iconColor: resolveServiceBoundaryFormColor(event),
+    };
+  }
+
+  const auto = automaticEventGlyph(event);
+  if (auto.type === 'icon' && auto.set === 'feather') {
+    return { icon: undefined, iconColor: auto.color ?? event.iconColor };
+  }
+  if (auto.type === 'icon') {
+    return { icon: auto.name, iconColor: auto.color ?? event.iconColor };
+  }
+  if (auto.type === 'custom') {
+    return { icon: auto.id, iconColor: auto.color ?? event.iconColor };
+  }
+
+  return { icon: undefined, iconColor: event.iconColor };
+}
+
+/** Ячейка «иконка по умолчанию» — только если автоглиф нельзя выбрать из каталога (Feather). */
+export function eventFormUsesAutoIconOption(event: DisplayEvent): boolean {
+  if (event.isCustom) {
+    return false;
+  }
+  const auto = automaticEventGlyph(event);
+  return auto.type === 'icon' && auto.set === 'feather';
+}
+
+/** Начальная иконка для формы праздника из пресета или сохранённого значения. */
+export function getHolidayFormIconDefaults(holiday: DisplayHoliday): {
+  icon?: string;
+  iconColor?: string;
+} {
+  if (holiday.isCustom) {
+    return {
+      icon: isCatalogIcon(holiday.icon) ? holiday.icon : DEFAULT_HOLIDAY_ICON,
+      iconColor: holiday.iconColor,
+    };
+  }
+
+  if (isCatalogIcon(holiday.icon)) {
+    return { icon: holiday.icon, iconColor: holiday.iconColor };
+  }
+
+  const auto = getAutomaticHolidayGlyph(holiday);
+  if (auto.type === 'custom') {
+    return { icon: SPLIT_STAR_ICON_ID, iconColor: holiday.iconColor };
+  }
+  if (auto.type === 'label') {
+    return { icon: undefined, iconColor: holiday.iconColor };
+  }
+  return { icon: auto.name, iconColor: holiday.iconColor };
+}
+
+export function getEventGlyph(event: DisplayEvent): EventGlyph {
+  const normalizedIcon = normalizeStoredIconName(event.icon);
+  let strokeColor = event.iconColor;
+  if (isServiceBoundaryEvent(event.id)) {
+    strokeColor =
+      serviceBoundaryDisplayMode(event) === 'icon'
+        ? resolveServiceBoundaryColor(event)
+        : undefined;
+  }
+
+  if (normalizedIcon) {
+    return catalogIconToGlyph(normalizedIcon, strokeColor);
+  }
+
+  return applyIconColor(automaticEventGlyph(event), strokeColor);
 }
 
 export function getAutomaticHolidayGlyph(holiday: DisplayHoliday): EventGlyph {
   const template = PREDEFINED_HOLIDAYS.find((item) => item.id === holiday.id);
-  return {
-    type: 'icon',
-    name: resolveCatalogIcon(template?.defaultIcon, DEFAULT_HOLIDAY_ICON),
-    size: template?.iconSize,
-  };
+  const glyph = catalogIconToGlyph(
+    resolveCatalogIcon(template?.defaultIcon, DEFAULT_HOLIDAY_ICON),
+  );
+  if (template?.iconSize && glyph.type === 'icon') {
+    return { ...glyph, size: template.iconSize };
+  }
+  return glyph;
 }
 
 export function getHolidayGlyph(holiday: DisplayHoliday): EventGlyph {
-  if (isCatalogIcon(holiday.icon)) {
-    return { type: 'icon', name: holiday.icon };
+  const normalizedIcon = normalizeStoredIconName(holiday.icon);
+  if (normalizedIcon) {
+    return catalogIconToGlyph(normalizedIcon, holiday.iconColor);
   }
 
-  return getAutomaticHolidayGlyph(holiday);
+  return applyIconColor(getAutomaticHolidayGlyph(holiday), holiday.iconColor);
 }
