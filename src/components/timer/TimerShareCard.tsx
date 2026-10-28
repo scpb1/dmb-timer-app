@@ -9,7 +9,11 @@ import { TimerStatCard } from '@/components/timer/TimerStatCard';
 import { TimerUnifiedStatCard } from '@/components/timer/TimerUnifiedStatCard';
 import { ScreenBackground } from '@/components/common/ScreenBackground';
 import type { ActiveTimer, TimerSettings } from '@/types/timer';
-import { DEFAULT_TIMER_SETTINGS } from '@/types/timer';
+import { FEATURES } from '@/constants';
+import {
+  DEFAULT_TIMER_SETTINGS,
+  PHOTO_ELEMENT_BORDER_WHEN_SWITCHES_HIDDEN,
+} from '@/types/timer';
 import {
   getCenterDisplayLabels,
   getFrameDisplayValues,
@@ -25,7 +29,10 @@ import type { EventGlyph } from '@/utils/eventGlyphs';
 import type { DisplayEvent } from '@/types/events';
 import type { DisplayHoliday } from '@/types/holidays';
 import type { TimerUpcomingItem } from '@/utils/timerUpcoming';
-import { formatTimerVizUpcomingHeadline } from '@/utils/timerUpcoming';
+import {
+  formatTimerVizUpcomingHeadline,
+  shouldOmitDemobilizationCountdown,
+} from '@/utils/timerUpcoming';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 
@@ -42,6 +49,7 @@ interface TimerShareCardProps {
   frameUpcomingGlyph?: EventGlyph | null;
   timelineEvents?: DisplayEvent[];
   timelineHolidays?: DisplayHoliday[];
+  timelineDefaultListEventIds?: string[];
   timelineUpcoming?: TimerUpcomingItem | null;
 }
 
@@ -59,12 +67,17 @@ export function TimerShareCard({
   frameUpcomingGlyph = null,
   timelineEvents = [],
   timelineHolidays = [],
+  timelineDefaultListEventIds = [],
   timelineUpcoming = null,
 }: TimerShareCardProps) {
   const hasPhotoBackground = Boolean(settings.backgroundImageUri);
-  const showPhotoStatBorder = !hasPhotoBackground || settings.photoStatCardBorder;
+  const photoStatCardBorder = FEATURES.showPhotoElementBorderSwitches
+    ? settings.photoStatCardBorder
+    : PHOTO_ELEMENT_BORDER_WHEN_SWITCHES_HIDDEN.photoStatCardBorder;
+  const showPhotoStatBorder = !hasPhotoBackground || photoStatCardBorder;
   const statCardMode = settings.statCardMode ?? DEFAULT_TIMER_SETTINGS.statCardMode;
   const filledCount = progress.filledSegments[settings.progressBarMode];
+  const segmentCount = progress.segmentCounts[settings.progressBarMode];
   const phase = progress.phase;
   const phaseCardTitle = getPhaseCardTitle(phase, activeTimer.kind);
   const phaseBreakdown = phase === 'before' ? remainingBreakdown : passedBreakdown;
@@ -90,6 +103,11 @@ export function TimerShareCard({
   const isDotGridTimer = settings.timerType === 'dotGrid';
   const isMilestonesTimer = settings.timerType === 'milestones';
   const hideActiveUnifiedStats = isDotGridTimer && phase === 'active';
+  const omitDemobilizationCountdown = shouldOmitDemobilizationCountdown(
+    settings.timerType,
+    settings.progressBarMode,
+    statCardMode,
+  );
 
   return (
     <View style={[styles.card, { width, height }]} collapsable={false}>
@@ -118,16 +136,19 @@ export function TimerShareCard({
 
         {settings.timerType === 'circular' ? (
           <SegmentedCircularProgress
-            mode={settings.progressBarMode}
+            segmentCount={segmentCount}
             filledCount={filledCount}
             primaryValue={centerDisplay.primaryValue}
             secondaryValue={centerDisplay.secondaryValue}
             unitLabel={centerDisplay.unitLabel}
+            progressBarMode={settings.progressBarMode}
+            percentDecimalPlaces={settings.percentDecimalPlaces}
             photoBackground={hasPhotoBackground}
           />
         ) : linearDisplay ? (
           <SegmentedLinearProgress
             mode={settings.progressBarMode}
+            segmentCount={segmentCount}
             filledCount={filledCount}
             display={linearDisplay}
             photoBackground={hasPhotoBackground}
@@ -138,6 +159,7 @@ export function TimerShareCard({
             progress={progress}
             endDate={activeTimer.endDate}
             decimalPlaces={settings.percentDecimalPlaces}
+            timerKind={activeTimer.kind}
             cellShape={settings.dotGridCellShape}
             photoBackground={hasPhotoBackground}
           />
@@ -147,12 +169,20 @@ export function TimerShareCard({
             startDate={activeTimer.startDate}
             endDate={activeTimer.endDate}
             decimalPlaces={settings.percentDecimalPlaces}
+            timerKind={activeTimer.kind}
             photoBackground={hasPhotoBackground}
             upcomingHeadline={
-              timelineUpcoming ? formatTimerVizUpcomingHeadline(timelineUpcoming) : null
+              timelineUpcoming
+                ? formatTimerVizUpcomingHeadline(
+                    timelineUpcoming,
+                    new Date(),
+                    omitDemobilizationCountdown,
+                  )
+                : null
             }
             events={timelineEvents}
             holidays={timelineHolidays}
+            defaultListEventIds={timelineDefaultListEventIds}
             layout={settings.milestonesLayout ?? DEFAULT_TIMER_SETTINGS.milestonesLayout}
           />
         ) : frameDisplay ? (
@@ -162,6 +192,7 @@ export function TimerShareCard({
             upcoming={frameUpcoming}
             glyph={frameUpcomingGlyph}
             photoBackground={hasPhotoBackground}
+            omitDemobilizationCountdown={omitDemobilizationCountdown}
           />
         ) : null}
 
@@ -169,7 +200,10 @@ export function TimerShareCard({
           <View style={styles.statsRow}>
             <TimerStatCard
               title={phaseCardTitle}
-              display={getStatCardDisplay(phaseBreakdown, statCardMode)}
+              display={getStatCardDisplay(phaseBreakdown, statCardMode, {
+                phase,
+                kind: activeTimer.kind,
+              })}
               photoBackground={hasPhotoBackground}
               showBorder={showPhotoStatBorder}
             />

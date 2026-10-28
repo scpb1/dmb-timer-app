@@ -1,15 +1,16 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { EventGlyphBadge } from '@/components/events/EventGlyphBadge';
+import { timerEventGlyphColorOverride } from '@/components/timer/timerEventGlyphColor';
 import type { EventGlyph } from '@/utils/eventGlyphs';
-import { colors, useAppTheme } from '@/theme';
+import { layout, useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 import {
   formatTimerUpcomingCountdown,
   timerUpcomingDisplayName,
   type TimerUpcomingItem,
 } from '@/utils/timerUpcoming';
-import { formatEventDate, isCalendarToday } from '@/utils/eventCalculations';
+import { formatEventDate } from '@/utils/eventCalculations';
 import { formatHolidayDate } from '@/utils/holidayCalculations';
 
 interface TimerUpcomingCardProps {
@@ -17,6 +18,7 @@ interface TimerUpcomingCardProps {
   glyph: EventGlyph;
   photoBackground?: boolean;
   showBorder?: boolean;
+  omitDemobilizationCountdown?: boolean;
 }
 
 export function TimerUpcomingCard({
@@ -24,58 +26,59 @@ export function TimerUpcomingCard({
   glyph,
   photoBackground = false,
   showBorder = true,
+  omitDemobilizationCountdown = false,
 }: TimerUpcomingCardProps) {
   const theme = useAppTheme();
-  const isHoliday = item.kind === 'holiday';
-  const date = item.kind === 'event' ? item.event.date : item.holiday.date;
   const isPast = item.kind === 'event' ? item.event.isPast : item.holiday.isPast;
-  const isToday = isCalendarToday(date);
   const dateText =
     item.kind === 'event' ? formatEventDate(item.event.date) : formatHolidayDate(item.holiday);
-  const subtitle = formatTimerUpcomingCountdown(item);
+  const subtitle = formatTimerUpcomingCountdown(item, new Date(), omitDemobilizationCountdown);
+  const iconOpacity = photoBackground ? undefined : isPast ? 0.72 : undefined;
 
-  if (photoBackground) {
-    return (
-      <View
-        style={[
-          styles.card,
-          styles.cardPhoto,
-          isToday && showBorder && styles.cardTodayPhoto,
-          !showBorder && styles.borderless,
-        ]}
-      >
-        <EventGlyphBadge glyph={glyph} />
-        <View style={styles.content}>
-          <Text style={[styles.name, styles.photoText]} numberOfLines={2}>
-            {timerUpcomingDisplayName(item)}
-          </Text>
-          <Text style={[styles.date, styles.photoTextSecondary]}>{dateText}</Text>
-          {subtitle ? (
-            <Text style={[styles.subtitle, styles.photoTextSecondary]}>{subtitle}</Text>
-          ) : null}
-        </View>
-      </View>
-    );
-  }
+  const cardStyle = [
+    styles.card,
+    photoBackground
+      ? styles.photoCard
+      : {
+          backgroundColor: theme.overlay.fill,
+          borderColor: theme.overlay.border,
+        },
+    !showBorder && styles.borderless,
+    !photoBackground && isPast && styles.cardPast,
+  ];
 
   return (
-    <View
-      style={[
-        styles.card,
-        isHoliday && styles.cardHoliday,
-        isToday && styles.cardToday,
-        isPast && styles.cardPast,
-      ]}
-    >
-      <EventGlyphBadge glyph={glyph} />
+    <View style={cardStyle}>
+      <EventGlyphBadge
+        glyph={glyph}
+        color={timerEventGlyphColorOverride(glyph, photoBackground)}
+        opacity={iconOpacity}
+      />
       <View style={styles.content}>
-        <Text style={[styles.name, { color: theme.text.primary }]} numberOfLines={2}>
-          {timerUpcomingDisplayName(item)}
-        </Text>
-        <Text style={[styles.date, { color: theme.text.secondary }]}>{dateText}</Text>
-        {subtitle ? (
-          <Text style={[styles.subtitle, { color: theme.text.secondary }]}>{subtitle}</Text>
-        ) : null}
+        {photoBackground ? (
+          <>
+            <Text style={[styles.name, styles.photoText]} numberOfLines={2}>
+              {timerUpcomingDisplayName(item)}
+            </Text>
+            <Text style={[styles.date, styles.photoTextSecondary]}>{dateText}</Text>
+            {subtitle ? (
+              <Text style={[styles.subtitle, styles.photoTextSecondary]}>{subtitle}</Text>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <Text
+              style={[styles.name, { color: isPast ? theme.text.secondary : theme.text.primary }]}
+              numberOfLines={2}
+            >
+              {timerUpcomingDisplayName(item)}
+            </Text>
+            <Text style={[styles.date, { color: theme.text.secondary }]}>{dateText}</Text>
+            {subtitle ? (
+              <Text style={[styles.subtitle, { color: theme.text.secondary }]}>{subtitle}</Text>
+            ) : null}
+          </>
+        )}
       </View>
     </View>
   );
@@ -86,31 +89,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 4,
+    borderRadius: layout.cardBorderRadius,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.25)',
   },
-  cardHoliday: {
-    backgroundColor: colors.light.holiday.cardBackground,
-    borderColor: colors.light.holiday.cardBorder,
-  },
-  cardPhoto: {
-    backgroundColor: 'rgba(0, 0, 0, 0.22)',
+  photoCard: {
+    backgroundColor: 'transparent',
     borderColor: 'rgba(242, 240, 236, 0.38)',
   },
   borderless: {
     borderWidth: 0,
-  },
-  cardToday: {
-    borderColor: colors.light.text.primary,
-    borderWidth: 1.5,
-  },
-  cardTodayPhoto: {
-    borderColor: '#F2F0EC',
-    borderWidth: 1.5,
   },
   cardPast: {
     opacity: 0.4,

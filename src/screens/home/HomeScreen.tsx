@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -24,6 +24,7 @@ import { TimerMilestonesTimelineDisplay } from '@/components/timer/TimerMileston
 import { TimerUpcomingCard } from '@/components/timer/TimerUpcomingCard';
 import { ServiceSummaryModal } from '@/components/timer/ServiceSummaryModal';
 import { LetterBookExportModal } from '@/components/diary/LetterBookExportModal';
+import { ArmyEventsChecklistShareCard } from '@/components/timer/ArmyEventsChecklistShareCard';
 import { TimerShareCard } from '@/components/timer/TimerShareCard';
 import { TimerStatCard } from '@/components/timer/TimerStatCard';
 import { TimerUnifiedStatCard } from '@/components/timer/TimerUnifiedStatCard';
@@ -35,7 +36,12 @@ import { useServiceTimer } from '@/hooks/useServiceTimer';
 import { useTimerUpcoming } from '@/hooks/useTimerUpcoming';
 import { useDatabaseProfile } from '@/hooks/useDatabaseProfile';
 import type { HomeStackParamList } from '@/types/navigation';
-import { DEFAULT_TIMER_SETTINGS, type CustomTimerRecord } from '@/types/timer';
+import { FEATURES } from '@/constants';
+import {
+  DEFAULT_TIMER_SETTINGS,
+  PHOTO_ELEMENT_BORDER_WHEN_SWITCHES_HIDDEN,
+  type CustomTimerRecord,
+} from '@/types/timer';
 import { isServiceAfterEnd } from '@/utils/serviceSummary';
 import {
   getCenterDisplayLabels,
@@ -45,8 +51,13 @@ import {
   getStatCardDisplay,
 } from '@/utils/timerCalculations';
 import { getEventGlyph, getHolidayGlyph } from '@/utils/eventGlyphs';
-import { formatTimerVizUpcomingHeadline } from '@/utils/timerUpcoming';
+import {
+  formatTimerVizUpcomingHeadline,
+  shouldOmitDemobilizationCountdown,
+} from '@/utils/timerUpcoming';
+import { buildDefaultEventsChecklistItems } from '@/utils/eventsTimeline';
 import { shareTimerImage } from '@/utils/shareTimerImage';
+import { incrementTimerVisitCount } from '@/utils/timerVisitCount';
 import { isViewShotAvailable } from '@/utils/nativeAvailability';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
@@ -83,6 +94,7 @@ export function HomeScreen({ navigation }: Props) {
     useCallback(() => {
       reload();
       void timerUpcoming.reload();
+      void incrementTimerVisitCount();
     }, [reload, timerUpcoming.reload]),
   );
 
@@ -92,7 +104,10 @@ export function HomeScreen({ navigation }: Props) {
   const [letterBookVisible, setLetterBookVisible] = useState(false);
   const [editingTimer, setEditingTimer] = useState<CustomTimerRecord | null>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const [isSharingArmyChecklist, setIsSharingArmyChecklist] = useState(false);
+  const [armyChecklistShowDates, setArmyChecklistShowDates] = useState(false);
   const shareRef = useRef<View>(null);
+  const armyChecklistShareRef = useRef<View>(null);
   const { width: shareWidth, height: shareHeight } = Dimensions.get('window');
 
   useServiceSummaryAutoOpen(demobilizationDate, () => setSummaryVisible(true));
@@ -107,8 +122,14 @@ export function HomeScreen({ navigation }: Props) {
   const isMilestonesTimer = settings.timerType === 'milestones';
   const isVizTimer = isDotGridTimer || isMilestonesTimer;
   const canSwitchCenterDisplay = phase === 'active';
-  const showPhotoStatBorder = !hasPhotoBackground || settings.photoStatCardBorder;
-  const showPhotoUpcomingBorder = !hasPhotoBackground || settings.photoUpcomingCardBorder;
+  const photoUpcomingCardBorder = FEATURES.showPhotoElementBorderSwitches
+    ? settings.photoUpcomingCardBorder
+    : PHOTO_ELEMENT_BORDER_WHEN_SWITCHES_HIDDEN.photoUpcomingCardBorder;
+  const photoStatCardBorder = FEATURES.showPhotoElementBorderSwitches
+    ? settings.photoStatCardBorder
+    : PHOTO_ELEMENT_BORDER_WHEN_SWITCHES_HIDDEN.photoStatCardBorder;
+  const showPhotoUpcomingBorder = !hasPhotoBackground || photoUpcomingCardBorder;
+  const showPhotoStatBorder = !hasPhotoBackground || photoStatCardBorder;
   const showStatCards =
     showStats && !isFrameTimer && !(isDotGridTimer && phase === 'active');
   const showUpcomingCard =
@@ -126,17 +147,86 @@ export function HomeScreen({ navigation }: Props) {
       : null;
   const upcomingGlyph = upcomingGlyphFor(timerUpcoming.item);
   const frameUpcomingGlyph = upcomingGlyphFor(frameUpcoming);
+  const omitDemobilizationCountdown = shouldOmitDemobilizationCountdown(
+    settings.timerType,
+    settings.progressBarMode,
+    statCardMode,
+  );
   const vizUpcomingHeadline =
     isVizTimer &&
     settings.timerUpcomingPreview !== 'off' &&
     timerUpcoming.item
-      ? formatTimerVizUpcomingHeadline(timerUpcoming.item)
+      ? formatTimerVizUpcomingHeadline(
+          timerUpcoming.item,
+          new Date(),
+          omitDemobilizationCountdown,
+        )
       : null;
   const showServiceSummaryButton = Boolean(
     enlistmentDate &&
       demobilizationDate &&
       isServiceAfterEnd(enlistmentDate, demobilizationDate),
   );
+
+  const armyChecklistShareItems = useMemo(() => {
+    if (!activeTimer || timerUpcoming.defaultListEventIds.length === 0) {
+      return [];
+    }
+    return buildDefaultEventsChecklistItems(
+      timerUpcoming.events,
+      timerUpcoming.defaultListEventIds,
+      { start: activeTimer.startDate, end: activeTimer.endDate },
+    );
+  }, [
+    activeTimer,
+    timerUpcoming.defaultListEventIds,
+    timerUpcoming.events,
+  ]);
+
+  const exportArmyChecklistImage = async (showDates: boolean) => {
+    setArmyChecklistShowDates(showDates);
+    setIsSharingArmyChecklist(true);
+    try {
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, hasPhotoBackground ? 420 : 220);
+      });
+      await shareTimerImage(armyChecklistShareRef, {
+        alertTitle: 'Чеклист армейских событий',
+        alertMessage: 'Сохранить в галерею или отправить',
+        shareDialogTitle: 'Чеклист армейских событий',
+      });
+    } finally {
+      setIsSharingArmyChecklist(false);
+    }
+  };
+
+  const handleDownloadArmyChecklist = () => {
+    if (!isViewShotAvailable()) {
+      Alert.alert('Ошибка', 'Не удалось подготовить картинку');
+      return;
+    }
+
+    if (armyChecklistShareItems.length === 0) {
+      Alert.alert('Нет событий', 'В списке по умолчанию нет событий для чеклиста');
+      return;
+    }
+
+    Alert.alert('Чеклист армейских событий', 'Добавить даты под названиями?', [
+      {
+        text: 'С датами',
+        onPress: () => {
+          void exportArmyChecklistImage(true);
+        },
+      },
+      {
+        text: 'Без дат',
+        onPress: () => {
+          void exportArmyChecklistImage(false);
+        },
+      },
+      { text: 'Отмена', style: 'cancel' },
+    ]);
+  };
 
   const handleShare = async () => {
     if (!isViewShotAvailable()) {
@@ -172,6 +262,7 @@ export function HomeScreen({ navigation }: Props) {
   }
 
   const filledCount = progress?.filledSegments[settings.progressBarMode] ?? 0;
+  const segmentCount = progress?.segmentCounts[settings.progressBarMode] ?? 1;
   const linearDisplay =
     progress && settings.timerType === 'linear'
       ? getLinearDisplayValues(
@@ -195,6 +286,54 @@ export function HomeScreen({ navigation }: Props) {
           getCenterDisplayLabels(activeTimer.kind),
         )
       : null;
+
+  const upcomingCard =
+    showUpcomingCard && timerUpcoming.item && upcomingGlyph ? (
+      <TimerUpcomingCard
+        item={timerUpcoming.item}
+        glyph={upcomingGlyph}
+        photoBackground={hasPhotoBackground}
+        showBorder={showPhotoUpcomingBorder}
+        omitDemobilizationCountdown={omitDemobilizationCountdown}
+      />
+    ) : null;
+
+  const statCards =
+    showStatCards && phase !== 'active' && phaseBreakdown ? (
+      <View style={styles.statsRow}>
+        <TimerStatCard
+          title={phaseCardTitle}
+          display={getStatCardDisplay(phaseBreakdown, statCardMode, {
+            phase,
+            kind: activeTimer?.kind ?? 'service',
+          })}
+          photoBackground={hasPhotoBackground}
+          showBorder={showPhotoStatBorder}
+        />
+      </View>
+    ) : showStatCards && phase === 'active' && passedBreakdown && remainingBreakdown ? (
+      <View style={styles.statsRow}>
+        <TimerUnifiedStatCard
+          elapsed={getStatCardDisplay(passedBreakdown, statCardMode)}
+          remaining={getStatCardDisplay(remainingBreakdown, statCardMode)}
+          photoBackground={hasPhotoBackground}
+          showBorder={showPhotoStatBorder}
+        />
+      </View>
+    ) : null;
+
+  const upcomingAndStatCards =
+    upcomingCard && statCards ? (
+      <View style={styles.upcomingStatsGroup}>
+        {upcomingCard}
+        {statCards}
+      </View>
+    ) : (
+      <>
+        {upcomingCard}
+        {statCards}
+      </>
+    );
 
   return (
     <View style={styles.root}>
@@ -268,26 +407,28 @@ export function HomeScreen({ navigation }: Props) {
             </Pressable>
           </View>
 
-          <View style={styles.topBarSideRight}>
-            <Pressable
-              style={styles.iconButton}
-              onPress={() => void handleShare()}
-              hitSlop={12}
-              disabled={isSharing}
-              accessibilityRole="button"
-              accessibilityLabel="Поделиться картинкой таймера"
-            >
-              {isSharing ? (
-                <ActivityIndicator size="small" color={foregroundColor} />
-              ) : (
-                <MaterialCommunityIcons
-                  name="share-variant"
-                  size={24}
-                  color={foregroundColor}
-                />
-              )}
-            </Pressable>
-          </View>
+          {!isMilestonesTimer ? (
+            <View style={styles.topBarSideRight}>
+              <Pressable
+                style={styles.iconButton}
+                onPress={() => void handleShare()}
+                hitSlop={12}
+                disabled={isSharing}
+                accessibilityRole="button"
+                accessibilityLabel="Поделиться картинкой таймера"
+              >
+                {isSharing ? (
+                  <ActivityIndicator size="small" color={foregroundColor} />
+                ) : (
+                  <MaterialCommunityIcons
+                    name="share-variant"
+                    size={24}
+                    color={foregroundColor}
+                  />
+                )}
+              </Pressable>
+            </View>
+          ) : null}
         </View>
 
         <ScrollView
@@ -302,11 +443,13 @@ export function HomeScreen({ navigation }: Props) {
           {settings.timerType === 'circular' && centerDisplay && progress ? (
             <SegmentedCircularProgress
               key={activeTimer?.id ?? 'circular'}
-              mode={settings.progressBarMode}
+              segmentCount={segmentCount}
               filledCount={filledCount}
               primaryValue={centerDisplay.primaryValue}
               secondaryValue={centerDisplay.secondaryValue}
               unitLabel={centerDisplay.unitLabel}
+              progressBarMode={settings.progressBarMode}
+              percentDecimalPlaces={settings.percentDecimalPlaces}
               photoBackground={hasPhotoBackground}
               centerDisplay={settings.centerDisplay}
               onCenterDisplayChange={
@@ -321,6 +464,7 @@ export function HomeScreen({ navigation }: Props) {
             <SegmentedLinearProgress
               key={activeTimer?.id ?? 'linear'}
               mode={settings.progressBarMode}
+              segmentCount={segmentCount}
               filledCount={filledCount}
               display={linearDisplay}
               centerDisplay={settings.centerDisplay}
@@ -340,6 +484,7 @@ export function HomeScreen({ navigation }: Props) {
               progress={progress}
               endDate={activeTimer.endDate}
               decimalPlaces={settings.percentDecimalPlaces}
+              timerKind={activeTimer.kind}
               cellShape={settings.dotGridCellShape}
               photoBackground={hasPhotoBackground}
               upcomingHeadline={vizUpcomingHeadline}
@@ -353,11 +498,19 @@ export function HomeScreen({ navigation }: Props) {
               startDate={activeTimer.startDate}
               endDate={activeTimer.endDate}
               decimalPlaces={settings.percentDecimalPlaces}
+              timerKind={activeTimer.kind}
               photoBackground={hasPhotoBackground}
               upcomingHeadline={vizUpcomingHeadline}
               events={timerUpcoming.events}
               holidays={timerUpcoming.holidays}
+              defaultListEventIds={timerUpcoming.defaultListEventIds}
               layout={settings.milestonesLayout}
+              onDownloadArmyChecklist={
+                settings.milestonesLayout === 'checklist'
+                  ? handleDownloadArmyChecklist
+                  : undefined
+              }
+              isDownloadingArmyChecklist={isSharingArmyChecklist}
             />
           ) : null}
 
@@ -375,39 +528,11 @@ export function HomeScreen({ navigation }: Props) {
                   ? (centerDisplayValue) => updateSettings({ centerDisplay: centerDisplayValue })
                   : undefined
               }
+              omitDemobilizationCountdown={omitDemobilizationCountdown}
             />
           ) : null}
 
-          {showUpcomingCard && timerUpcoming.item && upcomingGlyph ? (
-            <TimerUpcomingCard
-              item={timerUpcoming.item}
-              glyph={upcomingGlyph}
-              photoBackground={hasPhotoBackground}
-              showBorder={showPhotoUpcomingBorder}
-            />
-          ) : null}
-
-          {showStatCards && phase !== 'active' && phaseBreakdown ? (
-            <View style={styles.statsRow}>
-              <TimerStatCard
-                title={phaseCardTitle}
-                display={getStatCardDisplay(phaseBreakdown, statCardMode)}
-                photoBackground={hasPhotoBackground}
-                showBorder={showPhotoStatBorder}
-              />
-            </View>
-          ) : null}
-
-          {showStatCards && phase === 'active' && passedBreakdown && remainingBreakdown ? (
-            <View style={styles.statsRow}>
-              <TimerUnifiedStatCard
-                elapsed={getStatCardDisplay(passedBreakdown, statCardMode)}
-                remaining={getStatCardDisplay(remainingBreakdown, statCardMode)}
-                photoBackground={hasPhotoBackground}
-                showBorder={showPhotoStatBorder}
-              />
-            </View>
-          ) : null}
+          {upcomingAndStatCards}
 
           {showServiceSummaryButton ? (
             <Pressable
@@ -466,6 +591,28 @@ export function HomeScreen({ navigation }: Props) {
         onClose={() => setLetterBookVisible(false)}
       />
 
+      {isSharingArmyChecklist && armyChecklistShareItems.length > 0 ? (
+        <View
+          pointerEvents="none"
+          style={[styles.sharePoster, { width: shareWidth, height: shareHeight }]}
+          collapsable={false}
+        >
+          <View
+            ref={armyChecklistShareRef}
+            collapsable={false}
+            style={{ width: shareWidth, height: shareHeight }}
+          >
+            <ArmyEventsChecklistShareCard
+              width={shareWidth}
+              height={shareHeight}
+              settings={settings}
+              items={armyChecklistShareItems}
+              showEventDates={armyChecklistShowDates}
+            />
+          </View>
+        </View>
+      ) : null}
+
       {isSharing &&
       activeTimer &&
       progress &&
@@ -495,6 +642,7 @@ export function HomeScreen({ navigation }: Props) {
               frameUpcomingGlyph={frameUpcomingGlyph}
               timelineEvents={timerUpcoming.events}
               timelineHolidays={timerUpcoming.holidays}
+              timelineDefaultListEventIds={timerUpcoming.defaultListEventIds}
               timelineUpcoming={timerUpcoming.item}
             />
           </View>
@@ -581,6 +729,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 20,
   },
+  upcomingStatsGroup: {
+    width: '100%',
+    gap: 16,
+  },
   statsRow: {
     flexDirection: 'row',
     gap: 12,
@@ -615,7 +767,7 @@ const styles = StyleSheet.create({
   sharePoster: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    zIndex: 20,
+    left: -100000,
+    zIndex: -1,
   },
 });

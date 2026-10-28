@@ -36,7 +36,7 @@ async function captureTimerImage(target: RefObject<View | null>): Promise<string
   return toFileUri(uri);
 }
 
-async function shareCapturedImage(fileUri: string): Promise<void> {
+async function shareCapturedImage(fileUri: string, dialogTitle: string): Promise<void> {
   const available = await Sharing.isAvailableAsync();
   if (!available) {
     Alert.alert('Шаринг недоступен', 'На этом устройстве нельзя отправить файл');
@@ -45,14 +45,14 @@ async function shareCapturedImage(fileUri: string): Promise<void> {
 
   await Sharing.shareAsync(fileUri, {
     mimeType: 'image/png',
-    dialogTitle: 'Таймер',
+    dialogTitle,
     UTI: 'public.png',
   });
 }
 
 async function saveCapturedImage(fileUri: string): Promise<void> {
   if (!isMediaLibraryAvailable()) {
-    Alert.alert('Ошибка', 'Сохранение в галерею недоступно. Пересоберите приложение.');
+    Alert.alert('Ошибка', 'Сохранение в галерею недоступно. Пересоберите приложение');
     return;
   }
 
@@ -67,7 +67,19 @@ async function saveCapturedImage(fileUri: string): Promise<void> {
   Alert.alert('Готово', 'Картинка сохранена в галерею');
 }
 
-export async function shareTimerImage(target: RefObject<View | null>): Promise<void> {
+export interface ShareTimerImageOptions {
+  alertTitle?: string;
+  alertMessage?: string;
+  shareDialogTitle?: string;
+}
+
+export async function shareTimerImage(
+  target: RefObject<View | null>,
+  options: ShareTimerImageOptions = {},
+): Promise<void> {
+  const alertTitle = options.alertTitle ?? 'Картинка таймера';
+  const alertMessage = options.alertMessage ?? 'Сохранить в галерею или отправить';
+  const shareDialogTitle = options.shareDialogTitle ?? 'Таймер';
   try {
     const fileUri = await captureTimerImage(target);
     if (!fileUri) {
@@ -91,7 +103,7 @@ export async function shareTimerImage(target: RefObject<View | null>): Promise<v
       {
         text: 'Поделиться',
         onPress: () => {
-          void shareCapturedImage(fileUri).catch((error) => {
+          void shareCapturedImage(fileUri, shareDialogTitle).catch((error) => {
             logger.error('Ошибка шаринга таймера', error);
             Alert.alert('Ошибка', 'Не удалось поделиться картинкой');
           });
@@ -100,7 +112,7 @@ export async function shareTimerImage(target: RefObject<View | null>): Promise<v
       { text: 'Отмена', style: 'cancel' },
     ];
 
-    Alert.alert('Картинка таймера', 'Сохранить в галерею или отправить', buttons);
+    Alert.alert(alertTitle, alertMessage, buttons);
   } catch (error) {
     logger.error('Ошибка шаринга таймера', error);
     Alert.alert('Ошибка', 'Не удалось подготовить картинку');
