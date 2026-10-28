@@ -23,6 +23,7 @@ const payload: LetterBookPayload = {
     callStats: [],
     meetingStats: [],
     diaryStats: [],
+    timerVisitCount: 0,
   },
   letters: [
     {

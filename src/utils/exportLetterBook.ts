@@ -221,7 +221,7 @@ export async function exportLetterBook(
   options: LetterBookExportOptions = { includePhotos: true },
 ): Promise<boolean> {
   if (!isPrintAvailable()) {
-    Alert.alert('Недоступно', 'Экспорт в PDF недоступен. Пересоберите приложение.');
+    Alert.alert('Недоступно', 'Экспорт в PDF недоступен. Пересоберите приложение');
     return false;
   }
 

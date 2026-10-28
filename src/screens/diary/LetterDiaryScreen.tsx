@@ -20,7 +20,7 @@ export function LetterDiaryScreen({ navigation, route }: LetterDiaryScreenProps)
   const themeTitle = resolveTitle(themeId);
 
   const changeTheme = () => {
-    Alert.alert('Точно поменять?', 'Ваши изменения не сохранятся.', [
+    Alert.alert('Точно поменять?', 'Ваши изменения не сохранятся', [
       { text: 'Отмена', style: 'cancel' },
       {
         text: 'Поменять',
