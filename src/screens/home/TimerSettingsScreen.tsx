@@ -20,19 +20,26 @@ import { addDays, startOfDay } from 'date-fns';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { APP_NAME, FEATURES } from '@/constants';
+import { reloadAppSession } from '@/appSession';
+import { resetAllData } from '@/services/database';
+import {
+  applyAppNotificationsPreference,
+  readNotificationsEnabled,
+  rescheduleAppNotifications,
+} from '@/services/holidayNotifications';
 import { SettingsDropdown } from '@/components/common/SettingsDropdown';
+import { SettingsSegmented } from '@/components/common/SettingsSegmented';
 import { SettingsSlider } from '@/components/common/SettingsSlider';
 import { SettingsField } from '@/components/common/SettingsField';
+import { TimerTypeTilePicker } from '@/components/timer/TimerTypeTilePicker';
 import { DatePicker } from '@/components/common/DatePicker';
 import { ServiceDurationPresets } from '@/components/common/ServiceDurationPresets';
 import { ScreenBackground } from '@/components/common/ScreenBackground';
 import type { HomeStackParamList } from '@/types/navigation';
 import {
   DEFAULT_TIMER_SETTINGS,
-  DOT_GRID_CELL_SHAPE_LABELS,
   STAT_CARD_MODE_LABELS,
-  TIMER_TYPE_LABELS,
-  TIMER_UPCOMING_PREVIEW_LABELS,
+  defaultProgressBarModeForTimerType,
   getProgressBarModeOptions,
   MILESTONES_LAYOUT_LABELS,
   normalizeProgressBarMode,
@@ -55,40 +62,68 @@ import { isAndroidWidgetAvailable } from '@/utils/nativeAvailability';
 
 type Props = StackScreenProps<HomeStackParamList, 'TimerSettings'>;
 
-const TIMER_TYPE_OPTIONS = (Object.entries(TIMER_TYPE_LABELS) as [TimerType, string][]).map(
-  ([value, label]) => ({ value, label }),
-);
+const UPCOMING_PREVIEW_OPTIONS: { value: TimerUpcomingPreviewMode; label: string }[] = [
+  { value: 'off', label: 'Выкл' },
+  { value: 'nearest', label: 'Ближайшее' },
+  { value: 'pinned', label: 'Закрепить' },
+];
 
-const UPCOMING_PREVIEW_OPTIONS = (
-  Object.entries(TIMER_UPCOMING_PREVIEW_LABELS) as [TimerUpcomingPreviewMode, string][]
-).map(([value, label]) => ({ value, label }));
+const PROGRESS_BAR_SEGMENT_LABELS: Record<string, string> = {
+  percent: '%',
+  days: 'Дни',
+  weeks: 'Нед',
+  months: 'Мес',
+};
 
 const STAT_CARD_MODE_OPTIONS = (
   Object.entries(STAT_CARD_MODE_LABELS) as [StatCardMode, string][]
 ).map(([value, label]) => ({ value, label }));
 
-const DOT_GRID_CELL_SHAPE_OPTIONS = (
-  Object.entries(DOT_GRID_CELL_SHAPE_LABELS) as [DotGridCellShape, string][]
-).map(([value, label]) => ({ value, label }));
+const DOT_GRID_CELL_SHAPE_OPTIONS: { value: DotGridCellShape; label: string }[] = [
+  { value: 'circle', label: '● Кружки' },
+  { value: 'heart', label: '♥ Сердечки' },
+];
 
-const MILESTONES_LAYOUT_OPTIONS = (
-  Object.entries(MILESTONES_LAYOUT_LABELS) as [MilestonesLayout, string][]
-).map(([value, label]) => ({ value, label }));
+const MILESTONES_LAYOUT_OPTIONS: { value: MilestonesLayout; label: string }[] = [
+  { value: 'spine', label: MILESTONES_LAYOUT_LABELS.spine },
+  { value: 'checklist', label: MILESTONES_LAYOUT_LABELS.checklist },
+  ...(FEATURES.milestonesChipsLayout
+    ? [{ value: 'chips' as const, label: MILESTONES_LAYOUT_LABELS.chips }]
+    : []),
+];
+
+const MILESTONES_LAYOUT_HINTS: Record<'spine' | 'checklist' | 'chips', string> = {
+  spine: 'Показывает все события и праздники в сроке службы',
+  checklist: 'Только армейские события',
+  chips: 'Карточки событий с горизонтальной прокруткой',
+};
 
 const DECIMAL_OPTIONS = [0, 1, 2, 3, 4, 5, 6].map((value) => ({
   value,
   label: String(value),
 }));
 
+/** Дать React отрисовать overlay до тяжёлой работы */
+function waitForOverlayPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+}
+
 export function TimerSettingsScreen({ navigation }: Props) {
   const { settings, updateSettings } = useServiceTimer();
   const timerUpcoming = useTimerUpcoming(settings);
   const profile = useProfile();
   const [isPickingBackground, setIsPickingBackground] = useState(false);
+  const [isSavingDates, setIsSavingDates] = useState(false);
   const [userName, setUserName] = useState('');
   const [partnerName, setPartnerName] = useState('');
   const [enlistmentDate, setEnlistmentDate] = useState<Date | null>(null);
   const [demobilizationDate, setDemobilizationDate] = useState<Date | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
   const dimShared = useSharedValue(settings.backgroundDim);
   const theme = useAppTheme();
 
@@ -96,6 +131,7 @@ export function TimerSettingsScreen({ navigation }: Props) {
     useCallback(() => {
       void profile.reload();
       void timerUpcoming.reload();
+      void readNotificationsEnabled().then(setNotificationsEnabled);
     }, [profile.reload, timerUpcoming.reload]),
   );
 
@@ -118,7 +154,10 @@ export function TimerSettingsScreen({ navigation }: Props) {
   const isFrameTimer = settings.timerType === 'frame';
   const isDotGridTimer = settings.timerType === 'dotGrid';
   const isMilestonesTimer = settings.timerType === 'milestones';
-  const progressModeOptions = getProgressBarModeOptions(settings.timerType);
+  const progressModeOptions = getProgressBarModeOptions(settings.timerType).map((option) => ({
+    value: option.value,
+    label: PROGRESS_BAR_SEGMENT_LABELS[option.value] ?? option.label,
+  }));
   const safeProgressBarMode = normalizeProgressBarMode(
     settings.timerType,
     settings.progressBarMode,
@@ -129,13 +168,12 @@ export function TimerSettingsScreen({ navigation }: Props) {
     ('event:predefined-enlistment' as TimerUpcomingRef);
 
   const handleTimerTypeChange = (timerType: TimerType) => {
-    const nextMode =
-      timerType === 'dotGrid' && settings.progressBarMode === 'percent'
-        ? 'days'
-        : settings.progressBarMode;
     updateSettings({
       timerType,
-      progressBarMode: normalizeProgressBarMode(timerType, nextMode),
+      progressBarMode: normalizeProgressBarMode(
+        timerType,
+        defaultProgressBarModeForTimerType(timerType),
+      ),
     });
   };
 
@@ -144,13 +182,55 @@ export function TimerSettingsScreen({ navigation }: Props) {
     Alert.alert(ok ? 'Сохранено' : 'Ошибка', ok ? 'Имена обновлены' : 'Введите оба имени');
   };
 
+  const handleNotificationsToggle = async (next: boolean) => {
+    if (isUpdatingNotifications) {
+      return;
+    }
+    setIsUpdatingNotifications(true);
+    setNotificationsEnabled(next);
+    try {
+      const result = await applyAppNotificationsPreference(next);
+      if (next && result === 'denied') {
+        setNotificationsEnabled(false);
+        Alert.alert(
+          'Нет доступа',
+          'Разрешите уведомления в настройках телефона или попробуйте снова',
+        );
+        return;
+      }
+      if (next && result === 'unavailable') {
+        setNotificationsEnabled(false);
+        Alert.alert(
+          'Недоступно',
+          'Уведомления работают в сборке приложения с нативным модулем',
+        );
+      }
+    } catch (error) {
+      logger.error('Ошибка переключения уведомлений', error);
+      setNotificationsEnabled(!next);
+      Alert.alert('Ошибка', 'Не удалось изменить настройку уведомлений');
+    } finally {
+      setIsUpdatingNotifications(false);
+    }
+  };
+
   const handleSaveDates = async () => {
     if (!enlistmentDate || !demobilizationDate) {
       Alert.alert('Укажите обе даты');
       return;
     }
-    const error = await profile.saveDates(enlistmentDate, demobilizationDate);
-    Alert.alert(error ? 'Ошибка' : 'Сохранено', error ?? 'Даты службы обновлены');
+    if (FEATURES.timerSettingsSaveDatesOverlay) {
+      setIsSavingDates(true);
+      await waitForOverlayPaint();
+    }
+    try {
+      const error = await profile.saveDates(enlistmentDate, demobilizationDate);
+      Alert.alert(error ? 'Ошибка' : 'Сохранено', error ?? 'Даты службы обновлены');
+    } finally {
+      if (FEATURES.timerSettingsSaveDatesOverlay) {
+        setIsSavingDates(false);
+      }
+    }
   };
 
   const handlePickBackground = async () => {
@@ -194,6 +274,32 @@ export function TimerSettingsScreen({ navigation }: Props) {
     } finally {
       setIsPickingBackground(false);
     }
+  };
+
+  const handleDeleteAllData = () => {
+    Alert.alert(
+      'Удалить все данные?',
+      'Сотрутся таймер, события, праздники, настройки и фото на фоне. Приложение вернётся к первому запуску. Это нельзя отменить',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Удалить',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              try {
+                await resetAllData();
+                await rescheduleAppNotifications();
+                await reloadAppSession();
+              } catch (error) {
+                logger.error('Ошибка полного сброса данных', error);
+                Alert.alert('Ошибка', 'Не удалось удалить данные. Попробуйте ещё раз');
+              }
+            })();
+          },
+        },
+      ],
+    );
   };
 
   const handleRemoveBackground = () => {
@@ -242,32 +348,6 @@ export function TimerSettingsScreen({ navigation }: Props) {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Pressable
-            style={[
-              styles.themeLink,
-              {
-                backgroundColor: theme.overlay.fill,
-                borderColor: theme.overlay.border,
-              },
-            ]}
-            onPress={() => navigation.navigate('ColorThemes')}
-            accessibilityRole="button"
-            accessibilityLabel="Сменить тему приложения"
-          >
-            <View style={styles.themeLinkText}>
-              <Text style={[styles.themeLinkTitle, { color: theme.text.primary }]}>
-                Сменить тему
-              </Text>
-              <Text style={[styles.themeLinkHint, { color: theme.text.secondary }]}>
-                Фон, плашки и текст
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={22} color={theme.text.secondary} />
-          </Pressable>
-
-          <Text style={[styles.sectionLabel, styles.sectionSpacer, { color: theme.text.secondary }]}>
-            Имена
-          </Text>
           <SettingsField label="Ваше имя" value={userName} onChangeText={setUserName} />
           <View style={styles.fieldGap} />
           <SettingsField
@@ -309,18 +389,79 @@ export function TimerSettingsScreen({ navigation }: Props) {
             }}
           />
           <Pressable
-            style={[styles.saveButton, { backgroundColor: theme.text.primary }]}
+            style={[
+              styles.saveButton,
+              { backgroundColor: theme.text.primary },
+              FEATURES.timerSettingsSaveDatesOverlay &&
+                isSavingDates &&
+                styles.saveButtonDisabled,
+            ]}
             onPress={() => void handleSaveDates()}
+            disabled={FEATURES.timerSettingsSaveDatesOverlay && isSavingDates}
           >
             <Text style={[styles.saveButtonText, { color: theme.text.inverse }]}>
               Сохранить даты
             </Text>
           </Pressable>
 
+          <View style={[styles.switchRow, styles.sectionSpacer]}>
+            <View style={styles.notificationsLabelWrap}>
+              <Text style={[styles.switchLabel, { color: theme.text.primary }]}>
+                Уведомления о праздниках и событиях
+              </Text>
+              <Text style={[styles.notificationsHint, { color: theme.text.secondary }]}>
+                Напоминание в полночь в день события
+              </Text>
+            </View>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={(value) => void handleNotificationsToggle(value)}
+              disabled={isUpdatingNotifications}
+              trackColor={{
+                false: 'rgba(167, 154, 138, 0.35)',
+                true: theme.text.accent,
+              }}
+              thumbColor="#FFFFFF"
+              accessibilityLabel="Уведомления о праздниках и событиях"
+            />
+          </View>
+
+          <Pressable
+            style={[
+              styles.themeLink,
+              styles.sectionSpacer,
+              {
+                backgroundColor: theme.overlay.fill,
+                borderColor: theme.overlay.border,
+              },
+            ]}
+            onPress={() => navigation.navigate('ColorThemes')}
+            accessibilityRole="button"
+            accessibilityLabel="Сменить тему приложения"
+          >
+            <View style={styles.themeLinkText}>
+              <Text style={[styles.themeLinkTitle, { color: theme.text.primary }]}>
+                Сменить тему
+              </Text>
+              <Text style={[styles.themeLinkHint, { color: theme.text.secondary }]}>
+                Фон, плашки и текст
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={22} color={theme.text.secondary} />
+          </Pressable>
+
           <View style={styles.backgroundSection}>
             <Text style={[styles.sectionLabel, { color: theme.text.secondary }]}>Фото на фоне</Text>
 
-            <View style={styles.backgroundPreview}>
+            <View
+              style={[
+                styles.backgroundPreview,
+                {
+                  backgroundColor: theme.overlay.fill,
+                  borderColor: theme.overlay.border,
+                },
+              ]}
+            >
               {settings.backgroundImageUri ? (
                 <>
                   <Image
@@ -348,7 +489,13 @@ export function TimerSettingsScreen({ navigation }: Props) {
 
             <View style={styles.backgroundActions}>
               <Pressable
-                style={styles.photoButton}
+                style={[
+                  styles.photoButton,
+                  {
+                    backgroundColor: theme.overlay.fill,
+                    borderColor: theme.overlay.border,
+                  },
+                ]}
                 onPress={() => void handlePickBackground()}
                 disabled={isPickingBackground}
               >
@@ -360,13 +507,19 @@ export function TimerSettingsScreen({ navigation }: Props) {
 
               {settings.backgroundImageUri ? (
                 <Pressable
-                  style={styles.removePhotoButton}
+                  style={[
+                    styles.removePhotoButton,
+                    {
+                      borderColor: theme.overlay.border,
+                      backgroundColor: theme.overlay.fill,
+                    },
+                  ]}
                   onPress={handleRemoveBackground}
                   disabled={isPickingBackground}
                   accessibilityRole="button"
                   accessibilityLabel="Убрать фото с фона"
                 >
-                  <Feather name="trash-2" size={19} color={theme.text.accent} />
+                  <Feather name="trash-2" size={19} color={theme.text.secondary} />
                 </Pressable>
               ) : null}
             </View>
@@ -387,104 +540,122 @@ export function TimerSettingsScreen({ navigation }: Props) {
                   formatValue={(value) => `${value}%`}
                 />
 
-                <View style={styles.switchRow}>
-                  <Text style={[styles.switchLabel, { color: theme.text.primary }]}>
-                    Окантовка плашек «прошло / осталось»
-                  </Text>
-                  <Switch
-                    value={settings.photoStatCardBorder}
-                    onValueChange={(photoStatCardBorder) =>
-                      void updateSettings({ photoStatCardBorder })
-                    }
-                    trackColor={{
-                      false: 'rgba(167, 154, 138, 0.35)',
-                      true: theme.text.accent,
-                    }}
-                    thumbColor="#FFFFFF"
-                  />
-                </View>
+                {FEATURES.showPhotoElementBorderSwitches ? (
+                  <>
+                    <View style={styles.switchRow}>
+                      <Text style={[styles.switchLabel, { color: theme.text.primary }]}>
+                        Окантовка элемента «Событие»
+                      </Text>
+                      <Switch
+                        value={settings.photoUpcomingCardBorder}
+                        onValueChange={(photoUpcomingCardBorder) =>
+                          void updateSettings({ photoUpcomingCardBorder })
+                        }
+                        trackColor={{
+                          false: 'rgba(167, 154, 138, 0.35)',
+                          true: theme.text.accent,
+                        }}
+                        thumbColor="#FFFFFF"
+                      />
+                    </View>
 
-                <View style={styles.switchRow}>
-                  <Text style={[styles.switchLabel, { color: theme.text.primary }]}>
-                    Окантовка карточки события
-                  </Text>
-                  <Switch
-                    value={settings.photoUpcomingCardBorder}
-                    onValueChange={(photoUpcomingCardBorder) =>
-                      void updateSettings({ photoUpcomingCardBorder })
-                    }
-                    trackColor={{
-                      false: 'rgba(167, 154, 138, 0.35)',
-                      true: theme.text.accent,
-                    }}
-                    thumbColor="#FFFFFF"
-                  />
-                </View>
+                    <View style={styles.switchRow}>
+                      <Text style={[styles.switchLabel, { color: theme.text.primary }]}>
+                        Окантовка элемента «Таймер»
+                      </Text>
+                      <Switch
+                        value={settings.photoStatCardBorder}
+                        onValueChange={(photoStatCardBorder) =>
+                          void updateSettings({ photoStatCardBorder })
+                        }
+                        trackColor={{
+                          false: 'rgba(167, 154, 138, 0.35)',
+                          true: theme.text.accent,
+                        }}
+                        thumbColor="#FFFFFF"
+                      />
+                    </View>
+                  </>
+                ) : null}
               </>
             ) : null}
 
             <Text style={[styles.backgroundHint, { color: theme.text.secondary }]}>
               {settings.backgroundImageUri
-                ? 'Фото заполнит экран. Затемнение можно подкрутить, чтобы текст читался.'
-                : 'Фото автоматически заполнит экран. Затемнение можно будет настроить после выбора.'}
+                ? 'Затемнение можно подкрутить, чтобы текст читался'
+                : 'Затемнение можно будет настроить после выбора'}
             </Text>
           </View>
 
-          <SettingsDropdown
-            label="Тип таймера"
-            value={settings.timerType}
-            options={TIMER_TYPE_OPTIONS}
-            onChange={handleTimerTypeChange}
-          />
+          <TimerTypeTilePicker value={settings.timerType} onChange={handleTimerTypeChange} />
 
           {!isFrameTimer && timerTypeUsesProgressBarModes(settings.timerType) ? (
             <>
-              <SettingsDropdown
-                label={settings.timerType === 'dotGrid' ? 'Сетка: единица' : 'Режим прогресс-бара'}
+              <SettingsSegmented
+                label={isDotGridTimer ? 'Тип сетки' : 'Режим прогресс-бара'}
                 value={safeProgressBarMode}
                 options={progressModeOptions}
                 onChange={(progressBarMode) => updateSettings({ progressBarMode })}
+                equalWidth
               />
 
-              {safeProgressBarMode === 'percent' || isDotGridTimer ? (
-                <SettingsDropdown
+              {safeProgressBarMode === 'percent' ||
+              safeProgressBarMode === 'days' ||
+              isDotGridTimer ? (
+                <SettingsSegmented
                   label="Знаков после запятой"
                   value={settings.percentDecimalPlaces}
                   options={DECIMAL_OPTIONS}
                   onChange={(percentDecimalPlaces) => updateSettings({ percentDecimalPlaces })}
+                  equalWidth
+                  compact
                 />
               ) : null}
             </>
           ) : null}
 
           {isDotGridTimer ? (
-            <SettingsDropdown
-              label="Сетка: форма"
+            <SettingsSegmented
+              label="Форма элементов сетки"
               value={settings.dotGridCellShape}
               options={DOT_GRID_CELL_SHAPE_OPTIONS}
               onChange={(dotGridCellShape) => updateSettings({ dotGridCellShape })}
+              equalWidth
             />
           ) : null}
 
           {isMilestonesTimer ? (
-            <SettingsDropdown
+            <SettingsSegmented
               label="Вид ленты событий"
-              value={settings.milestonesLayout}
+              value={
+                settings.milestonesLayout === 'chips' && !FEATURES.milestonesChipsLayout
+                  ? 'spine'
+                  : settings.milestonesLayout
+              }
               options={MILESTONES_LAYOUT_OPTIONS}
               onChange={(milestonesLayout) => updateSettings({ milestonesLayout })}
+              equalWidth
+              hint={
+                MILESTONES_LAYOUT_HINTS[
+                  settings.milestonesLayout === 'chips' && !FEATURES.milestonesChipsLayout
+                    ? 'spine'
+                    : settings.milestonesLayout
+                ]
+              }
             />
           ) : null}
 
           {!isFrameTimer && !isDotGridTimer ? (
-            <SettingsDropdown
+            <SettingsSegmented
               label="Режим плашек"
               value={statCardMode}
               options={STAT_CARD_MODE_OPTIONS}
               onChange={(statCardMode) => updateSettings({ statCardMode })}
+              equalWidth
             />
           ) : null}
 
-          <SettingsDropdown
+          <SettingsSegmented
             label="Событие на таймере"
             value={settings.timerUpcomingPreview}
             options={UPCOMING_PREVIEW_OPTIONS}
@@ -499,6 +670,7 @@ export function TimerSettingsScreen({ navigation }: Props) {
               }
               void updateSettings({ timerUpcomingPreview });
             }}
+            equalWidth
           />
 
           {settings.timerUpcomingPreview === 'pinned' && timerUpcoming.pinOptions.length > 0 ? (
@@ -519,21 +691,56 @@ export function TimerSettingsScreen({ navigation }: Props) {
               </Text>
               {Platform.OS === 'android' && isAndroidWidgetAvailable() ? (
                 <Text style={[styles.widgetText, { color: theme.text.primary }]}>
-                  {`Долгое нажатие на пустое место рабочего стола → «Виджеты» → найдите «${APP_NAME}» → перетащите на экран. Он показывает дни до дембеля, призыва или конца выбранного срока.`}
+                  {`Долгое нажатие на пустое место рабочего стола → «Виджеты» → найдите «${APP_NAME}» → перетащите на экран. Он показывает дни до дембеля, призыва или конца выбранного срока`}
                 </Text>
               ) : Platform.OS === 'android' ? (
                 <Text style={[styles.widgetText, { color: theme.text.primary }]}>
-                  {`Виджет появится после сборки приложения с нативным модулем. Добавляется так: долгое нажатие на рабочий стол → «Виджеты» → «${APP_NAME}».`}
+                  {`Виджет появится после сборки приложения с нативным модулем. Добавляется так: долгое нажатие на рабочий стол → «Виджеты» → «${APP_NAME}»`}
                 </Text>
               ) : (
                 <Text style={[styles.widgetText, { color: theme.text.primary }]}>
-                  {`Виджет для iPhone пока недоступен. На Android: долгое нажатие на рабочий стол → «Виджеты» → «${APP_NAME}».`}
+                  {`Виджет для iPhone пока недоступен. На Android: долгое нажатие на рабочий стол → «Виджеты» → «${APP_NAME}»`}
                 </Text>
               )}
             </View>
           ) : null}
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.deleteAllLinkWrap,
+              styles.sectionSpacer,
+              pressed && styles.deleteAllLinkPressed,
+            ]}
+            onPress={handleDeleteAllData}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Удалить все данные"
+          >
+            <Text style={styles.deleteAllLinkText}>Удалить все данные</Text>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
+
+      {FEATURES.timerSettingsSaveDatesOverlay && isSavingDates ? (
+        <View
+          style={[styles.savingOverlay, { backgroundColor: theme.overlay.muted }]}
+          accessibilityLiveRegion="polite"
+          accessibilityLabel="Сохранение дат"
+        >
+          <View
+            style={[
+              styles.savingCard,
+              {
+                backgroundColor: theme.overlay.fill,
+                borderColor: theme.overlay.border,
+              },
+            ]}
+          >
+            <ActivityIndicator size="large" color={theme.text.primary} />
+            <Text style={[styles.savingLabel, { color: theme.text.primary }]}>Сохранение…</Text>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -590,8 +797,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.25)',
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
   },
   backgroundImage: {
     width: '100%',
@@ -631,8 +836,6 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.25)',
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
   },
   photoButtonText: {
     fontFamily: typography.fontFamily.sans,
@@ -645,8 +848,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(229, 57, 53, 0.22)',
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
   },
   backgroundHint: {
     marginTop: 8,
@@ -666,6 +867,16 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.sans,
     fontSize: 15,
     lineHeight: 20,
+  },
+  notificationsLabelWrap: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  notificationsHint: {
+    marginTop: 4,
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 12,
+    lineHeight: 17,
   },
   fieldGap: {
     height: 10,
@@ -703,6 +914,28 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     paddingVertical: 13,
   },
+  saveButtonDisabled: {
+    opacity: 0.55,
+  },
+  savingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 40,
+  },
+  savingCard: {
+    minWidth: 200,
+    alignItems: 'center',
+    gap: 14,
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingVertical: 28,
+    paddingHorizontal: 32,
+  },
+  savingLabel: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 16,
+  },
   saveButtonText: {
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 15,
@@ -719,5 +952,20 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
     lineHeight: 20,
+  },
+  deleteAllLinkWrap: {
+    alignSelf: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  deleteAllLinkPressed: {
+    opacity: 0.65,
+  },
+  deleteAllLinkText: {
+    fontFamily: typography.fontFamily.sansBold,
+    fontSize: 15,
+    color: '#bb322e',
+    textDecorationLine: 'underline',
+    textAlign: 'center',
   },
 });
