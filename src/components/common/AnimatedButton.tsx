@@ -6,8 +6,9 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-import { colors } from '@/theme/colors';
+import { colors, useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
+import type { ThemeMode } from '@/types/onboarding';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -19,6 +20,8 @@ interface AnimatedButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   children?: ReactNode;
+  /** Как у ServiceDurationPresets на онбординге — те же overlay-токены для light/dark */
+  themeMode?: ThemeMode;
 }
 
 /** Кнопка с анимацией нажатия */
@@ -29,7 +32,10 @@ export function AnimatedButton({
   loading = false,
   style,
   textStyle,
+  themeMode,
 }: AnimatedButtonProps) {
+  const appTheme = useAppTheme();
+  const theme = themeMode ? colors[themeMode] : appTheme;
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -46,7 +52,16 @@ export function AnimatedButton({
 
   return (
     <AnimatedPressable
-      style={[styles.button, style, animatedStyle, disabled && styles.disabled]}
+      style={[
+        styles.button,
+        {
+          backgroundColor: theme.overlay.fill,
+          borderColor: theme.overlay.border,
+        },
+        style,
+        animatedStyle,
+        disabled && styles.disabled,
+      ]}
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
@@ -56,9 +71,9 @@ export function AnimatedButton({
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
     >
       {loading ? (
-        <ActivityIndicator color={colors.light.text.primary} />
+        <ActivityIndicator color={theme.text.primary} />
       ) : (
-        <Text style={[styles.label, textStyle]}>{label}</Text>
+        <Text style={[styles.label, { color: theme.text.primary }, textStyle]}>{label}</Text>
       )}
     </AnimatedPressable>
   );
@@ -66,20 +81,17 @@ export function AnimatedButton({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: colors.light.background.end,
     borderRadius: 4,
     paddingVertical: 16,
     marginHorizontal: 24,
     marginTop: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.35)',
   },
   disabled: {
     opacity: 0.7,
   },
   label: {
-    color: colors.light.text.primary,
     fontSize: 18,
     fontFamily: typography.fontFamily.primary,
   },

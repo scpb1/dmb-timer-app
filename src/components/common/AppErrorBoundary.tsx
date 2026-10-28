@@ -48,7 +48,13 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
           </Text>
         ) : null}
         <Pressable
-          style={styles.button}
+          style={[
+            styles.button,
+            {
+              backgroundColor: colors.light.overlay.fill,
+              borderColor: colors.light.overlay.border,
+            },
+          ]}
           onPress={this.handleReset}
           accessibilityRole="button"
           accessibilityLabel="Перезапустить"
@@ -89,10 +95,10 @@ const styles = StyleSheet.create({
   },
   button: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.light.background.end,
     borderRadius: 4,
     paddingVertical: 14,
     paddingHorizontal: 20,
+    borderWidth: 1,
   },
   buttonLabel: {
     fontFamily: typography.fontFamily.sansBold,

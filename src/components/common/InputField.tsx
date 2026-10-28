@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -44,8 +44,12 @@ export function InputField({
   themeMode,
 }: InputFieldProps) {
   const inputRef = useRef<TextInput>(null);
+  const [focused, setFocused] = useState(false);
   const appTheme = useAppTheme();
   const theme = themeMode ? colors[themeMode] : appTheme;
+
+  const showAndroidCenterCaret =
+    Platform.OS === 'android' && focused && value.length === 0;
 
   return (
     <KeyboardAvoidingView
@@ -62,26 +66,39 @@ export function InputField({
           <Text style={[styles.label, { color: theme.text.primary }, labelStyle]}>{label}</Text>
         ) : null}
 
-        <TextInput
-          ref={inputRef}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={theme.input.placeholder}
-          style={[
-            styles.input,
-            {
-              color: theme.text.primary,
-              borderBottomColor: error ? theme.text.accent : theme.input.border,
-            },
-            inputStyle,
-          ]}
-          autoFocus={autoFocus}
-          autoCapitalize="words"
-          autoCorrect={false}
-          returnKeyType="done"
-          onSubmitEditing={onSubmitEditing}
-        />
+        <View style={styles.inputShell}>
+          {showAndroidCenterCaret ? (
+            <View style={[styles.centerCaret, { backgroundColor: theme.text.primary }]} />
+          ) : null}
+
+          <TextInput
+            ref={inputRef}
+            value={value}
+            onChangeText={onChangeText}
+            placeholder={placeholder}
+            placeholderTextColor={theme.input.placeholder}
+            style={[
+              styles.input,
+              {
+                color: theme.text.primary,
+                borderBottomColor: error ? theme.text.accent : theme.input.border,
+              },
+              inputStyle,
+            ]}
+            autoFocus={autoFocus}
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="done"
+            onSubmitEditing={onSubmitEditing}
+            textAlign="center"
+            caretHidden={showAndroidCenterCaret}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            selection={
+              value.length === 0 ? { start: 0, end: 0 } : undefined
+            }
+          />
+        </View>
 
         {error ? <Text style={[styles.error, { color: theme.text.accent }]}>{error}</Text> : null}
       </ScrollView>
@@ -96,6 +113,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
+    alignItems: 'stretch',
+    width: '100%',
   },
   label: {
     fontFamily: typography.fontFamily.primary,
@@ -104,13 +123,28 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 32,
   },
+  inputShell: {
+    position: 'relative',
+    alignSelf: 'stretch',
+    marginHorizontal: 24,
+  },
   input: {
     fontFamily: typography.fontFamily.primary,
     borderBottomWidth: 1,
     fontSize: 24,
+    lineHeight: 32,
     textAlign: 'center',
     paddingVertical: 12,
-    marginHorizontal: 24,
+    width: '100%',
+  },
+  centerCaret: {
+    position: 'absolute',
+    top: 12,
+    left: '50%',
+    marginLeft: -1,
+    width: 2,
+    height: 28,
+    zIndex: 1,
   },
   error: {
     textAlign: 'center',

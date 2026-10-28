@@ -21,7 +21,7 @@ export function ServiceDurationPresets({
   return (
     <View style={styles.wrap}>
       <Text style={[styles.caption, { color: theme.text.secondary }]}>
-        Или срок от даты призыва
+        или срок от даты призыва
       </Text>
       <View style={styles.row}>
         {SERVICE_DURATION_PRESETS.map((preset) => (

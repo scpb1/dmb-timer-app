@@ -19,6 +19,7 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 
+import { useAppTheme } from '@/theme';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import { hexToHsv, hsvToHex, normalizeHex } from '@/utils/color';
@@ -81,6 +82,7 @@ const HueWheel = memo(function HueWheel() {
 
 /** Круг HSV + яркость + поле HEX */
 export function ColorWheelPicker({ visible, color, onClose, onChange }: ColorWheelPickerProps) {
+  const theme = useAppTheme();
   const initial = hexToHsv(color) ?? { h: 24, s: 0.24, v: 0.24 };
   const [hue, setHue] = useState(initial.h);
   const [saturation, setSaturation] = useState(initial.s);
@@ -277,7 +279,16 @@ export function ColorWheelPicker({ visible, color, onClose, onChange }: ColorWhe
 
             <View style={styles.previewRow}>
               <View style={[styles.preview, { backgroundColor: hex }]} />
-              <Pressable style={styles.doneButton} onPress={onClose}>
+              <Pressable
+                style={[
+                  styles.doneButton,
+                  {
+                    backgroundColor: theme.overlay.fill,
+                    borderColor: theme.overlay.border,
+                  },
+                ]}
+                onPress={onClose}
+              >
                 <Text style={styles.doneLabel}>Готово</Text>
               </Pressable>
             </View>
@@ -394,12 +405,10 @@ const styles = StyleSheet.create({
   },
   doneButton: {
     flex: 1,
-    backgroundColor: colors.light.background.end,
     borderRadius: 4,
     paddingVertical: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.35)',
   },
   doneLabel: {
     fontFamily: typography.fontFamily.sansBold,

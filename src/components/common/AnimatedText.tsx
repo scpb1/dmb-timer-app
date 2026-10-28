@@ -13,6 +13,16 @@ import { typography } from '@/theme/typography';
 
 const AnimatedHighlightText = Animated.createAnimatedComponent(Text);
 
+function styleWithoutColor(style?: StyleProp<TextStyle>): StyleProp<TextStyle> {
+  const flat = StyleSheet.flatten(style);
+  if (!flat) {
+    return undefined;
+  }
+
+  const { color: _color, ...rest } = flat;
+  return rest;
+}
+
 interface AnimatedTextProps {
   children: string;
   visible?: boolean;
@@ -23,6 +33,8 @@ interface AnimatedTextProps {
   highlightStyle?: StyleProp<TextStyle>;
   highlightDelay?: number;
   initialColor?: string;
+  /** Только выделение слова; появление/исчезание — снаружи (например fade онбординга) */
+  skipEntranceAnimation?: boolean;
 }
 
 function HighlightWord({
@@ -31,16 +43,19 @@ function HighlightWord({
   toColor,
   delay,
   textStyle,
+  highlightStyle,
 }: {
   word: string;
   fromColor: string;
   toColor: string;
   delay: number;
   textStyle?: StyleProp<TextStyle>;
+  highlightStyle?: StyleProp<TextStyle>;
 }) {
   const progress = useSharedValue(0);
 
   useEffect(() => {
+    progress.value = 0;
     progress.value = withDelay(
       delay,
       withTiming(1, { duration: 500, easing: Easing.out(Easing.cubic) }),
@@ -52,7 +67,9 @@ function HighlightWord({
   }));
 
   return (
-    <AnimatedHighlightText style={[styles.text, textStyle, colorStyle]}>
+    <AnimatedHighlightText
+      style={[styles.text, styleWithoutColor(textStyle), styleWithoutColor(highlightStyle), colorStyle]}
+    >
       {word}
     </AnimatedHighlightText>
   );
@@ -69,9 +86,10 @@ export function AnimatedText({
   highlightStyle,
   highlightDelay = typography.animation.highlightDelayMs,
   initialColor,
+  skipEntranceAnimation = false,
 }: AnimatedTextProps) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(16);
+  const opacity = useSharedValue(skipEntranceAnimation ? 1 : 0);
+  const translateY = useSharedValue(skipEntranceAnimation ? 0 : 16);
 
   const flatStyle = StyleSheet.flatten(style);
   const baseColor = initialColor ?? (flatStyle?.color as string | undefined) ?? '#3E3630';
@@ -79,6 +97,12 @@ export function AnimatedText({
     (StyleSheet.flatten(highlightStyle)?.color as string | undefined) ?? '#e53935';
 
   useEffect(() => {
+    if (skipEntranceAnimation) {
+      opacity.value = 1;
+      translateY.value = 0;
+      return;
+    }
+
     opacity.value = withDelay(
       delay,
       withTiming(visible ? 1 : 0, {
@@ -93,7 +117,7 @@ export function AnimatedText({
         easing: visible ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
       }),
     );
-  }, [visible, delay, duration, opacity, translateY]);
+  }, [visible, delay, duration, opacity, translateY, skipEntranceAnimation]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -117,6 +141,7 @@ export function AnimatedText({
             toColor={accentColor}
             delay={highlightDelay}
             textStyle={style}
+            highlightStyle={highlightStyle}
           />
         ) : null}
       </Text>
