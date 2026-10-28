@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Жди — прототипы иконки</title>
+  <style>
+    :root {
+      --text: #3e3630;
+      --muted: #a79a8a;
+      --card: rgba(255, 255, 255, 0.55);
+      --border: rgba(167, 154, 138, 0.35);
+      --accent: #e53935;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: linear-gradient(165deg, #fcf7df 0%, #ede8d5 45%, #c7d3db 100%);
+      min-height: 100vh;
+      color: var(--text);
+      padding: 2rem 1.5rem 3rem;
+    }
+    h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.35rem; }
+    p.lead {
+      margin: 0 0 1.25rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+      max-width: 44rem;
+      line-height: 1.55;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.1rem;
+      max-width: 1100px;
+    }
+    a.card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.15rem 1.25rem 1.25rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    a.card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(62, 54, 48, 0.08);
+    }
+    a.card h2 { margin: 0.65rem 0 0.4rem; font-size: 1.02rem; }
+    a.card .tag {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    a.card p { margin: 0; font-size: 0.86rem; color: var(--muted); line-height: 1.45; }
+    .thumb {
+      width: 72px;
+      height: 72px;
+      border-radius: 22.37%;
+      overflow: hidden;
+      box-shadow: 0 6px 16px rgba(62, 54, 48, 0.12);
+    }
+    .thumb svg { display: block; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <h1>Прототипы иконки «Жди»</h1>
+  <p class="lead">
+    HTML-макеты в палитре приложения: крем <code>#FCF7DF</code>, коричневый <code>#3E3630</code>,
+    акцент <code>#e53935</code>. На каждой странице — размеры, домашний экран, Android adaptive и сплэш.
+    Открывай файлы локально в браузере; приложение не меняется.
+  </p>
+
+  <div class="grid" style="max-width:1100px;margin-bottom:1.25rem;">
+    <a class="card" href="devichya/index.html" style="border-color:rgba(229,57,53,0.35);background:rgba(229,57,53,0.06);">
+      <span class="tag">новое</span>
+      <h2>Девичья служба — иконки</h2>
+      <p><a href="devichya/figures/index.html">Силуэт и руки</a> (новое) · <a href="devichya/ideas/index.html">бант/символы</a> · <a href="devichya/concept-a-bow.html">А + бант</a>.</p>
+    </a>
+  </div>
+
+  <div class="grid">
+    <a class="card" href="concept-sketch-batch.html" style="border-color:rgba(199,211,219,0.8);background:rgba(255,255,255,0.45);">
+      <div class="thumb" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1024" height="560" fill="#4a5238"/>
+          <path fill="#FCF7DF" d="M332 560a180 180 0 0 1 360 0z"/>
+          <rect fill="#3E3630" y="552" width="1024" height="16"/>
+          <rect fill="#6a7558" y="560" width="1024" height="464"/>
+        </svg>
+      </div>
+      <span class="tag">эскизы · 16 шт</span>
+      <h2>Вторая партия</h2>
+      <p>Рассвет, чемодан, окно, часы, мишень «0», костёр… Сетка 112 + 29 px.</p>
+    </a>
+
+    <a class="card" href="concept-army-simple.html" style="border-color:rgba(74,82,56,0.45);background:rgba(62,54,48,0.05);">
+      <div class="thumb" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1024" height="1024" fill="#3E3630"/>
+          <path fill="#D4C4A8" d="M292 248h440c33 0 60 27 60 60v408c0 33-27 60-60 60H292c-33 0-60-27-60-60V308c0-33 27-60 60-60z"/>
+          <circle cx="512" cy="318" r="52" fill="#3E3630"/>
+          <circle cx="432" cy="548" r="28" fill="#3E3630"/>
+          <circle cx="512" cy="548" r="28" fill="#3E3630"/>
+          <circle cx="592" cy="548" r="28" fill="#3E3630"/>
+          <rect x="352" y="648" width="320" height="20" rx="10" fill="#e53935" opacity="0.85"/>
+        </svg>
+      </div>
+      <span class="tag">армейское · новое</span>
+      <h2>Простое · не как у конкурента</h2>
+      <p>Жетон, засечки, календарь, проход, полоски — пять разных силуэтов без нашивок.</p>
+    </a>
+
+    <a class="card" href="concept-zh.html">
+      <div class="thumb" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1024" height="1024" fill="#3E3630"/>
+          <text x="512" y="700" text-anchor="middle" font-size="620" font-weight="800" fill="#F5F2EB" font-family="Segoe UI, system-ui, sans-serif">Ж</text>
+          <circle cx="748" cy="792" r="36" fill="#e53935"/>
+        </svg>
+      </div>
+      <span class="tag">монограмма</span>
+      <h2>Буква «Ж»</h2>
+      <p>Монограмма + красная точка. Узнаваемо на сетке, не похоже на почту или календарь.</p>
+    </a>
+
+    <a class="card" href="concept-zh-du.html">
+      <div class="thumb" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1024" height="1024" fill="#3E3630"/>
+          <text x="512" y="720" text-anchor="middle" font-size="620" font-weight="800" fill="#F5F2EB" font-family="Segoe UI, system-ui, sans-serif">Ж</text>
+          <text x="668" y="812" font-size="132" font-weight="800" fill="#e53935" font-family="Segoe UI, system-ui, sans-serif">ду</text>
+        </svg>
+      </div>
+      <span class="tag">монограмма</span>
+      <h2>«Ж» + ду</h2>
+      <p>Как «Ж» с точкой, но «ду» вместо кружка — жду.</p>
+    </a>
+
+    <a class="card" href="concept-a.html">
+      <div class="thumb" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1024" height="1024" fill="#3E3630"/>
+          <text x="512" y="720" text-anchor="middle" font-size="640" font-weight="800" fill="#F5F2EB" font-family="Segoe UI, system-ui, sans-serif">А</text>
+          <circle cx="768" cy="808" r="36" fill="#e53935"/>
+        </svg>
+      </div>
+      <span class="tag">монограмма</span>
+      <h2>Буква «А»</h2>
+      <p>Тот же стиль, что «Ж». Чёткий треугольный силуэт.</p>
+    </a>
+
+    <a class="card" href="concept-d-letter.html">
+      <div class="thumb" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1024" height="1024" fill="#3E3630"/>
+          <text x="512" y="710" text-anchor="middle" font-size="600" font-weight="800" fill="#F5F2EB" font-family="Segoe UI, system-ui, sans-serif">Д</text>
+          <circle cx="792" cy="800" r="36" fill="#e53935"/>
+        </svg>
+      </div>
+      <span class="tag">монограмма</span>
+      <h2>Буква «Д»</h2>
+      <p>Намёк на дембель и ддд. Широкая дуга внизу.</p>
+    </a>
+
+    <a class="card" href="concept-ring.html">
+      <div class="thumb" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1024" height="1024" fill="#FCF7DF"/>
+          <circle cx="512" cy="512" r="340" fill="none" stroke="#C7D3DB" stroke-width="88"/>
+          <circle cx="512" cy="512" r="340" fill="none" stroke="#3E3630" stroke-width="88" stroke-linecap="round"
+            stroke-dasharray="1450 2138" transform="rotate(-90 512 512)"/>
+          <path fill="#e53935" d="M512 560c-48-36-98-28-118 8-22 40 4 88 48 128l70 64 70-64c44-40 70-88 48-128-20-36-70-44-118-8z"/>
+        </svg>
+      </div>
+      <span class="tag">B · продукт</span>
+      <h2>Кольцо таймера</h2>
+      <p>Круговой прогресс как на главной. Сердце — кого ждут.</p>
+    </a>
+
+    <a class="card" href="concept-envelope.html">
+      <div class="thumb" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FCF7DF"/>
+              <stop offset="100%" stop-color="#C7D3DB"/>
+            </linearGradient>
+          </defs>
+          <rect width="1024" height="1024" fill="url(#g)"/>
+          <rect x="212" y="380" width="600" height="360" rx="24" fill="#3E3630"/>
+          <path fill="#2d2722" d="M212 404 L512 620 L812 404 Z"/>
+          <circle cx="512" cy="448" r="52" fill="#e53935"/>
+          <path fill="#FCF7DF" d="M512 432c-10-8-22-6-28 2-8 10-2 24 10 34l18 16 18-16c12-10 18-24 10-34-6-8-18-10-28-2z"/>
+        </svg>
+      </div>
+      <span class="tag">C · дневник</span>
+      <h2>Конверт</h2>
+      <p>Письма и личный дневник. Теплее, но ближе к «почте».</p>
+    </a>
+
+    <a class="card" href="concept-hourglass.html">
+      <div class="thumb" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1024" height="1024" fill="#0a0a0b"/>
+          <path fill="#F5F2EB" d="M320 240h384L512 480 320 240zm0 544h384L512 544 320 784z"/>
+          <rect x="472" y="488" width="80" height="48" rx="4" fill="#e53935"/>
+          <circle cx="512" cy="520" r="6" fill="#F5F2EB"/>
+          <circle cx="512" cy="548" r="5" fill="#F5F2EB" opacity="0.7"/>
+          <circle cx="512" cy="572" r="4" fill="#F5F2EB" opacity="0.45"/>
+        </svg>
+      </div>
+      <span class="tag">D · метафора</span>
+      <h2>Песочные часы</h2>
+      <p>Ожидание на тёмном фоне как у сплэша. Абстрактно и спокойно.</p>
+    </a>
+
+    <a class="card" href="concept-wordmark.html">
+      <div class="thumb" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1024" height="1024" fill="#FCF7DF"/>
+          <text x="512" y="580" text-anchor="middle" font-size="300" font-weight="800" fill="#3E3630" font-family="Segoe UI, system-ui, sans-serif" letter-spacing="-0.04em">ддд</text>
+          <rect x="328" y="650" width="368" height="16" rx="8" fill="#e53935"/>
+        </svg>
+      </div>
+      <span class="tag">wordmark</span>
+      <h2>«ддд» wordmark</h2>
+      <p>В приложении · крем + полоска. Палитры девичьи / армейские на странице.</p>
+    </a>
+
+    <a class="card" href="concept-wordmark-ddd.html">
+      <div class="thumb" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1024" height="1024" fill="#6a5f31"/>
+          <text x="512" y="950" text-anchor="middle" font-size="1250" font-weight="800" fill="#e53935" font-family="Segoe UI, system-ui, sans-serif">?</text>
+          <text x="512" y="580" text-anchor="middle" font-size="300" font-weight="800" fill="#ffffff" font-family="Segoe UI, system-ui, sans-serif" letter-spacing="-0.04em">ддд</text>
+        </svg>
+      </div>
+      <span class="tag">wordmark</span>
+      <h2>«ддд»</h2>
+      <p>Хаки + красный «?» + «ддд». Есть палитра из 8 вариантов.</p>
+    </a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Иконка — «Д»</title>
+  <link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Все варианты</a>
+  <h1>Буква «Д»</h1>
+  <p class="lead">
+    Монограмма в том же стиле. «Д» намекает на дембель и ддд без цифр на иконке.
+    Нижняя дуга шире — точку сдвинули вправо, чтобы не липла к букве.
+  </p>
+
+  <div class="layout">
+    <section class="panel">
+      <h2>Мастер · 1024 (iOS squircle)</h2>
+      <div class="hero-row">
+        <div class="icon-wrap">
+          <div class="icon-ios" data-icon-slot></div>
+          <span>180 px preview</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Размеры</h2>
+      <div class="size-ladder">
+        <figure><div class="slot size-1024" data-icon-slot></div><figcaption>1024 → 128</figcaption></figure>
+        <figure><div class="slot size-180" data-icon-slot></div><figcaption>180</figcaption></figure>
+        <figure><div class="slot size-60" data-icon-slot></div><figcaption>60</figcaption></figure>
+        <figure><div class="slot size-29" data-icon-slot></div><figcaption>29</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Домашний экран</h2>
+      <div class="phone-grid">
+        <div class="phone light-wallpaper">
+          <div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+            <div class="app-grid">
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Фото</span></div>
+              <div class="app-item target"><div class="icon-ios" data-icon-slot></div><span class="label">Жди</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Календарь</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Почта</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Заметки</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Музыка</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Карты</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Настройки</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="phone dark-wallpaper">
+          <div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+            <div class="app-grid">
+              <div class="app-item target"><div class="icon-ios" data-icon-slot></div><span class="label">Жди</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Фото</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Карты</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Почта</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Android adaptive · фон #0a0a0b</h2>
+      <div class="android-row">
+        <div class="android-adaptive">
+          <div class="bg"></div>
+          <div class="fg" data-icon-slot></div>
+        </div>
+        <div class="android-shapes">
+          <div class="shape-preview"><div class="shape-circle" data-icon-slot></div><span>Круг</span></div>
+          <div class="shape-preview"><div class="shape-squircle" data-icon-slot></div><span>Squircle</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Сплэш и уведомление</h2>
+      <div class="hero-row">
+        <div class="splash-preview dark">
+          <div class="icon-ios" data-icon-slot></div>
+          <div class="word">Жди</div>
+        </div>
+        <div class="notif-row">
+          <div class="icon-ios" data-icon-slot></div>
+          <div class="notif-body">
+            <strong>Жди</strong>
+            <p>287 дней до дембеля</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel pros-cons">
+      <div>
+        <h3>Плюсы</h3>
+        <ul>
+          <li>Смысл для аудитории: дембель, отсчёт</li>
+          <li>Устойчивый силуэт, хорошо в squircle</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Минусы</h3>
+        <ul>
+          <li>Не буква из названия приложения</li>
+          <li>На 29 px дуга может «плыть»</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const ICON = `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="1024" height="1024" fill="#474530"/>
+      <text x="512" y="665" text-anchor="middle" font-size="600" font-weight="800" fill="#F5F2EB" font-family="Segoe UI, system-ui, sans-serif">Д</text>
+      <circle cx="794" cy="755" r="36" fill="#c70000"/>
+    </svg>`;
+    document.querySelectorAll("[data-icon-slot]").forEach((el) => { el.innerHTML = ICON; });
+  </script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Иконка — эскизы · вторая партия</title>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    .sketch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+    .sketch-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--card);
+      padding: 1rem 0.85rem 0.9rem;
+    }
+    .sketch-card h3 {
+      margin: 0.65rem 0 0.25rem;
+      font-size: 0.95rem;
+      font-weight: 650;
+    }
+    .sketch-card p {
+      margin: 0 0 0.75rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.4;
+      min-height: 2.5em;
+    }
+    .sketch-card .previews {
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .sketch-card .slot.size-112 {
+      width: 112px;
+      height: 112px;
+    }
+    .sketch-card .slot.size-29 {
+      width: 29px;
+      height: 29px;
+      border-radius: 22.37%;
+    }
+    .sketch-card .previews figcaption {
+      font-size: 0.62rem;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 0.2rem;
+    }
+    .sketch-card figure { margin: 0; }
+    .links-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      font-size: 0.86rem;
+    }
+    .links-row a { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все варианты</a>
+  <div class="links-row">
+    <a href="concept-army-simple.html">← первая партия (жетон…)</a>
+  </div>
+  <h1>Ещё эскизы</h1>
+  <p class="lead">
+    Другая подборка: не нашивки, не wordmark, не буква «Ж». Смотри на <strong>29 px</strong> — если там каша,
+    вариант отпадает. Напиши номера или названия, что «живее»; один доведём до полного макета.
+  </p>
+
+  <div class="layout">
+    <section class="panel">
+      <div class="sketch-grid" id="grid"></div>
+    </section>
+  </div>
+
+  <script>
+    const SKETCHES = [
+      {
+        id: "sunrise",
+        title: "Рассвет",
+        note: "День ближе. Горизонт + солнце — без цифр.",
+      },
+      {
+        id: "suitcase",
+        title: "Чемодан",
+        note: "Собран в дорогу домой. Простой прямоугольник.",
+      },
+      {
+        id: "tent",
+        title: "Палатка",
+        note: "Полевая служба, один треугольник.",
+      },
+      {
+        id: "window",
+        title: "Окно казармы",
+        note: "Смотришь наружу. Крест рамы + свет.",
+      },
+      {
+        id: "watch",
+        title: "Часы на руке",
+        note: "Таймер. Один бегунок, без циферблата.",
+      },
+      {
+        id: "moon",
+        title: "Луна",
+        note: "Ночи в запасе. Три звезды — намёк на «ещё».",
+      },
+      {
+        id: "medal",
+        title: "Медаль",
+        note: "Круг + лента. Пустой центр — «ещё не финал».",
+      },
+      {
+        id: "ribbon-bar",
+        title: "Планка",
+        note: "Три прямоугольника, не уголки. Награды / отметки.",
+      },
+      {
+        id: "key",
+        title: "Ключ",
+        note: "От дома. Крупный силуэт.",
+      },
+      {
+        id: "path",
+        title: "Тропа",
+        note: "Путь к выходу: линия и три точки.",
+      },
+      {
+        id: "target",
+        title: "Мишень «0»",
+        note: "Кольца, в центре ноль — день дембеля.",
+      },
+      {
+        id: "progress",
+        title: "Полоски прогресса",
+        note: "Три ячейки: две сняты, одна осталась.",
+      },
+      {
+        id: "bell",
+        title: "Колокол",
+        note: "Подъём / отбой — ритм службы.",
+      },
+      {
+        id: "thermos",
+        title: "Термос",
+        note: "Армейский быт, узнаваемый цилиндр.",
+      },
+      {
+        id: "letter-fold",
+        title: "Письмо",
+        note: "Треугольный конверт, не как в «Конверте» с сердцем.",
+      },
+      {
+        id: "campfire",
+        title: "Костёр",
+        note: "Пауза, вечер. Три языка пламени.",
+      },
+    ];
+
+    const ICONS = {
+      sunrise: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#4a5238" width="1024" height="560"/><rect fill="#6a7558" y="560" width="1024" height="464"/><path fill="#FCF7DF" d="M332 560a180 180 0 0 1 360 0z"/><path fill="#e53935" d="M332 560a180 180 0 0 1 360 0L512 560z" opacity="0.35"/><rect fill="#3E3630" y="552" width="1024" height="16"/></svg>`,
+
+      suitcase: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#FCF7DF" width="1024" height="1024"/><rect fill="#3E3630" x="272" y="360" width="480" height="380" rx="48"/><rect fill="#2d2722" x="272" y="360" width="480" height="80" rx="48"/><path fill="none" stroke="#FCF7DF" stroke-width="28" d="M392 400h240"/><rect fill="#3E3630" x="432" y="280" width="160" height="100" rx="24"/><circle fill="#e53935" cx="512" cy="560" r="36"/></svg>`,
+
+      tent: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#3E3630" width="1024" height="1024"/><path fill="#6a5f31" d="M512 280L832 760H192z"/><path fill="#4a5238" d="M512 280L512 760"/><circle fill="#e53935" cx="512" cy="420" r="28"/></svg>`,
+
+      window: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#2d2722" width="1024" height="1024"/><rect fill="#C7D3DB" x="280" y="240" width="464" height="544" rx="20"/><rect fill="#FCF7DF" opacity="0.45" x="280" y="240" width="464" height="544" rx="20"/><rect fill="#3E3630" x="492" y="240" width="40" height="544"/><rect fill="#3E3630" x="280" y="492" width="464" height="40"/><rect fill="#e53935" x="320" y="680" width="120" height="16" rx="8"/></svg>`,
+
+      watch: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#FCF7DF" width="1024" height="1024"/><rect fill="#3E3630" x="352" y="352" width="320" height="320" rx="48"/><circle fill="#F5F2EB" cx="512" cy="512" r="120"/><circle fill="none" stroke="#3E3630" stroke-width="16" cx="512" cy="512" r="120"/><line stroke="#e53935" stroke-width="20" stroke-linecap="round" x1="512" y1="512" x2="512" y2="420"/><line stroke="#3E3630" stroke-width="14" stroke-linecap="round" x1="512" y1="512" x2="580" y2="540"/><rect fill="#3E3630" x="432" y="260" width="160" height="48" rx="12"/><rect fill="#3E3630" x="432" y="716" width="160" height="48" rx="12"/></svg>`,
+
+      moon: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#121a28" width="1024" height="1024"/><path fill="#FCF7DF" d="M620 260a220 220 0 1 0 0 440 280 280 0 1 1 0-440z"/><circle fill="#FCF7DF" opacity="0.85" cx="360" cy="340" r="12"/><circle fill="#FCF7DF" opacity="0.65" cx="420" cy="280" r="8"/><circle fill="#FCF7DF" opacity="0.65" cx="320" cy="420" r="8"/><circle fill="#e53935" cx="720" cy="720" r="32"/></svg>`,
+
+      medal: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#FCF7DF" width="1024" height="1024"/><path fill="#e53935" d="M380 280l60 160-100 80 40-200zm264 0l-60 160 100 80-40-200z"/><circle fill="#3E3630" cx="512" cy="560" r="180"/><circle fill="none" stroke="#F5F2EB" stroke-width="28" cx="512" cy="560" r="120"/><circle fill="#F5F2EB" cx="512" cy="560" r="28" opacity="0.35"/></svg>`,
+
+      "ribbon-bar": `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#3E3630" width="1024" height="1024"/><rect fill="#e53935" x="240" y="360" width="544" height="88" rx="12"/><rect fill="#6a5f31" x="240" y="468" width="544" height="88" rx="12"/><rect fill="#C7D3DB" x="240" y="576" width="544" height="88" rx="12"/></svg>`,
+
+      key: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#4a5238" width="1024" height="1024"/><circle fill="none" stroke="#FCF7DF" stroke-width="48" cx="400" cy="420" r="140"/><circle fill="#4a5238" cx="400" cy="420" r="48"/><rect fill="#FCF7DF" x="480" y="388" width="320" height="64" rx="16"/><rect fill="#FCF7DF" x="720" y="320" width="64" height="120" rx="12"/><rect fill="#FCF7DF" x="620" y="320" width="64" height="80" rx="12"/><circle fill="#e53935" cx="400" cy="420" r="24"/></svg>`,
+
+      path: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#FCF7DF" width="1024" height="1024"/><path fill="none" stroke="#3E3630" stroke-width="36" stroke-linecap="round" stroke-dasharray="8 48" d="M280 720 Q512 520 760 320"/><circle fill="#3E3630" cx="340" cy="660" r="40"/><circle fill="#3E3630" cx="480" cy="540" r="40"/><circle fill="#e53935" cx="720" cy="320" r="48"/></svg>`,
+
+      target: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#3E3630" width="1024" height="1024"/><circle fill="none" stroke="#F5F2EB" stroke-width="40" cx="512" cy="512" r="280"/><circle fill="none" stroke="#F5F2EB" stroke-width="32" cx="512" cy="512" r="190" opacity="0.7"/><circle fill="none" stroke="#e53935" stroke-width="28" cx="512" cy="512" r="100"/><text x="512" y="540" text-anchor="middle" font-size="120" font-weight="800" fill="#FCF7DF" font-family="Segoe UI,system-ui,sans-serif">0</text></svg>`,
+
+      progress: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#FCF7DF" width="1024" height="1024"/><rect fill="#3E3630" x="240" y="420" width="160" height="200" rx="24" opacity="0.25"/><rect fill="#3E3630" x="432" y="420" width="160" height="200" rx="24" opacity="0.25"/><rect fill="none" stroke="#e53935" stroke-width="24" x="624" y="420" width="160" height="200" rx="24"/><path stroke="#3E3630" stroke-width="20" stroke-linecap="round" d="M320 520h80M512 520h80"/></svg>`,
+
+      bell: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#FCF7DF" width="1024" height="1024"/><path fill="#3E3630" d="M512 280c-120 0-200 100-200 220v180l-60 80h520l-60-80V500c0-120-80-220-200-220z"/><circle fill="#3E3630" cx="512" cy="820" r="48"/><circle fill="#e53935" cx="512" cy="640" r="32"/><path fill="none" stroke="#3E3630" stroke-width="24" d="M512 240v40"/></svg>`,
+
+      thermos: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#3E3630" width="1024" height="1024"/><rect fill="#6a5f31" x="380" y="300" width="264" height="520" rx="48"/><rect fill="#4a5238" x="380" y="300" width="264" height="120" rx="48"/><rect fill="#2d2722" x="420" y="240" width="184" height="80" rx="20"/><rect fill="#e53935" x="420" y="480" width="184" height="48" rx="12" opacity="0.9"/></svg>`,
+
+      "letter-fold": `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#C7D3DB" width="1024" height="1024"/><rect fill="#F5F2EB" x="240" y="320" width="544" height="400" rx="16"/><path fill="#3E3630" opacity="0.12" d="M240 320l272 200 272-200"/><path fill="#e53935" d="M512 520l272-200v360c0 22-18 40-40 40H280c-22 0-40-18-40-40V320z" opacity="0.35"/><path fill="#3E3630" d="M512 520L240 320v360c0 22 18 40 40 40h472c22 0 40-18 40-40V320z"/></svg>`,
+
+      campfire: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect fill="#121a28" width="1024" height="1024"/><ellipse fill="#2d2722" cx="512" cy="760" rx="200" ry="40"/><path fill="#e53935" d="M512 400c-40 80-120 120-120 200 0 66 54 120 120 120s120-54 120-120c0-80-80-120-120-200z"/><path fill="#ff8a65" d="M512 460c-24 50-72 76-72 130 0 40 32 72 72 72s72-32 72-72c0-54-48-80-72-130z"/><path fill="#FCF7DF" d="M512 500c-12 28-36 42-36 72 0 20 16 36 36 36s36-16 36-36c0-30-24-44-36-72z"/></svg>`,
+    };
+
+    const grid = document.getElementById("grid");
+    SKETCHES.forEach((s, i) => {
+      const svg = ICONS[s.id];
+      if (!svg) return;
+      const article = document.createElement("article");
+      article.className = "sketch-card";
+      article.innerHTML = `
+        <div class="previews">
+          <figure>
+            <div class="slot size-112" data-id="${s.id}"></div>
+            <figcaption>112</figcaption>
+          </figure>
+          <figure>
+            <div class="slot size-29" data-id="${s.id}"></div>
+            <figcaption>29</figcaption>
+          </figure>
+        </div>
+        <h3>${i + 1}. ${s.title}</h3>
+        <p>${s.note}</p>`;
+      grid.appendChild(article);
+    });
+
+    document.querySelectorAll("[data-id]").forEach((el) => {
+      el.innerHTML = ICONS[el.getAttribute("data-id")] || "";
+    });
+  </script>
+</body>
+</html>

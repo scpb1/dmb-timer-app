@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Иконка — «ддд» wordmark</title>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    .palette-section h3 {
+      margin: 0 0 0.85rem;
+      font-size: 0.95rem;
+      font-weight: 650;
+      color: var(--brown);
+    }
+    .palette-section + .palette-section {
+      margin-top: 1.75rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+      gap: 1.1rem;
+    }
+    .palette-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.9rem 0.65rem 0.85rem;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .palette-card.is-base {
+      border-color: rgba(229, 57, 53, 0.45);
+      box-shadow: 0 0 0 1px rgba(229, 57, 53, 0.1);
+    }
+    .palette-card h4 {
+      margin: 0;
+      font-size: 0.86rem;
+      font-weight: 650;
+      text-align: center;
+    }
+    .palette-card .swatches {
+      display: flex;
+      gap: 0.3rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .palette-card .swatches span {
+      width: 1rem;
+      height: 1rem;
+      border-radius: 4px;
+      border: 1px solid rgba(62, 54, 48, 0.12);
+    }
+    .palette-card .sizes {
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-end;
+    }
+    .palette-card .sizes figure { margin: 0; text-align: center; }
+    .palette-card .sizes figcaption {
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+    .palette-card .slot.size-120 { width: 120px; height: 120px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все варианты</a>
+  <h1>Слово «ддд»</h1>
+  <p class="lead">
+    Wordmark в продакшене: «ддд», grotesque 800, полоска ближе к буквам. База — крем <code>#FCF7DF</code>
+    (см. <code>assets/app-icon/</code> и <code>npm run generate:icons</code>). Ниже — девичьи и армейские палитры.
+  </p>
+
+  <div class="layout">
+    <section class="panel">
+      <h2>Мастер · 1024</h2>
+      <div class="hero-row">
+        <div class="icon-wrap">
+          <div class="icon-ios" data-icon-slot></div>
+          <span>крем · база</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="palettes">
+      <h2>Цветовые вариации</h2>
+
+      <div class="palette-section">
+        <h3>Девичьи</h3>
+        <div class="palette-grid">
+          <article class="palette-card is-base">
+            <div class="slot size-120" data-palette="ds-cream"></div>
+            <h4>Крем · база</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#FCF7DF"></span>
+              <span style="background:#3E3630"></span>
+              <span style="background:#e53935"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="ds-cream"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="ds-cream"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="ds-blush"></div>
+            <h4>Румянец</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#fff0f3"></span>
+              <span style="background:#5c3d4a"></span>
+              <span style="background:#e53935"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="ds-blush"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="ds-blush"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="ds-rose"></div>
+            <h4>Роза</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#fce4ec"></span>
+              <span style="background:#4a1942"></span>
+              <span style="background:#c2185b"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="ds-rose"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="ds-rose"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="ds-bow"></div>
+            <h4>Бантик</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#FCF7DF"></span>
+              <span style="background:#3E3630"></span>
+              <span style="background:#f06292"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="ds-bow"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="ds-bow"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="ds-lavender"></div>
+            <h4>Лаванда</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#ede7f6"></span>
+              <span style="background:#4527a0"></span>
+              <span style="background:#e53935"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="ds-lavender"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="ds-lavender"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="ds-powder"></div>
+            <h4>Пудра</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#f3e5f5"></span>
+              <span style="background:#6a4a5a"></span>
+              <span style="background:#ec407a"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="ds-powder"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="ds-powder"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="ds-night"></div>
+            <h4>Ночное письмо</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#3d2c35"></span>
+              <span style="background:#fce4ec"></span>
+              <span style="background:#ff6090"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="ds-night"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="ds-night"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="ds-brown-soft"></div>
+            <h4>Тёплый brown</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#3E3630"></span>
+              <span style="background:#FCF7DF"></span>
+              <span style="background:#f48fb1"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="ds-brown-soft"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="ds-brown-soft"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="palette-section">
+        <h3>Армейские</h3>
+        <div class="palette-grid">
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="arm-khaki"></div>
+            <h4>Хаки</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#6a5f31"></span>
+              <span style="background:#ffffff"></span>
+              <span style="background:#e53935"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="arm-khaki"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="arm-khaki"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="arm-field"></div>
+            <h4>Поле</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#4a5238"></span>
+              <span style="background:#e8dcc8"></span>
+              <span style="background:#e53935"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="arm-field"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="arm-field"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="arm-olive"></div>
+            <h4>Олива</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#3a4530"></span>
+              <span style="background:#F5F2EB"></span>
+              <span style="background:#c62828"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="arm-olive"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="arm-olive"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="arm-sand"></div>
+            <h4>Песок</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#8b7355"></span>
+              <span style="background:#fff8ef"></span>
+              <span style="background:#e53935"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="arm-sand"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="arm-sand"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="arm-brown"></div>
+            <h4>Коричневый</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#3E3630"></span>
+              <span style="background:#FCF7DF"></span>
+              <span style="background:#e53935"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="arm-brown"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="arm-brown"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="arm-slate"></div>
+            <h4>Серо-сталь</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#4d5c66"></span>
+              <span style="background:#FCF7DF"></span>
+              <span style="background:#e53935"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="arm-slate"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="arm-slate"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="arm-splash"></div>
+            <h4>Сплэш</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#0a0a0b"></span>
+              <span style="background:#F5F2EB"></span>
+              <span style="background:#e53935"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="arm-splash"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="arm-splash"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+          <article class="palette-card">
+            <div class="slot size-120" data-palette="arm-winter"></div>
+            <h4>Зима</h4>
+            <div class="swatches" aria-hidden="true">
+              <span style="background:#2c3338"></span>
+              <span style="background:#C7D3DB"></span>
+              <span style="background:#e53935"></span>
+            </div>
+            <div class="sizes">
+              <figure><div class="slot size-60" data-palette="arm-winter"></div><figcaption>60</figcaption></figure>
+              <figure><div class="slot size-29" data-palette="arm-winter"></div><figcaption>29</figcaption></figure>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Размеры · база</h2>
+      <div class="size-ladder">
+        <figure><div class="slot size-1024" data-icon-slot></div><figcaption>1024</figcaption></figure>
+        <figure><div class="slot size-180" data-icon-slot></div><figcaption>180</figcaption></figure>
+        <figure><div class="slot size-60" data-icon-slot></div><figcaption>60</figcaption></figure>
+        <figure><div class="slot size-29" data-icon-slot></div><figcaption>29 — критично</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Домашний экран</h2>
+      <div class="phone-grid">
+        <div class="phone light-wallpaper">
+          <div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+            <div class="app-grid">
+              <div class="app-item target"><div class="icon-ios" data-icon-slot></div><span class="label">Жди</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Фото</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Календарь</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Почта</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Музыка</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Заметки</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Карты</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Настройки</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Android adaptive</h2>
+      <div class="android-row">
+        <div class="android-adaptive">
+          <div class="bg"></div>
+          <div class="fg" data-icon-slot></div>
+        </div>
+        <div class="android-shapes">
+          <div class="shape-preview"><div class="shape-circle" data-icon-slot></div><span>Круг</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Сплэш · здесь wordmark уместнее</h2>
+      <div class="hero-row">
+        <div class="splash-preview light">
+          <div class="icon-ios" data-icon-slot></div>
+          <div class="word">Жди</div>
+        </div>
+        <div class="notif-row">
+          <div class="icon-ios" data-icon-slot></div>
+          <div class="notif-body">
+            <strong>Жди</strong>
+            <p>287 дней до дембеля</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel pros-cons">
+      <div>
+        <h3>Плюсы</h3>
+        <ul>
+          <li>Сразу про дни до дембеля для «своих»</li>
+          <li>Две линейки палитр под разную ЦА</li>
+          <li>Хорошо для маркетинга и сплэша</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Минусы</h3>
+        <ul>
+          <li>На 60 px текст почти не читается</li>
+          <li>На 29 px — сплошное пятно</li>
+          <li>Девичьи розовые фоны хуже на тёмных обоях</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    /** Подстрой под свою правку: текст, размер, полоска */
+    const LAYOUT = {
+      word: "ждуля",
+      fontSize: 250,
+      textY: 580,
+      letterSpacing: "-0.04em",
+      stripe: { x: 328, y: 660, w: 400, h: 18, rx: 9 },
+    };
+
+    const PALETTES = {
+      "ds-cream": { bg: "#FCF7DF", text: "#3E3630", accent: "#e53935" },
+      "ds-blush": { bg: "#fff0f3", text: "#5c3d4a", accent: "#e53935" },
+      "ds-rose": { bg: "#fce4ec", text: "#4a1942", accent: "#c2185b" },
+      "ds-bow": { bg: "#FCF7DF", text: "#3E3630", accent: "#f06292" },
+      "ds-lavender": { bg: "#ede7f6", text: "#4527a0", accent: "#e53935" },
+      "ds-powder": { bg: "#f3e5f5", text: "#6a4a5a", accent: "#ec407a" },
+      "ds-night": { bg: "#3d2c35", text: "#fce4ec", accent: "#ff6090" },
+      "ds-brown-soft": { bg: "#3E3630", text: "#FCF7DF", accent: "#f48fb1" },
+
+      "arm-khaki": { bg: "#6a5f31", text: "#ffffff", accent: "#e53935" },
+      "arm-field": { bg: "#4a5238", text: "#e8dcc8", accent: "#e53935" },
+      "arm-olive": { bg: "#3a4530", text: "#F5F2EB", accent: "#c62828" },
+      "arm-sand": { bg: "#8b7355", text: "#fff8ef", accent: "#e53935" },
+      "arm-brown": { bg: "#3E3630", text: "#FCF7DF", accent: "#e53935" },
+      "arm-slate": { bg: "#4d5c66", text: "#FCF7DF", accent: "#e53935" },
+      "arm-splash": { bg: "#0a0a0b", text: "#F5F2EB", accent: "#e53935" },
+      "arm-winter": { bg: "#2c3338", text: "#C7D3DB", accent: "#e53935" },
+    };
+
+    function iconSvg({ bg, text, accent }) {
+      const { word, fontSize, textY, letterSpacing, stripe } = LAYOUT;
+      return `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="1024" height="1024" fill="${bg}"/>
+      <text x="512" y="${textY}" text-anchor="middle" font-size="${fontSize}" font-weight="800" fill="${text}" font-family="Segoe UI, system-ui, sans-serif" letter-spacing="${letterSpacing}">${word}</text>
+      <rect x="${stripe.x}" y="${stripe.y}" width="${stripe.w}" height="${stripe.h}" rx="${stripe.rx}" fill="${accent}"/>
+    </svg>`;
+    }
+
+    const DEFAULT = PALETTES["ds-cream"];
+    document.querySelectorAll("[data-icon-slot]").forEach((el) => {
+      el.innerHTML = iconSvg(DEFAULT);
+    });
+    document.querySelectorAll("[data-palette]").forEach((el) => {
+      const key = el.getAttribute("data-palette");
+      el.innerHTML = iconSvg(PALETTES[key] || DEFAULT);
+    });
+  </script>
+</body>
+</html>

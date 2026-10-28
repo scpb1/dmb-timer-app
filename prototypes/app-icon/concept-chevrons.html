@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Иконка — три нашивки</title>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    .ref-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      align-items: center;
+    }
+    .ref-row img {
+      width: 96px;
+      height: 96px;
+      border-radius: 22.37%;
+      image-rendering: pixelated;
+      box-shadow: 0 6px 16px rgba(62, 54, 48, 0.15);
+    }
+    .ref-row p {
+      margin: 0;
+      max-width: 28rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+      gap: 1.1rem;
+    }
+    .palette-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.9rem 0.65rem;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .palette-card.is-base { border-color: rgba(229, 57, 53, 0.4); }
+    .palette-card h3 { margin: 0; font-size: 0.88rem; font-weight: 650; }
+    .palette-card .slot.size-120 { width: 120px; height: 120px; }
+    .palette-card .sizes {
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-end;
+    }
+    .palette-card .sizes figure { margin: 0; text-align: center; }
+    .palette-card .sizes figcaption {
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все варианты</a>
+  <p class="lead" style="border:1px solid rgba(229,57,53,0.4);padding:0.75rem 1rem;border-radius:12px;background:rgba(229,57,53,0.06);">
+    <strong>Снято с галереи:</strong> слишком близко к иконке конкурента. Смотри
+    <a href="concept-army-simple.html">простые армейские варианты без нашивок</a>.
+  </p>
+  <h1>Три нашивки (архив)</h1>
+  <p class="lead">
+    Архивная страница — не использовать для продукта.
+  </p>
+
+  <div class="layout">
+    <section class="panel">
+      <h2>Референс конкурента</h2>
+      <div class="ref-row">
+        <img src="ref-competitor-chevrons.png" width="96" height="96" alt="Иконка конкурента: три золотые нашивки на тёмном фоне" />
+        <p>
+          У них — тёмное поле и «металлические» полоски. Здесь тот же приём, но своя геометрия
+          (толще штрих, чуть уже блок) и палитры под «Жди», чтобы не быть клоном.
+        </p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Мастер · 1024</h2>
+      <div class="hero-row">
+        <div class="icon-wrap">
+          <div class="icon-ios" data-icon-slot></div>
+          <span>флот + золото</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Цветовые вариации</h2>
+      <div class="palette-grid">
+        <article class="palette-card is-base">
+          <div class="slot size-120" data-palette="navy"></div>
+          <h3>Флот</h3>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="navy"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="navy"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+        <article class="palette-card">
+          <div class="slot size-120" data-palette="brown"></div>
+          <h3>Коричневый</h3>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="brown"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="brown"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+        <article class="palette-card">
+          <div class="slot size-120" data-palette="olive"></div>
+          <h3>Хаки</h3>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="olive"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="olive"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+        <article class="palette-card">
+          <div class="slot size-120" data-palette="cream"></div>
+          <h3>Крем + красный</h3>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="cream"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="cream"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+        <article class="palette-card">
+          <div class="slot size-120" data-palette="splash"></div>
+          <h3>Сплэш</h3>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="splash"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="splash"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+        <article class="palette-card">
+          <div class="slot size-120" data-palette="mono"></div>
+          <h3>Монохром</h3>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="mono"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="mono"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Размеры</h2>
+      <div class="size-ladder">
+        <figure><div class="slot size-1024" data-icon-slot></div><figcaption>1024</figcaption></figure>
+        <figure><div class="slot size-180" data-icon-slot></div><figcaption>180</figcaption></figure>
+        <figure><div class="slot size-60" data-icon-slot></div><figcaption>60</figcaption></figure>
+        <figure><div class="slot size-29" data-icon-slot></div><figcaption>29</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Домашний экран</h2>
+      <div class="phone-grid">
+        <div class="phone light-wallpaper">
+          <div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+            <div class="app-grid">
+              <div class="app-item target"><div class="icon-ios" data-icon-slot></div><span class="label">Жди</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Фото</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Карты</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Почта</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="phone dark-wallpaper">
+          <div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+            <div class="app-grid">
+              <div class="app-item target"><div class="icon-ios" data-icon-slot></div><span class="label">Жди</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Музыка</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Настройки</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Камера</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Android adaptive</h2>
+      <div class="android-row">
+        <div class="android-adaptive">
+          <div class="bg"></div>
+          <div class="fg" data-icon-slot></div>
+        </div>
+        <div class="android-shapes">
+          <div class="shape-preview"><div class="shape-circle" data-icon-slot></div><span>Круг</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel pros-cons">
+      <div>
+        <h3>Плюсы</h3>
+        <ul>
+          <li>Сразу «армия» и «срок», без расшифровки букв</li>
+          <li>Три полоски = ддд / три буквы «д» в голове у своих</li>
+          <li>На мелком размере — три чётких штриха</li>
+          <li>Не привязано к конкретному званию (абстрактные уголки)</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Минусы</h3>
+        <ul>
+          <li>Рядом с конкурентом может казаться «так же» — смотри палитру «крем + красный»</li>
+          <li>Новичку не объясняет «дембель», только настроение службы</li>
+          <li>Золото на тёмном — не фирменный крем приложения</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const CHEVRON_Y = [352, 512, 672];
+    const CHEVRON = { left: 252, tip: 748, half: 92, stroke: 98 };
+
+    const PALETTES = {
+      navy: {
+        bg: "#121a28",
+        light: "#f5e6a8",
+        mid: "#c9a227",
+        dark: "#8a6914",
+        flat: null,
+      },
+      brown: {
+        bg: "#3E3630",
+        light: "#FCF7DF",
+        mid: "#F5F2EB",
+        dark: "#c7baa8",
+        flat: null,
+      },
+      olive: {
+        bg: "#3a4530",
+        light: "#e8d48a",
+        mid: "#b8941f",
+        dark: "#6b5410",
+        flat: null,
+      },
+      cream: {
+        bg: "#FCF7DF",
+        light: "#ff6b60",
+        mid: "#e53935",
+        dark: "#b71c1c",
+        flat: null,
+      },
+      splash: {
+        bg: "#0a0a0b",
+        light: "#f0dfa0",
+        mid: "#d4af37",
+        dark: "#9a7b1a",
+        flat: null,
+      },
+      mono: {
+        bg: "#1c1c1e",
+        light: "#ffffff",
+        mid: "#d1d1d6",
+        dark: "#8e8e93",
+        flat: null,
+      },
+    };
+
+    let gradCounter = 0;
+
+    function chevronPaths(strokePaint) {
+      const { left, tip, half, stroke } = CHEVRON;
+      return CHEVRON_Y.map(
+        (y) =>
+          `<path d="M ${left} ${y - half} L ${tip} ${y} L ${left} ${y + half}" fill="none" stroke="${strokePaint}" stroke-width="${stroke}" stroke-linecap="butt" stroke-linejoin="miter"/>`
+      ).join("");
+    }
+
+    function iconSvg(palette) {
+      const id = `chev-g-${gradCounter++}`;
+      const strokePaint = palette.flat || `url(#${id})`;
+      const defs = palette.flat
+        ? ""
+        : `<defs><linearGradient id="${id}" x1="18%" y1="12%" x2="82%" y2="88%">
+        <stop offset="0%" stop-color="${palette.light}"/>
+        <stop offset="48%" stop-color="${palette.mid}"/>
+        <stop offset="100%" stop-color="${palette.dark}"/>
+      </linearGradient></defs>`;
+      return `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      ${defs}
+      <rect width="1024" height="1024" fill="${palette.bg}"/>
+      ${chevronPaths(strokePaint)}
+    </svg>`;
+    }
+
+    const DEFAULT = PALETTES.navy;
+    document.querySelectorAll("[data-icon-slot]").forEach((el) => {
+      el.innerHTML = iconSvg(DEFAULT);
+    });
+    document.querySelectorAll("[data-palette]").forEach((el) => {
+      const key = el.getAttribute("data-palette");
+      el.innerHTML = iconSvg(PALETTES[key] || DEFAULT);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>А + бант-бейдж</title>
+  <link rel="stylesheet" href="../shared.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Девичья служба</a>
+  <h1>А + бант-бейдж</h1>
+  <p class="lead">
+    Тот же контраст, что у «Ж»: коричневое поле, кремовая «А». Бант в красном круге сверху справа —
+    на 60 px бант не превращается в кляксу, читается как «бейдж».
+  </p>
+
+  <div class="layout">
+    <section class="panel">
+      <h2>Мастер · 1024</h2>
+      <div class="hero-row">
+        <div class="icon-wrap">
+          <div class="icon-ios" data-icon-slot></div>
+          <span>бейдж</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Размеры</h2>
+      <div class="size-ladder">
+        <figure><div class="slot size-1024" data-icon-slot></div><figcaption>1024</figcaption></figure>
+        <figure><div class="slot size-180" data-icon-slot></div><figcaption>180</figcaption></figure>
+        <figure><div class="slot size-60" data-icon-slot></div><figcaption>60</figcaption></figure>
+        <figure><div class="slot size-29" data-icon-slot></div><figcaption>29</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Домашний экран</h2>
+      <div class="phone-grid">
+        <div class="phone dark-wallpaper">
+          <div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+            <div class="app-grid">
+              <div class="app-item target"><div class="icon-ios" data-icon-slot></div><span class="label">Д. служба</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Фото</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Сообщения</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Календарь</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Сплэш</h2>
+      <div class="splash-preview dark">
+        <div class="icon-ios" data-icon-slot></div>
+        <div class="word">Девичья служба</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const ICON = `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="1024" height="1024" fill="#3E3630"/>
+      <text x="512" y="700" text-anchor="middle" font-size="580" font-weight="800" fill="#F5F2EB" font-family="Segoe UI, system-ui, sans-serif">А</text>
+      <circle cx="748" cy="276" r="128" fill="#e53935"/>
+      <ellipse cx="700" cy="276" rx="36" ry="26" fill="#FCF7DF"/>
+      <ellipse cx="796" cy="276" rx="36" ry="26" fill="#FCF7DF"/>
+      <circle cx="748" cy="276" r="14" fill="#e53935"/>
+    </svg>`;
+    document.querySelectorAll("[data-icon-slot]").forEach((el) => { el.innerHTML = ICON; });
+  </script>
+</body>
+</html>

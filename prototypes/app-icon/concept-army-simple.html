@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Иконка — простое · армейское (не нашивки)</title>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    .concept-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .concept-nav a {
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.35);
+    }
+    .concept-nav a:hover { color: var(--brown); }
+    .concept-block { scroll-margin-top: 1rem; }
+    .concept-block + .concept-block { margin-top: 0.25rem; }
+    .concept-block .tagline {
+      margin: 0 0 1rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+      max-width: 40rem;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все варианты</a>
+  · <a class="back" href="concept-sketch-batch.html">Ещё 16 эскизов →</a>
+  <h1>Простое и армейское — без нашивок</h1>
+  <p class="lead">
+    Конкурент занял «три уголка вправо». Здесь другие силуэты: жетон, засечки на стене, лист календаря,
+    проход «из части», полоски камуфляжа. Общее: срок, служба, счёт — без копирования чужой иконки.
+  </p>
+
+  <nav class="concept-nav" aria-label="Варианты">
+    <a href="#dogtag">Жетон</a>
+    <a href="#tally">Засечки</a>
+    <a href="#calendar">Календарь</a>
+    <a href="#gate">Проход</a>
+    <a href="#camo">Полоски</a>
+  </nav>
+
+  <div class="layout">
+    <section class="panel concept-block" id="dogtag">
+      <h2>1 · Жетон</h2>
+      <p class="tagline">Узнаваемый армейский предмет. Три точки — «ещё не ноль», без букв ддд и без погон.</p>
+      <div class="size-ladder">
+        <figure><div class="slot size-180" data-concept="dogtag"></div><figcaption>180</figcaption></figure>
+        <figure><div class="slot size-60" data-concept="dogtag"></div><figcaption>60</figcaption></figure>
+        <figure><div class="slot size-29" data-concept="dogtag"></div><figcaption>29</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="panel concept-block" id="tally">
+      <h2>2 · Засечки на стене</h2>
+      <p class="tagline">Три вертикальных штриха — отмеченные дни. Не уголки, не золото на синем.</p>
+      <div class="size-ladder">
+        <figure><div class="slot size-180" data-concept="tally"></div><figcaption>180</figcaption></figure>
+        <figure><div class="slot size-60" data-concept="tally"></div><figcaption>60</figcaption></figure>
+        <figure><div class="slot size-29" data-concept="tally"></div><figcaption>29</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="panel concept-block" id="calendar">
+      <h2>3 · Лист календаря</h2>
+      <p class="tagline">Счёт по дням. Красная скрепа сверху — акцент «Жди», пустое поле под число (без цифры на иконке).</p>
+      <div class="size-ladder">
+        <figure><div class="slot size-180" data-concept="calendar"></div><figcaption>180</figcaption></figure>
+        <figure><div class="slot size-60" data-concept="calendar"></div><figcaption>60</figcaption></figure>
+        <figure><div class="slot size-29" data-concept="calendar"></div><figcaption>29</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="panel concept-block" id="gate">
+      <h2>4 · Проход</h2>
+      <p class="tagline">Калитка / КП: два столба, проём, стрелка «наружу» — к дембелю и дому.</p>
+      <div class="size-ladder">
+        <figure><div class="slot size-180" data-concept="gate"></div><figcaption>180</figcaption></figure>
+        <figure><div class="slot size-60" data-concept="gate"></div><figcaption>60</figcaption></figure>
+        <figure><div class="slot size-29" data-concept="gate"></div><figcaption>29</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="panel concept-block" id="camo">
+      <h2>5 · Полоски камуфляжа</h2>
+      <p class="tagline">Три горизонтальные полосы (форма / рукав), без углов и званий. Можно в кремово-коричневой гамме приложения.</p>
+      <div class="size-ladder">
+        <figure><div class="slot size-180" data-concept="camo"></div><figcaption>180</figcaption></figure>
+        <figure><div class="slot size-60" data-concept="camo"></div><figcaption>60</figcaption></figure>
+        <figure><div class="slot size-29" data-concept="camo"></div><figcaption>29</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Жетон · домашний экран (фаворит по отличию)</h2>
+      <div class="phone-grid">
+        <div class="phone light-wallpaper">
+          <div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+            <div class="app-grid">
+              <div class="app-item target"><div class="icon-ios" data-concept="dogtag"></div><span class="label">Жди</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Фото</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Карты</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Почта</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const ICONS = {
+      dogtag: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="1024" height="1024" fill="#3E3630"/>
+        <path fill="#D4C4A8" d="M292 248h440c33 0 60 27 60 60v408c0 33-27 60-60 60H292c-33 0-60-27-60-60V308c0-33 27-60 60-60z"/>
+        <circle cx="512" cy="318" r="52" fill="#3E3630"/>
+        <circle cx="512" cy="318" r="36" fill="none" stroke="#A89878" stroke-width="12"/>
+        <circle cx="432" cy="548" r="28" fill="#3E3630"/>
+        <circle cx="512" cy="548" r="28" fill="#3E3630"/>
+        <circle cx="592" cy="548" r="28" fill="#3E3630"/>
+        <rect x="352" y="648" width="320" height="20" rx="10" fill="#e53935" opacity="0.85"/>
+      </svg>`,
+
+      tally: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="1024" height="1024" fill="#FCF7DF"/>
+        <rect x="248" y="200" width="528" height="624" rx="24" fill="#E8E0CE"/>
+        <rect x="336" y="312" width="44" height="400" rx="8" fill="#3E3630"/>
+        <rect x="490" y="312" width="44" height="400" rx="8" fill="#3E3630"/>
+        <rect x="644" y="312" width="44" height="400" rx="8" fill="#3E3630"/>
+        <path d="M280 320 L744 720" stroke="#e53935" stroke-width="28" stroke-linecap="round" opacity="0.35"/>
+      </svg>`,
+
+      calendar: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="1024" height="1024" fill="#FCF7DF"/>
+        <rect x="248" y="280" width="528" height="520" rx="36" fill="#F5F2EB" stroke="#3E3630" stroke-width="16"/>
+        <rect x="248" y="280" width="528" height="120" rx="36" fill="#e53935"/>
+        <rect x="248" y="364" width="528" height="36" fill="#e53935"/>
+        <circle cx="360" cy="340" r="22" fill="#FCF7DF" opacity="0.9"/>
+        <circle cx="512" cy="340" r="22" fill="#FCF7DF" opacity="0.9"/>
+        <circle cx="664" cy="340" r="22" fill="#FCF7DF" opacity="0.9"/>
+        <rect x="320" y="480" width="384" height="48" rx="12" fill="#C7D3DB" opacity="0.55"/>
+        <rect x="320" y="560" width="280" height="48" rx="12" fill="#C7D3DB" opacity="0.35"/>
+      </svg>`,
+
+      gate: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="1024" height="1024" fill="#4a5238"/>
+        <rect x="268" y="320" width="72" height="480" rx="8" fill="#2a2e24"/>
+        <rect x="684" y="320" width="72" height="480" rx="8" fill="#2a2e24"/>
+        <rect x="340" y="560" width="344" height="24" fill="#6a7558"/>
+        <path fill="#FCF7DF" d="M512 420l120 88H392z"/>
+        <rect x="488" y="508" width="48" height="120" rx="6" fill="#FCF7DF"/>
+        <path fill="none" stroke="#e53935" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"
+          d="M560 640 L680 520 L680 460"/>
+        <path fill="none" stroke="#e53935" stroke-width="36" stroke-linecap="round"
+          d="M620 520 L680 520 L680 460"/>
+      </svg>`,
+
+      camo: `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="1024" height="1024" fill="#3E3630"/>
+        <rect x="192" y="312" width="640" height="120" rx="16" fill="#6a5f31"/>
+        <rect x="192" y="452" width="640" height="120" rx="16" fill="#4a5238"/>
+        <rect x="192" y="592" width="640" height="120" rx="16" fill="#8b7355"/>
+        <circle cx="768" cy="512" r="40" fill="#e53935"/>
+      </svg>`,
+    };
+
+    document.querySelectorAll("[data-concept]").forEach((el) => {
+      const key = el.getAttribute("data-concept");
+      el.innerHTML = ICONS[key] || ICONS.dogtag;
+    });
+  </script>
+</body>
+</html>

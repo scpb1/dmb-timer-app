@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Дом + бант</title>
+  <link rel="stylesheet" href="../shared.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Девичья служба</a>
+  <h1>Дом + бант</h1>
+  <p class="lead">Запасной вариант, если название «Жду домой», а не «Девичья служба».</p>
+  <div class="layout">
+    <section class="panel">
+      <div class="icon-ios" data-icon-slot style="width:180px;height:180px;border-radius:22.37%;overflow:hidden;margin:0 auto;"></div>
+      <p class="lead" style="text-align:center;margin-top:1rem;">Сплэш: «Жду домой»</p>
+    </section>
+  </div>
+  <script>
+    const ICON = `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1024" height="1024" fill="#3E3630"/>
+      <path fill="#F5F2EB" d="M512 300 L768 480 V760 H624 V580 H400 V760 H256 V480 Z"/>
+      <ellipse cx="412" cy="248" rx="56" ry="40" fill="#e53935"/>
+      <ellipse cx="612" cy="248" rx="56" ry="40" fill="#e53935"/>
+      <circle cx="512" cy="248" r="26" fill="#c62828"/>
+    </svg>`;
+    document.querySelectorAll("[data-icon-slot]").forEach((el) => { el.innerHTML = ICON; });
+  </script>
+</body>
+</html>

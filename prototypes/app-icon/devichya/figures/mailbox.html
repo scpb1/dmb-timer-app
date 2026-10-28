@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ящик — Девичья служба</title>
+  <link rel="stylesheet" href="../../shared.css" />
+</head>
+<body data-draw="mailbox">
+  <a class="back" href="index.html">← Силуэты и руки</a>
+  <h1>Ящик</h1>
+  <p class="lead">Поднятый флаг — жду письмо.</p>
+  <div class="layout">
+    <section class="panel">
+      <h2>Светлый · тёмный</h2>
+      <div class="hero-row">
+        <div class="icon-wrap"><div class="icon-ios" data-icon-slot="light"></div><span>свет</span></div>
+        <div class="icon-wrap"><div class="icon-ios" data-icon-slot="dark"></div><span>тёмный</span></div>
+      </div>
+      <div class="size-ladder" style="margin-top:1.25rem;">
+        <figure><div class="slot size-60" data-icon-slot="light"></div><figcaption>60</figcaption></figure>
+        <figure><div class="slot size-29" data-icon-slot="light"></div><figcaption>29</figcaption></figure>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Домашний экран</h2>
+      <div class="phone-grid">
+        <div class="phone light-wallpaper">
+          <div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+            <div class="app-grid">
+              <div class="app-item target"><div class="icon-ios" data-icon-slot="light"></div><span class="label">Д. служба</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Сообщения</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Фото</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Календарь</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Сплэш</h2>
+      <div class="splash-preview light">
+        <div class="icon-ios" data-icon-slot="light"></div>
+        <div class="word">Девичья служба</div>
+      </div>
+    </section>
+  </div>
+  <script src="../shared-bow.js"></script>
+  <script src="drawers.js"></script>
+  <script src="boot.js"></script>
+</body>
+</html>

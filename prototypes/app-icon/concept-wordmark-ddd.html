@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Иконка — «ддд»</title>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+      gap: 1.25rem;
+    }
+    .palette-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 1rem 0.75rem 0.85rem;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .palette-card.is-base {
+      border-color: rgba(229, 57, 53, 0.45);
+      box-shadow: 0 0 0 1px rgba(229, 57, 53, 0.12);
+    }
+    .palette-card h3 {
+      margin: 0;
+      font-size: 0.92rem;
+      font-weight: 650;
+      text-align: center;
+    }
+    .palette-card .swatches {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .palette-card .swatches span {
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 4px;
+      border: 1px solid rgba(62, 54, 48, 0.15);
+    }
+    .palette-card .sizes {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-end;
+    }
+    .palette-card .sizes figure {
+      margin: 0;
+      text-align: center;
+    }
+    .palette-card .sizes figcaption {
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+    .palette-card .slot.size-120 {
+      width: 120px;
+      height: 120px;
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все варианты</a>
+  <h1>Слово «ддд»</h1>
+  <p class="lead">
+    Крупный «?» на заднем плане, «ддд» спереди — grotesque 800. Базовая палитра: хаки + красный знак +
+    белый текст. Ниже — вариации в духе «Жди» (крем, коричневый, сплэш, сине-серый).
+  </p>
+
+  <div class="layout">
+    <section class="panel">
+      <h2>Мастер · 1024</h2>
+      <div class="hero-row">
+        <div class="icon-wrap">
+          <div class="icon-ios" data-icon-slot></div>
+          <span>хаки · база</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="palettes">
+      <h2>Цветовые вариации</h2>
+      <div class="palette-grid">
+        <article class="palette-card is-base">
+          <div class="slot size-120" data-palette="khaki"></div>
+          <h3>Хаки</h3>
+          <div class="swatches" aria-hidden="true">
+            <span style="background:#6a5f31" title="фон"></span>
+            <span style="background:#e53935" title="?"></span>
+            <span style="background:#ffffff" title="ддд"></span>
+          </div>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="khaki"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="khaki"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+        <article class="palette-card">
+          <div class="slot size-120" data-palette="cream"></div>
+          <h3>Крем</h3>
+          <div class="swatches" aria-hidden="true">
+            <span style="background:#FCF7DF"></span>
+            <span style="background:#e53935"></span>
+            <span style="background:#3E3630"></span>
+          </div>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="cream"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="cream"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+        <article class="palette-card">
+          <div class="slot size-120" data-palette="brown"></div>
+          <h3>Коричневый</h3>
+          <div class="swatches" aria-hidden="true">
+            <span style="background:#3E3630"></span>
+            <span style="background:#e53935"></span>
+            <span style="background:#FCF7DF"></span>
+          </div>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="brown"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="brown"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+        <article class="palette-card">
+          <div class="slot size-120" data-palette="splash"></div>
+          <h3>Сплэш</h3>
+          <div class="swatches" aria-hidden="true">
+            <span style="background:#0a0a0b"></span>
+            <span style="background:#e53935"></span>
+            <span style="background:#F5F2EB"></span>
+          </div>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="splash"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="splash"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+        <article class="palette-card">
+          <div class="slot size-120" data-palette="slate"></div>
+          <h3>Серо-голубой</h3>
+          <div class="swatches" aria-hidden="true">
+            <span style="background:#4d5c66"></span>
+            <span style="background:#C7D3DB"></span>
+            <span style="background:#FCF7DF"></span>
+          </div>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="slate"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="slate"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+        <article class="palette-card">
+          <div class="slot size-120" data-palette="forest"></div>
+          <h3>Лесной</h3>
+          <div class="swatches" aria-hidden="true">
+            <span style="background:#2f4a34"></span>
+            <span style="background:#e53935"></span>
+            <span style="background:#e8f0e4"></span>
+          </div>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="forest"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="forest"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+        <article class="palette-card">
+          <div class="slot size-120" data-palette="sand"></div>
+          <h3>Песок</h3>
+          <div class="swatches" aria-hidden="true">
+            <span style="background:#8b7355"></span>
+            <span style="background:#c62828"></span>
+            <span style="background:#fff8ef"></span>
+          </div>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="sand"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="sand"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+        <article class="palette-card">
+          <div class="slot size-120" data-palette="mono"></div>
+          <h3>Моно</h3>
+          <div class="swatches" aria-hidden="true">
+            <span style="background:#1a1a1a"></span>
+            <span style="background:#ffffff"></span>
+            <span style="background:#e53935"></span>
+          </div>
+          <div class="sizes">
+            <figure><div class="slot size-60" data-palette="mono"></div><figcaption>60</figcaption></figure>
+            <figure><div class="slot size-29" data-palette="mono"></div><figcaption>29</figcaption></figure>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Размеры</h2>
+      <div class="size-ladder">
+        <figure><div class="slot size-1024" data-icon-slot></div><figcaption>1024</figcaption></figure>
+        <figure><div class="slot size-180" data-icon-slot></div><figcaption>180</figcaption></figure>
+        <figure><div class="slot size-60" data-icon-slot></div><figcaption>60</figcaption></figure>
+        <figure><div class="slot size-29" data-icon-slot></div><figcaption>29 — критично</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Домашний экран</h2>
+      <div class="phone-grid">
+        <div class="phone light-wallpaper">
+          <div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+            <div class="app-grid">
+              <div class="app-item target"><div class="icon-ios" data-icon-slot></div><span class="label">Жди</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Фото</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Сообщения</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Календарь</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Почта</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Музыка</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Заметки</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Настройки</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Android adaptive</h2>
+      <div class="android-row">
+        <div class="android-adaptive">
+          <div class="bg"></div>
+          <div class="fg" data-icon-slot></div>
+        </div>
+        <div class="android-shapes">
+          <div class="shape-preview"><div class="shape-circle" data-icon-slot></div><span>Круг</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Сплэш и уведомление</h2>
+      <div class="hero-row">
+        <div class="splash-preview light">
+          <div class="icon-ios" data-icon-slot></div>
+          <div class="word">Жди</div>
+        </div>
+        <div class="notif-row">
+          <div class="icon-ios" data-icon-slot></div>
+          <div class="notif-body">
+            <strong>Жди</strong>
+            <p>Осталось 287 ддд</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel pros-cons">
+      <div>
+        <h3>Плюсы</h3>
+        <ul>
+          <li>Сразу про таймер, без «жди/жду»</li>
+          <li>Знакомо тем, кто уже в теме службы</li>
+          <li>Три «д» — плотный, ровный знак</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Минусы</h3>
+        <ul>
+          <li>Вне контекста — непонятно новичку</li>
+          <li>На 29 px буквы сливаются</li>
+          <li>Для стора нужен подзаголовок</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const PALETTES = {
+      khaki: { bg: "#6a5f31", q: "#e53935", text: "#ffffff" },
+      cream: { bg: "#FCF7DF", q: "#e53935", text: "#3E3630" },
+      brown: { bg: "#3E3630", q: "#e53935", text: "#FCF7DF" },
+      splash: { bg: "#0a0a0b", q: "#e53935", text: "#F5F2EB" },
+      slate: { bg: "#4d5c66", q: "#C7D3DB", text: "#FCF7DF" },
+      forest: { bg: "#2f4a34", q: "#e53935", text: "#e8f0e4" },
+      sand: { bg: "#8b7355", q: "#c62828", text: "#fff8ef" },
+      mono: { bg: "#1a1a1a", q: "#ffffff", text: "#e53935" },
+    };
+
+    function iconSvg({ bg, q, text }) {
+      return `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="1024" height="1024" fill="${bg}"/>
+      <text x="512" y="950" text-anchor="middle" font-size="1250" font-weight="800" fill="${q}" font-family="Segoe UI, system-ui, sans-serif">?</text>
+      <text x="512" y="580" text-anchor="middle" font-size="300" font-weight="800" fill="${text}" font-family="Segoe UI, system-ui, sans-serif" letter-spacing="-0.04em">ддд</text>
+    </svg>`;
+    }
+
+    const DEFAULT = PALETTES.khaki;
+    document.querySelectorAll("[data-icon-slot]").forEach((el) => {
+      el.innerHTML = iconSvg(DEFAULT);
+    });
+    document.querySelectorAll("[data-palette]").forEach((el) => {
+      const key = el.getAttribute("data-palette");
+      el.innerHTML = iconSvg(PALETTES[key] || DEFAULT);
+    });
+  </script>
+</body>
+</html>

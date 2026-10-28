@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Д + бант</title>
+  <link rel="stylesheet" href="../shared.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Девичья служба</a>
+  <h1>Д + бант</h1>
+  <p class="lead">
+    «Д» от «Девичья» — буква из названия, не абстрактная «А». Бант сверху как бантик в волосах / на письме.
+  </p>
+
+  <div class="layout">
+    <section class="panel">
+      <h2>Мастер · 1024</h2>
+      <div class="hero-row">
+        <div class="icon-wrap">
+          <div class="icon-ios" data-icon-slot></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Размеры</h2>
+      <div class="size-ladder">
+        <figure><div class="slot size-1024" data-icon-slot></div><figcaption>1024</figcaption></figure>
+        <figure><div class="slot size-60" data-icon-slot></div><figcaption>60</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Домашний экран</h2>
+      <div class="phone-grid">
+        <div class="phone light-wallpaper">
+          <div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+            <div class="app-grid">
+              <div class="app-item target"><div class="icon-ios" data-icon-slot></div><span class="label">Д. служба</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Фото</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Сообщения</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Календарь</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const ICON = `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="1024" height="1024" fill="#FCF7DF"/>
+      <ellipse cx="412" cy="248" rx="64" ry="46" fill="#e53935"/>
+      <ellipse cx="612" cy="248" rx="64" ry="46" fill="#e53935"/>
+      <circle cx="512" cy="248" r="30" fill="#c62828"/>
+      <path fill="#e53935" d="M478 286 L460 340 L494 328 L512 296 L530 328 L564 340 L546 286 Z"/>
+      <text x="512" y="680" text-anchor="middle" font-size="500" font-weight="800" fill="#3E3630" font-family="Segoe UI, system-ui, sans-serif">Д</text>
+    </svg>`;
+    document.querySelectorAll("[data-icon-slot]").forEach((el) => { el.innerHTML = ICON; });
+  </script>
+</body>
+</html>

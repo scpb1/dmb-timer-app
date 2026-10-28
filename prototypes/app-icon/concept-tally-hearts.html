@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Насечки и сердца</title>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    .compare {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    .compare figure {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .compare figcaption {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .compare .icon-ios {
+      width: 200px;
+      height: 200px;
+    }
+    .ref-thumb {
+      width: 200px;
+      height: 200px;
+      border-radius: 22.37%;
+      object-fit: cover;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    }
+    .icon-ios--tally,
+    .slot--tally {
+      background: #2a2a2e;
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все варианты</a>
+  <h1>Насечки · сердца</h1>
+  <p class="lead">
+    Как на эскизе: две пятёрки по диагонали, два сердца. Тонкие векторные линии с круглыми концами.
+    Фон <code>#2a2a2e</code> (чуть светлее чёрного).
+  </p>
+
+  <div class="layout">
+    <section class="panel">
+      <h2>Эскиз → иконка</h2>
+      <div class="compare">
+        <figure>
+          <img class="ref-thumb" src="ref-tally-hearts.png" alt="эскиз" />
+          <figcaption>референс</figcaption>
+        </figure>
+        <figure>
+          <div class="icon-ios icon-ios--tally" data-icon-slot></div>
+          <figcaption>прототип</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Размеры</h2>
+      <div class="size-ladder">
+        <figure><div class="slot size-180 slot--tally" data-icon-slot></div><figcaption>180</figcaption></figure>
+        <figure><div class="slot size-60 slot--tally" data-icon-slot></div><figcaption>60</figcaption></figure>
+        <figure><div class="slot size-29 slot--tally" data-icon-slot></div><figcaption>29</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Домашний экран</h2>
+      <div class="phone-grid">
+        <div class="phone dark-wallpaper">
+          <div class="phone-screen">
+            <div class="phone-status"><span>9:41</span><span>●●●</span></div>
+            <div class="app-grid">
+              <div class="app-item target">
+                <div class="icon-ios icon-ios--tally" data-icon-slot></div>
+                <span class="label">Жди</span>
+              </div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Фото</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Сообщения</span></div>
+              <div class="app-item filler"><div class="icon-ios"></div><span class="label">Календарь</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Сплэш</h2>
+      <div class="splash-preview dark">
+        <div class="icon-ios icon-ios--tally" data-icon-slot></div>
+        <div class="word">Жди</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const BG = "#2a2a2e";
+    const INK = "#f4f4ef";
+    const HEART = "#9a1830";
+    const W = 28;
+    const CAP = "round";
+
+    function line(x1, y1, x2, y2) {
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${INK}" stroke-width="${W}" stroke-linecap="${CAP}"/>`;
+    }
+
+    function tallyGroup(tx, ty, rot) {
+      const xs = [-92, -30, 32, 94];
+      const y0 = -128;
+      const y1 = 128;
+      const parts = xs.map((x) => line(x, y0, x, y1)).join("");
+      const slash = line(xs[0], y1, xs[3], y0);
+      return `<g transform="translate(${tx} ${ty}) rotate(${rot})">${parts}${slash}</g>`;
+    }
+
+    function heart(cx, cy, s) {
+      const d =
+        `M ${cx} ${cy + s * 0.36}` +
+        ` C ${cx - s * 0.5} ${cy + s * 0.02}, ${cx - s * 0.48} ${cy - s * 0.4}, ${cx} ${cy - s * 0.14}` +
+        ` C ${cx + s * 0.48} ${cy - s * 0.4}, ${cx + s * 0.5} ${cy + s * 0.02}, ${cx} ${cy + s * 0.36} Z`;
+      return `<path d="${d}" fill="${HEART}"/>`;
+    }
+
+    function buildIcon() {
+      return (
+        `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">` +
+        `<rect width="1024" height="1024" fill="${BG}"/>` +
+        tallyGroup(252, 322, -38) +
+        tallyGroup(672, 692, 11) +
+        heart(848, 278, 96) +
+        heart(212, 778, 96) +
+        `</svg>`
+      );
+    }
+
+    const markup = buildIcon();
+    document.querySelectorAll("[data-icon-slot]").forEach((el) => {
+      el.innerHTML = markup;
+    });
+  </script>
+</body>
+</html>

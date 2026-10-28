@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ДС + лента</title>
+  <link rel="stylesheet" href="../shared.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Девичья служба</a>
+  <h1>ДС + лента</h1>
+  <p class="lead">Монограмма «Девичья Служба». На мелком размере буквы тесные — проверь 29 px.</p>
+  <div class="layout">
+    <section class="panel">
+      <h2>Мастер</h2>
+      <div class="icon-ios" data-icon-slot style="width:180px;height:180px;border-radius:22.37%;overflow:hidden;margin:0 auto;"></div>
+    </section>
+    <section class="panel">
+      <h2>60 px</h2>
+      <div class="slot size-60" data-icon-slot style="margin:0 auto;"></div>
+    </section>
+  </div>
+  <script>
+    const ICON = `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1024" height="1024" fill="#FCF7DF"/>
+      <text x="380" y="640" text-anchor="middle" font-size="360" font-weight="800" fill="#3E3630" font-family="Segoe UI,sans-serif">Д</text>
+      <text x="644" y="640" text-anchor="middle" font-size="360" font-weight="800" fill="#3E3630" font-family="Segoe UI,sans-serif">С</text>
+      <ellipse cx="412" cy="748" rx="56" ry="40" fill="#e53935"/>
+      <ellipse cx="612" cy="748" rx="56" ry="40" fill="#e53935"/>
+      <circle cx="512" cy="748" r="26" fill="#c62828"/>
+    </svg>`;
+    document.querySelectorAll("[data-icon-slot]").forEach((el) => { el.innerHTML = ICON; });
+  </script>
+</body>
+</html>
