@@ -91,14 +91,18 @@ export function useProfile(): UseProfileResult {
     }
 
     try {
-      await setConfig(CONFIG_KEYS.ENLISTMENT_DATE, enlistment.toISOString());
-      await setConfig(CONFIG_KEYS.DEMOBILIZATION_DATE, demobilization.toISOString());
+      await Promise.all([
+        setConfig(CONFIG_KEYS.ENLISTMENT_DATE, enlistment.toISOString()),
+        setConfig(CONFIG_KEYS.DEMOBILIZATION_DATE, demobilization.toISOString()),
+      ]);
       setState((prev) => ({
         ...prev,
         enlistmentDate: enlistment,
         demobilizationDate: demobilization,
       }));
-      await rescheduleHolidayNotifications();
+      void rescheduleHolidayNotifications().catch((error) => {
+        logger.error('Не удалось обновить уведомления после сохранения дат', error);
+      });
       return null;
     } catch (error) {
       logger.error('Ошибка сохранения дат', error);

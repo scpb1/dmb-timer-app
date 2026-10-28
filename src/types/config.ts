@@ -27,8 +27,12 @@ export const CONFIG_KEYS = {
   CUSTOM_TIMERS_DATA: 'custom_timers_data',
   ACTIVE_TIMER_ID: 'active_timer_id',
   SERVICE_SUMMARY_AUTO_SHOWN_DATE: 'service_summary_auto_shown_date',
+  /** +1 при каждом фокусе главного экрана с таймером */
+  TIMER_HOME_VISIT_COUNT: 'timer_home_visit_count',
   SANDBOX_SEED_VERSION: 'sandbox_seed_version',
   COLOR_THEME_ID: 'color_theme_id',
+  /** 'true' | 'false' — локальные пуши о праздниках и событиях */
+  NOTIFICATIONS_ENABLED: 'notifications_enabled',
 } as const;
 
 export type ConfigKey = (typeof CONFIG_KEYS)[keyof typeof CONFIG_KEYS];
