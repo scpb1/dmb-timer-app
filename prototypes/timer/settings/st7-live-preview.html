@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ST7 · Живое превью</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="_settings-proto.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Настройки UI</a>
+  <div class="phone">
+    <span class="proto-badge">ST7</span>
+    <div class="settings-screen">
+      <header class="settings-header">
+        <button class="icon-btn" type="button">‹</button>
+        <h1>Настройки таймера</h1>
+        <span style="width:44px"></span>
+      </header>
+
+      <div class="preview-strip">
+        <div class="preview-label">Предпросмотр</div>
+        <div class="preview-timer" id="preview" data-mode="circular">
+          <div class="pv-ring-wrap">
+            <div class="ring-thin">
+              <div class="ring-thin-inner">
+                <div class="big" id="pv-pct">21%</div>
+                <div class="unit">служба</div>
+              </div>
+            </div>
+          </div>
+          <div class="pv-linear-wrap">
+            <div class="big">287</div>
+            <div class="unit" style="font-size:0.75rem;color:var(--text-muted);">дней до дембеля</div>
+            <div class="segments">
+              <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span>
+              <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+              <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+            </div>
+          </div>
+          <div class="pv-stats" id="pv-stats">
+            <div class="pv-stat"><div class="caption">прошло</div><div class="val">78</div></div>
+            <div class="pv-stat"><div class="caption">осталось</div><div class="val">287</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-scroll">
+        <div class="field-block">
+          <span class="field-label">Тип таймера</span>
+          <div class="tile-scroll" id="types">
+            <div class="tile-card is-on" data-mode="circular"><div class="tile-preview"><div class="prev-ring"></div></div><div class="tile-name">Круг</div></div>
+            <div class="tile-card" data-mode="linear"><div class="tile-preview"><div class="prev-bar"></div></div><div class="tile-name">Линия</div></div>
+            <div class="tile-card" data-mode="frame"><div class="tile-preview"><div class="prev-frame">287</div></div><div class="tile-name">Рамка</div></div>
+          </div>
+        </div>
+
+        <div class="field-block" id="bar-block">
+          <span class="field-label">Режим прогресс-бара</span>
+          <div class="seg-row tight" id="bar-seg">
+            <button type="button" class="seg-btn is-on" data-bar="percent">%</button>
+            <button type="button" class="seg-btn" data-bar="days">Дни</button>
+            <button type="button" class="seg-btn" data-bar="weeks">Нед.</button>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Знаков после запятой</span>
+          <div class="stepper">
+            <button type="button" id="pv-dec-min">−</button>
+            <span class="step-val" id="pv-dec">2</span>
+            <button type="button" id="pv-dec-plus">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const preview = document.getElementById('preview');
+    const pvPct = document.getElementById('pv-pct');
+    const pvStats = document.getElementById('pv-stats');
+    let decimals = 2;
+    let bar = 'percent';
+    let mode = 'circular';
+    const RAW = 21.372849;
+
+    function renderPct() {
+      if (bar === 'percent') {
+        pvPct.textContent = RAW.toFixed(decimals) + '%';
+      } else if (bar === 'days') {
+        pvPct.textContent = '287';
+        pvPct.nextElementSibling.textContent = 'дней';
+      } else {
+        pvPct.textContent = '41';
+        pvPct.nextElementSibling.textContent = 'нед.';
+      }
+    }
+
+    document.getElementById('types').addEventListener('click', (e) => {
+      const card = e.target.closest('.tile-card');
+      if (!card) return;
+      document.querySelectorAll('#types .tile-card').forEach((c) => c.classList.remove('is-on'));
+      card.classList.add('is-on');
+      mode = card.dataset.mode;
+      preview.dataset.mode = mode === 'linear' ? 'linear' : 'circular';
+      pvStats.hidden = mode === 'frame';
+      document.getElementById('bar-block').style.opacity = mode === 'frame' ? '0.35' : '1';
+      if (mode === 'frame') {
+        pvPct.textContent = '287';
+        pvPct.nextElementSibling.textContent = 'в рамке';
+      } else renderPct();
+    });
+
+    document.getElementById('bar-seg').addEventListener('click', (e) => {
+      const btn = e.target.closest('.seg-btn');
+      if (!btn) return;
+      document.querySelectorAll('#bar-seg .seg-btn').forEach((b) => b.classList.remove('is-on'));
+      btn.classList.add('is-on');
+      bar = btn.dataset.bar;
+      renderPct();
+    });
+
+    document.getElementById('pv-dec-min').onclick = () => { decimals = Math.max(0, decimals - 1); document.getElementById('pv-dec').textContent = decimals; renderPct(); };
+    document.getElementById('pv-dec-plus').onclick = () => { decimals = Math.min(6, decimals + 1); document.getElementById('pv-dec').textContent = decimals; renderPct(); };
+    renderPct();
+  </script>
+</body>
+</html>

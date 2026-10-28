@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ST2 · Плитки с превью</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="_settings-proto.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Настройки UI</a>
+  <div class="phone">
+    <span class="proto-badge">ST2</span>
+    <div class="settings-screen">
+      <header class="settings-header">
+        <button class="icon-btn" type="button">‹</button>
+        <h1>Настройки таймера</h1>
+        <span style="width:44px"></span>
+      </header>
+      <div class="settings-scroll">
+        <div class="field-block">
+          <span class="field-label">Тип таймера</span>
+          <div class="tile-scroll" id="type-tiles">
+            <div class="tile-card is-on" data-type="circular">
+              <div class="tile-preview"><div class="prev-ring"></div></div>
+              <div class="tile-name">Круговой</div>
+            </div>
+            <div class="tile-card" data-type="linear">
+              <div class="tile-preview"><div class="prev-bar"></div></div>
+              <div class="tile-name">Линейный</div>
+            </div>
+            <div class="tile-card" data-type="frame">
+              <div class="tile-preview"><div class="prev-frame">287</div></div>
+              <div class="tile-name">Рамка</div>
+            </div>
+            <div class="tile-card" data-type="dotGrid">
+              <div class="tile-preview">
+                <div class="prev-dots">
+                  <span></span><span></span><span class="off"></span><span class="off"></span>
+                  <span></span><span class="off"></span><span></span><span class="off"></span>
+                </div>
+              </div>
+              <div class="tile-name">Сетка дней</div>
+            </div>
+            <div class="tile-card" data-type="milestones">
+              <div class="tile-preview"><div class="prev-spine"></div></div>
+              <div class="tile-name">Лента</div>
+            </div>
+          </div>
+          <p class="tile-hint">Свайп в стороны · выбор по картинке, не по тексту в списке</p>
+        </div>
+
+        <div class="field-block" id="milestones-only" hidden>
+          <span class="field-label">Вид ленты событий</span>
+          <div class="tile-scroll" id="layout-tiles">
+            <div class="tile-card is-on">
+              <div class="tile-preview"><div class="prev-spine"></div></div>
+              <div class="tile-name">Прямой шток</div>
+            </div>
+            <div class="tile-card">
+              <div class="tile-preview" style="font-size:0.65rem;line-height:1.2;padding:4px;">
+                ▢ ▢ ▢<br>▢ ▢
+              </div>
+              <div class="tile-name">Плитки</div>
+            </div>
+            <div class="tile-card">
+              <div class="tile-preview" style="font-size:0.7rem;text-align:left;padding:8px 12px;line-height:1.5;">
+                ✓ Призыв<br>✓ 100 дн.<br>○ Дембель
+              </div>
+              <div class="tile-name">Чеклист</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-block" id="dot-only" hidden>
+          <span class="field-label">Сетка: форма</span>
+          <div class="tile-scroll">
+            <div class="tile-card is-on" style="flex:0 0 100px;">
+              <div class="tile-preview">
+                <div class="prev-dots"><span></span><span></span><span></span></div>
+              </div>
+              <div class="tile-name">Кружки</div>
+            </div>
+            <div class="tile-card" style="flex:0 0 100px;">
+              <div class="tile-preview" style="color:var(--accent);font-size:1.2rem;">♥ ♥ ♥</div>
+              <div class="tile-name">Сердечки</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Режим прогресс-бара</span>
+          <div class="seg-row tight">
+            <button type="button" class="seg-btn is-on">%</button>
+            <button type="button" class="seg-btn">Дни</button>
+            <button type="button" class="seg-btn">Нед.</button>
+            <button type="button" class="seg-btn">Мес.</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    function wireTiles(containerId, onPick) {
+      const root = document.getElementById(containerId);
+      if (!root) return;
+      root.querySelectorAll('.tile-card').forEach((card) => {
+        card.addEventListener('click', () => {
+          root.querySelectorAll('.tile-card').forEach((c) => c.classList.remove('is-on'));
+          card.classList.add('is-on');
+          onPick?.(card.dataset.type || card);
+        });
+      });
+    }
+    wireTiles('type-tiles', (type) => {
+      document.getElementById('milestones-only').hidden = type !== 'milestones';
+      document.getElementById('dot-only').hidden = type !== 'dotGrid';
+    });
+    wireTiles('layout-tiles');
+  </script>
+</body>
+</html>

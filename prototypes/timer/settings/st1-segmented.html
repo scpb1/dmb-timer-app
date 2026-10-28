@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ST1 · Сегменты</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="_settings-proto.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Настройки UI</a>
+  <div class="phone" id="phone">
+    <span class="proto-badge">ST1</span>
+    <div class="settings-screen">
+      <header class="settings-header">
+        <button class="icon-btn" type="button">‹</button>
+        <h1>Настройки таймера</h1>
+        <span style="width:44px"></span>
+      </header>
+      <div class="settings-scroll">
+        <div class="field-block">
+          <span class="field-label">Тип таймера</span>
+          <div class="seg-row" data-seg="single">
+            <button type="button" class="seg-btn" data-value="circular">Круговой</button>
+            <button type="button" class="seg-btn" data-value="linear">Линейный</button>
+            <button type="button" class="seg-btn" data-value="frame">Рамка</button>
+          </div>
+          <div class="seg-row" style="margin-top:6px;" data-seg="single2">
+            <button type="button" class="seg-btn" data-value="dotGrid">Сетка</button>
+            <button type="button" class="seg-btn" data-value="milestones">Лента</button>
+          </div>
+          <p class="tile-hint">5 типов — два ряда; длинные названия можно сократить.</p>
+        </div>
+
+        <div class="field-block" id="block-progress">
+          <span class="field-label">Режим прогресс-бара</span>
+          <div class="seg-row tight" data-seg="progress">
+            <button type="button" class="seg-btn is-on" data-value="percent">%</button>
+            <button type="button" class="seg-btn" data-value="days">Дни</button>
+            <button type="button" class="seg-btn" data-value="weeks">Нед.</button>
+            <button type="button" class="seg-btn" data-value="months">Мес.</button>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Режим плашек</span>
+          <div class="seg-row tight" data-seg="stat">
+            <button type="button" class="seg-btn is-on" data-value="days">Дни</button>
+            <button type="button" class="seg-btn" data-value="weeks">Недели</button>
+            <button type="button" class="seg-btn" data-value="months">Месяцы</button>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Сетка: форма</span>
+          <div class="seg-row" data-seg="shape">
+            <button type="button" class="seg-btn icon-btn-seg is-on" data-value="circle">
+              <span class="mini-icon">●</span>
+              Кружки
+            </button>
+            <button type="button" class="seg-btn icon-btn-seg" data-value="heart">
+              <span class="mini-icon">♥</span>
+              Сердечки
+            </button>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Событие на таймере</span>
+          <div class="seg-row" data-seg="upcoming">
+            <button type="button" class="seg-btn" data-value="off">Выкл</button>
+            <button type="button" class="seg-btn is-on" data-value="nearest">Ближайшее</button>
+            <button type="button" class="seg-btn" data-value="pinned">Закрепить</button>
+          </div>
+        </div>
+
+        <div class="field-block" id="block-decimals">
+          <span class="field-label">Знаков после запятой</span>
+          <div class="seg-row tight" data-seg="decimals">
+            <button type="button" class="seg-btn" data-value="0">0</button>
+            <button type="button" class="seg-btn" data-value="1">1</button>
+            <button type="button" class="seg-btn is-on" data-value="2">2</button>
+            <button type="button" class="seg-btn" data-value="3">3</button>
+            <button type="button" class="seg-btn" data-value="4">4</button>
+            <button type="button" class="seg-btn" data-value="5">5</button>
+            <button type="button" class="seg-btn" data-value="6">6</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.querySelectorAll('[data-seg]').forEach((row) => {
+      row.querySelectorAll('.seg-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          row.querySelectorAll('.seg-btn').forEach((b) => b.classList.remove('is-on'));
+          btn.classList.add('is-on');
+        });
+      });
+    });
+    document.querySelector('[data-seg="single"]')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.seg-btn');
+      if (!btn) return;
+      const frame = btn.dataset.value === 'frame';
+      document.getElementById('block-progress').style.opacity = frame ? '0.35' : '1';
+      document.getElementById('block-progress').style.pointerEvents = frame ? 'none' : '';
+    });
+  </script>
+</body>
+</html>

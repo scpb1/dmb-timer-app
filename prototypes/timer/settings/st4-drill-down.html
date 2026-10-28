@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ST4 · Подэкраны</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="_settings-proto.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Настройки UI</a>
+  <div class="phone" id="phone">
+    <span class="proto-badge">ST4</span>
+    <div class="settings-screen" id="root-list">
+      <header class="settings-header">
+        <button class="icon-btn" type="button">‹</button>
+        <h1>Настройки таймера</h1>
+        <span style="width:44px"></span>
+      </header>
+      <div class="settings-scroll">
+        <div class="theme-link">
+          <div>
+            <strong style="display:block;">Сменить тему</strong>
+            <span style="font-size:0.78rem;color:var(--text-muted);">Фон, плашки и текст</span>
+          </div>
+          <span class="nav-chev">›</span>
+        </div>
+
+        <p class="sec-label">Отображение</p>
+
+        <button type="button" class="nav-row" id="go-timer">
+          <span class="nav-text">
+            <strong>Вид таймера</strong>
+            <span id="timer-summary">Круговой · проценты · 2 знака · плашки: дни</span>
+          </span>
+          <span class="nav-chev">›</span>
+        </button>
+
+        <button type="button" class="nav-row" id="go-event">
+          <span class="nav-text">
+            <strong>Событие на таймере</strong>
+            <span id="event-summary">Ближайшее</span>
+          </span>
+          <span class="nav-chev">›</span>
+        </button>
+
+        <button type="button" class="nav-row">
+          <span class="nav-text">
+            <strong>Фото на фоне</strong>
+            <span>Не выбрано</span>
+          </span>
+          <span class="nav-chev">›</span>
+        </button>
+
+        <p class="gallery-note">
+          На корневом экране — только summary. Детали — на push-экранах (ниже — симуляция в том же «телефоне»).
+        </p>
+      </div>
+    </div>
+
+    <div class="drill-panel" id="panel-timer">
+      <header class="settings-header">
+        <button class="icon-btn" type="button" id="back-timer" aria-label="Назад">‹</button>
+        <h1>Вид таймера</h1>
+        <span style="width:44px"></span>
+      </header>
+      <div class="settings-scroll">
+        <div class="field-block">
+          <span class="field-label">Тип</span>
+          <div class="tile-scroll" id="drill-types">
+            <div class="tile-card is-on" data-label="Круговой"><div class="tile-preview"><div class="prev-ring"></div></div><div class="tile-name">Круговой</div></div>
+            <div class="tile-card" data-label="Линейный"><div class="tile-preview"><div class="prev-bar"></div></div><div class="tile-name">Линейный</div></div>
+            <div class="tile-card" data-label="Рамка"><div class="tile-preview"><div class="prev-frame">287</div></div><div class="tile-name">Рамка</div></div>
+          </div>
+        </div>
+        <div class="field-block">
+          <span class="field-label">Режим прогресс-бара</span>
+          <div class="seg-row tight" data-seg="bar">
+            <button type="button" class="seg-btn is-on" data-label="проценты">%</button>
+            <button type="button" class="seg-btn" data-label="дни">Дни</button>
+            <button type="button" class="seg-btn" data-label="недели">Нед.</button>
+          </div>
+        </div>
+        <div class="field-block">
+          <span class="field-label">Знаков после запятой</span>
+          <div class="stepper">
+            <button type="button" id="dec-min">−</button>
+            <span class="step-val" id="dec-val">2</span>
+            <button type="button" id="dec-plus">+</button>
+          </div>
+        </div>
+        <div class="field-block">
+          <span class="field-label">Плашки</span>
+          <div class="seg-row tight" data-seg="stat">
+            <button type="button" class="seg-btn is-on" data-label="дни">Дни</button>
+            <button type="button" class="seg-btn" data-label="недели">Нед.</button>
+            <button type="button" class="seg-btn" data-label="месяцы">Мес.</button>
+          </div>
+        </div>
+        <button type="button" class="nav-row" style="margin-top:28px;background:var(--text);color:#f2f0ec;border-color:transparent;" id="save-timer">
+          <span class="nav-text"><strong style="color:inherit;">Готово</strong></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="drill-panel" id="panel-event">
+      <header class="settings-header">
+        <button class="icon-btn" type="button" id="back-event">‹</button>
+        <h1>Событие</h1>
+        <span style="width:44px"></span>
+      </header>
+      <div class="settings-scroll">
+        <div class="seg-row" data-seg="ev" style="margin-top:8px;">
+          <button type="button" class="seg-btn" data-mode="Выкл">Выкл</button>
+          <button type="button" class="seg-btn is-on" data-mode="Ближайшее">Ближайшее</button>
+          <button type="button" class="seg-btn" data-mode="Закрепить">Закрепить</button>
+        </div>
+        <div class="field-block" id="pin-list" hidden>
+          <span class="field-label">Какое событие</span>
+          <div class="dropdown-menu" style="margin-top:0;">
+            <div class="dropdown-item is-on">🎖 День защитника Отечества</div>
+            <div class="dropdown-item">🎂 День рождения</div>
+            <div class="dropdown-item">★ 100 дней службы</div>
+          </div>
+        </div>
+        <button type="button" class="nav-row" style="margin-top:28px;background:var(--text);color:#f2f0ec;border-color:transparent;" id="save-event">
+          <span class="nav-text"><strong style="color:inherit;">Готово</strong></span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const phone = document.getElementById('phone');
+    const summaryTimer = document.getElementById('timer-summary');
+    const summaryEvent = document.getElementById('event-summary');
+    let decimals = 2;
+    let typeLabel = 'Круговой';
+    let barLabel = 'проценты';
+    let statLabel = 'дни';
+    let eventMode = 'Ближайшее';
+
+    function openDrill(id) {
+      phone.classList.add('drill-open');
+      document.querySelectorAll('.drill-panel').forEach((p) => p.style.zIndex = '15');
+      document.getElementById(id).style.zIndex = '16';
+    }
+    function closeDrill() {
+      phone.classList.remove('drill-open');
+    }
+
+    document.getElementById('go-timer').onclick = () => openDrill('panel-timer');
+    document.getElementById('go-event').onclick = () => openDrill('panel-event');
+    document.getElementById('back-timer').onclick = closeDrill;
+    document.getElementById('back-event').onclick = closeDrill;
+
+    document.getElementById('drill-types').addEventListener('click', (e) => {
+      const card = e.target.closest('.tile-card');
+      if (!card) return;
+      document.querySelectorAll('#drill-types .tile-card').forEach((c) => c.classList.remove('is-on'));
+      card.classList.add('is-on');
+      typeLabel = card.dataset.label;
+    });
+
+    document.querySelectorAll('[data-seg]').forEach((row) => {
+      row.querySelectorAll('.seg-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          row.querySelectorAll('.seg-btn').forEach((b) => b.classList.remove('is-on'));
+          btn.classList.add('is-on');
+          if (row.dataset.seg === 'bar') barLabel = btn.dataset.label;
+          if (row.dataset.seg === 'stat') statLabel = btn.dataset.label;
+          if (row.dataset.seg === 'ev') {
+            eventMode = btn.dataset.mode;
+            document.getElementById('pin-list').hidden = eventMode !== 'Закрепить';
+          }
+        });
+      });
+    });
+
+    document.getElementById('dec-min').onclick = () => {
+      decimals = Math.max(0, decimals - 1);
+      document.getElementById('dec-val').textContent = String(decimals);
+    };
+    document.getElementById('dec-plus').onclick = () => {
+      decimals = Math.min(6, decimals + 1);
+      document.getElementById('dec-val').textContent = String(decimals);
+    };
+
+    document.getElementById('save-timer').onclick = () => {
+      summaryTimer.textContent = `${typeLabel} · ${barLabel} · ${decimals} знака · плашки: ${statLabel}`;
+      closeDrill();
+    };
+    document.getElementById('save-event').onclick = () => {
+      summaryEvent.textContent = eventMode === 'Закрепить' ? 'Закреплено: День защитника…' : eventMode;
+      closeDrill();
+    };
+  </script>
+</body>
+</html>

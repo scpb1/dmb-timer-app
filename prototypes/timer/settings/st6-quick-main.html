@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ST6 · Быстро на главной</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="_settings-proto.css" />
+  <style>
+    .split-view {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .split-view .phone { flex-shrink: 0; }
+    .legend {
+      max-width: 320px;
+      font-size: 0.85rem;
+      color: #5a524a;
+      line-height: 1.55;
+      padding: 1rem;
+      background: rgba(255,255,255,0.5);
+      border-radius: 12px;
+      border: 1px solid rgba(167,154,138,0.35);
+    }
+    .legend h2 { font-size: 0.95rem; margin: 0 0 0.5rem; color: #3e3630; }
+    .legend ul { margin: 0; padding-left: 1.1rem; }
+    .legend li { margin-bottom: 0.35rem; }
+    .phone-label {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #5a524a;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .screen-home {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: calc(var(--safe-top) + 44px) 20px 28px;
+      gap: 16px;
+    }
+    .toggle-fake {
+      font-size: 0.72rem;
+      padding: 6px 12px;
+      border-radius: 99px;
+      border: 1px solid var(--overlay-border);
+      background: var(--overlay);
+      color: var(--text-muted);
+    }
+    .center-display {
+      text-align: center;
+      padding: 12px;
+      border-radius: 12px;
+      transition: background 0.2s;
+    }
+    .center-display.flash {
+      background: rgba(229, 57, 53, 0.12);
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html" style="align-self:flex-start;max-width:100%;">← Настройки UI</a>
+  <div class="split-view">
+    <div>
+      <p class="phone-label">Главный экран</p>
+      <div class="phone">
+        <span class="proto-badge">ST6</span>
+        <header class="topbar">
+          <button class="icon-btn" type="button">⚙</button>
+          <div class="topbar-center">Алексей<span>▾</span></div>
+          <button class="icon-btn right" type="button">↗</button>
+        </header>
+        <div class="screen-home">
+          <div class="holiday-card" style="max-width:100%;">
+            <span class="glyph">🎖</span>
+            <div>
+              <div class="title">День защитника Отечества</div>
+              <div class="date">23 фев · через 12 дней</div>
+            </div>
+          </div>
+
+          <div class="toggle-fake">ддд · дпп</div>
+
+          <div class="center-display long-press-ring" id="ring-zone">
+            <div class="ring-thin" style="width:200px;height:200px;">
+              <div class="ring-thin-inner">
+                <div class="big" id="center-num">287</div>
+                <div class="unit"><span class="label-tap" id="unit-label">дней до дембеля</span></div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="cycle-pill" id="cycle-units">
+            Единицы: <strong id="unit-mode">дни</strong>
+            <span class="arrow">⇄</span>
+          </button>
+
+          <div class="stats-row" style="max-width:100%;">
+            <div class="stat-card">
+              <div class="caption">прошло</div>
+              <div class="val" id="stat-elapsed">78</div>
+              <div class="sub" id="stat-elapsed-sub">дней</div>
+            </div>
+            <div class="stat-card">
+              <div class="caption">осталось</div>
+              <div class="val" id="stat-remain">287</div>
+              <div class="sub" id="stat-remain-sub">дней</div>
+            </div>
+          </div>
+
+          <div class="quick-hint">
+            <strong>Long press</strong> на кольце — переключить «осталось ↔ прошло» (будущий <code>centerDisplay</code>).
+            Тап по pill — цикл дни → недели → месяцы (как режим плашек).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <p class="phone-label">Настройки (полная версия)</p>
+      <div class="phone" style="height:640px;">
+        <div class="settings-screen">
+          <header class="settings-header">
+            <button class="icon-btn" type="button">‹</button>
+            <h1>Настройки</h1>
+            <span style="width:44px"></span>
+          </header>
+          <div class="settings-scroll">
+            <button type="button" class="nav-row">
+              <span class="nav-text">
+                <strong>Вид таймера</strong>
+                <span>Круговой · % · 2 знака</span>
+              </span>
+              <span class="nav-chev">›</span>
+            </button>
+            <p class="gallery-note">
+              Жесты на home не заменяют настройки — только ускоряют частые действия. Всё остаётся в ST4/ST1.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="legend">
+      <h2>Идея ST6</h2>
+      <ul>
+        <li>Дублировать редкие опции на главной не нужно.</li>
+        <li>Имеет смысл для: единицы времени, осталось/прошло.</li>
+        <li>В настройках — те же поля, что сейчас, плюс подсказка «можно и на главной».</li>
+      </ul>
+    </aside>
+  </div>
+  <script>
+    const units = [
+      { key: 'days', label: 'дни', elapsed: '78', remain: '287', sub: 'дней', caption: 'дней до дембеля' },
+      { key: 'weeks', label: 'недели', elapsed: '11', remain: '41', sub: 'нед.', caption: 'нед. до дембеля' },
+      { key: 'months', label: 'месяцы', elapsed: '2', remain: '9', sub: 'мес.', caption: 'мес. до дембеля' },
+    ];
+    let u = 0;
+    let showRemaining = true;
+    const ringZone = document.getElementById('ring-zone');
+    let pressTimer;
+
+    document.getElementById('cycle-units').onclick = () => {
+      u = (u + 1) % units.length;
+      const m = units[u];
+      document.getElementById('unit-mode').textContent = m.label;
+      document.getElementById('stat-elapsed').textContent = m.elapsed;
+      document.getElementById('stat-remain').textContent = m.remain;
+      document.getElementById('stat-elapsed-sub').textContent = m.sub;
+      document.getElementById('stat-remain-sub').textContent = m.sub;
+      if (showRemaining) {
+        document.getElementById('center-num').textContent = m.remain;
+        document.getElementById('unit-label').textContent = m.caption;
+      }
+    };
+
+    ringZone.addEventListener('mousedown', () => {
+      pressTimer = setTimeout(() => {
+        showRemaining = !showRemaining;
+        ringZone.classList.add('flash');
+        setTimeout(() => ringZone.classList.remove('flash'), 400);
+        const m = units[u];
+        if (showRemaining) {
+          document.getElementById('center-num').textContent = m.remain;
+          document.getElementById('unit-label').textContent = m.caption;
+        } else {
+          document.getElementById('center-num').textContent = m.elapsed;
+          document.getElementById('unit-label').textContent = 'дней прошло';
+        }
+      }, 550);
+    });
+    ['mouseup', 'mouseleave'].forEach((ev) => {
+      ringZone.addEventListener(ev, () => clearTimeout(pressTimer));
+    });
+  </script>
+</body>
+</html>

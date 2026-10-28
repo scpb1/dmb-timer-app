@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ST8 · Галерея контролов</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="_settings-proto.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Настройки UI</a>
+  <div class="phone">
+    <span class="proto-badge">ST8</span>
+    <div class="settings-screen">
+      <header class="settings-header">
+        <button class="icon-btn" type="button">‹</button>
+        <h1>SettingsChoice</h1>
+        <span style="width:44px"></span>
+      </header>
+      <div class="settings-scroll">
+        <p class="gallery-note">
+          Задел на один компонент с prop <code>variant</code>. Ниже — все варианты на одном экране для сравнения высоты и плотности.
+        </p>
+
+        <span class="gallery-tag">variant="dropdown"</span>
+        <div class="field-block">
+          <span class="field-label">Тип таймера</span>
+          <div class="dropdown-trigger"><span>Круговой</span><span class="chev">▾</span></div>
+        </div>
+
+        <span class="gallery-tag">variant="segmented"</span>
+        <div class="field-block">
+          <span class="field-label">Режим плашек</span>
+          <div class="seg-row tight">
+            <button type="button" class="seg-btn is-on">Дни</button>
+            <button type="button" class="seg-btn">Нед.</button>
+            <button type="button" class="seg-btn">Мес.</button>
+          </div>
+        </div>
+
+        <span class="gallery-tag">variant="tiles"</span>
+        <div class="field-block">
+          <span class="field-label">Форма сетки</span>
+          <div class="tile-scroll">
+            <div class="tile-card is-on" style="flex:0 0 96px;"><div class="tile-preview"><div class="prev-dots"><span></span><span></span></div></div><div class="tile-name">●</div></div>
+            <div class="tile-card" style="flex:0 0 96px;"><div class="tile-preview" style="color:var(--accent);">♥ ♥</div><div class="tile-name">♥</div></div>
+          </div>
+        </div>
+
+        <span class="gallery-tag">variant="stepper"</span>
+        <div class="field-block">
+          <span class="field-label">Знаков после запятой</span>
+          <div class="stepper">
+            <button type="button">−</button>
+            <span class="step-val">2</span>
+            <button type="button">+</button>
+          </div>
+        </div>
+
+        <span class="gallery-tag">variant="navRow" → sheet / drill</span>
+        <button type="button" class="nav-row">
+          <span class="nav-text"><strong>Закрепить</strong><span>День защитника Отечества</span></span>
+          <span class="nav-chev">›</span>
+        </button>
+
+        <span class="gallery-tag">variant="switch" (уже в приложении)</span>
+        <div class="nav-row" style="cursor:default;">
+          <span class="nav-text"><strong>Окантовка «Таймер»</strong><span>На фото-фоне</span></span>
+          <span style="width:44px;height:26px;border-radius:99px;background:var(--accent);position:relative;"><span style="position:absolute;right:2px;top:2px;width:22px;height:22px;border-radius:50%;background:#fff;"></span></span>
+        </div>
+
+        <span class="gallery-tag">variant="slider" (уже в приложении)</span>
+        <div class="field-block">
+          <span class="field-label">Затемнение · 40%</span>
+          <div style="height:8px;border-radius:99px;background:var(--ring-track);position:relative;">
+            <div style="width:40%;height:100%;background:var(--ring-fill);border-radius:99px;"></div>
+            <div style="position:absolute;left:40%;top:50%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid var(--text);"></div>
+          </div>
+        </div>
+
+        <p class="sec-label">Рекомендуемая матрица</p>
+        <div class="dropdown-menu" style="margin-top:0;font-size:0.82rem;">
+          <div class="dropdown-item"><span>2–4 enum, короткие подписи</span><span>segmented</span></div>
+          <div class="dropdown-item"><span>Визуальные режимы</span><span>tiles</span></div>
+          <div class="dropdown-item"><span>0–6, шаг 1</span><span>stepper</span></div>
+          <div class="dropdown-item"><span>Длинный динамический список</span><span>navRow + sheet</span></div>
+          <div class="dropdown-item"><span>Много полей одной темы</span><span>drill-down</span></div>
+          <div class="dropdown-item"><span>boolean</span><span>switch</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

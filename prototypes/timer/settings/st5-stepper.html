@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ST5 · Stepper</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="_settings-proto.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Настройки UI</a>
+  <div class="phone">
+    <span class="proto-badge">ST5</span>
+    <div class="settings-screen">
+      <header class="settings-header">
+        <button class="icon-btn" type="button">‹</button>
+        <h1>Настройки таймера</h1>
+        <span style="width:44px"></span>
+      </header>
+      <div class="settings-scroll">
+        <div class="field-block">
+          <span class="field-label">Тип таймера</span>
+          <div class="seg-row" data-seg>
+            <button type="button" class="seg-btn is-on">Круговой</button>
+            <button type="button" class="seg-btn">Линейный</button>
+            <button type="button" class="seg-btn">Сетка</button>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Режим прогресс-бара</span>
+          <div class="seg-row tight" data-seg>
+            <button type="button" class="seg-btn is-on">%</button>
+            <button type="button" class="seg-btn">Дни</button>
+            <button type="button" class="seg-btn">Нед.</button>
+            <button type="button" class="seg-btn">Мес.</button>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Знаков после запятой</span>
+          <div class="stepper">
+            <button type="button" id="step-min" aria-label="Меньше">−</button>
+            <span class="step-val" id="step-val">2</span>
+            <button type="button" id="step-plus" aria-label="Больше">+</button>
+          </div>
+          <p class="stepper-hint">Пример: <strong id="step-example">21.37%</strong> · диапазон 0–6</p>
+        </div>
+
+        <div class="field-block compare-ref">
+          <span class="field-label">Было бы dropdown (для сравнения)</span>
+          <div class="dropdown-trigger" style="opacity:0.5;pointer-events:none;">
+            <span>2</span>
+            <span class="chev">▾</span>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Событие на таймере</span>
+          <div class="seg-row" data-seg>
+            <button type="button" class="seg-btn">Выкл</button>
+            <button type="button" class="seg-btn is-on">Ближайшее</button>
+            <button type="button" class="seg-btn">Закрепить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    let n = 2;
+    const valEl = document.getElementById('step-val');
+    const exEl = document.getElementById('step-example');
+    const minBtn = document.getElementById('step-min');
+    const plusBtn = document.getElementById('step-plus');
+
+    function render() {
+      valEl.textContent = String(n);
+      minBtn.disabled = n <= 0;
+      plusBtn.disabled = n >= 6;
+      exEl.textContent = (21.372849).toFixed(n) + '%';
+    }
+    minBtn.onclick = () => { n = Math.max(0, n - 1); render(); };
+    plusBtn.onclick = () => { n = Math.min(6, n + 1); render(); };
+    render();
+
+    document.querySelectorAll('[data-seg]').forEach((row) => {
+      row.querySelectorAll('.seg-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          row.querySelectorAll('.seg-btn').forEach((b) => b.classList.remove('is-on'));
+          btn.classList.add('is-on');
+        });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Настройки таймера — прототипы UI</title>
+  <style>
+    :root {
+      --text: #3e3630;
+      --muted: #a79a8a;
+      --card: rgba(255, 255, 255, 0.55);
+      --border: rgba(167, 154, 138, 0.35);
+      --pick: rgba(229, 57, 53, 0.12);
+      --pick-border: rgba(229, 57, 53, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: linear-gradient(165deg, #fcf7df 0%, #ede8d5 45%, #c7d3db 100%);
+      min-height: 100vh;
+      color: var(--text);
+      padding: 2rem 1.5rem 3rem;
+    }
+    a.back {
+      display: inline-block;
+      margin-bottom: 1rem;
+      color: #5a524a;
+      font-size: 0.9rem;
+    }
+    h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.35rem; }
+    p.lead {
+      margin: 0 0 1.25rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+      max-width: 44rem;
+      line-height: 1.55;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.1rem;
+      max-width: 1100px;
+    }
+    a.card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.15rem 1.25rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    a.card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(62, 54, 48, 0.08);
+    }
+    a.card h2 { margin: 0 0 0.45rem; font-size: 1.02rem; }
+    a.card .tag {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    a.card p { margin: 0; font-size: 0.86rem; color: var(--muted); line-height: 1.45; }
+    a.card.ref { border-style: dashed; opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <a class="back" href="../index.html">← Прототипы таймера</a>
+  <h1>Настройки таймера — варианты контролов</h1>
+  <p class="lead">
+    Альтернативы выпадающим меню (<code>SettingsDropdown</code>). Каждый файл — один подход на том же экране «Настройки таймера».
+    ST3 и ST4 кликабельны; остальные — там, где есть смысл, тоже с минимальным JS.
+  </p>
+
+  <div class="grid">
+    <a class="card ref" href="st0-dropdown-baseline.html">
+      <span class="tag">ST0 · референс</span>
+      <h2>Как сейчас (dropdown)</h2>
+      <p>Текущий паттерн: label + trigger + раскрывающийся список.</p>
+    </a>
+    <a class="card" href="st1-segmented.html">
+      <span class="tag">ST1</span>
+      <h2>Сегменты / chips</h2>
+      <p>2–4 опции в ряд: режим бара, плашки, событие, форма сетки.</p>
+    </a>
+    <a class="card" href="st2-tiles-preview.html">
+      <span class="tag">ST2</span>
+      <h2>Плитки с превью</h2>
+      <p>Горизонтальный скролл: тип таймера и вид ленты с мини-макетом.</p>
+    </a>
+    <a class="card" href="st3-bottom-sheet.html">
+      <span class="tag">ST3 · интерактив</span>
+      <h2>Bottom sheet</h2>
+      <p>Компактные строки; длинные списки (тип, закрепить) — в sheet снизу.</p>
+    </a>
+    <a class="card" href="st4-drill-down.html">
+      <span class="tag">ST4 · интерактив</span>
+      <h2>Подэкраны</h2>
+      <p>Summary-строки на главном списке → push «Вид таймера» / «Событие».</p>
+    </a>
+    <a class="card" href="st5-stepper.html">
+      <span class="tag">ST5 · интерактив</span>
+      <h2>Stepper</h2>
+      <p>Знаки после запятой через − / +; остальное — сегментами.</p>
+    </a>
+    <a class="card" href="st6-quick-main.html">
+      <span class="tag">ST6</span>
+      <h2>Быстро на главной</h2>
+      <p>Long press и цикл единиц на home; настройки — полная версия.</p>
+    </a>
+    <a class="card" href="st7-live-preview.html">
+      <span class="tag">ST7 · интерактив</span>
+      <h2>Живое превью</h2>
+      <p>Закреплённый мини-таймер сверху, меняется при выборе типа/режима.</p>
+    </a>
+    <a class="card" href="st8-choice-gallery.html">
+      <span class="tag">ST8</span>
+      <h2>Галерея контролов</h2>
+      <p>Все варианты на одном скролле — задел под <code>SettingsChoice</code>.</p>
+    </a>
+  </div>
+</body>
+</html>

@@ -48,14 +48,17 @@
     }
   }
 
-  document.querySelectorAll('[data-app-ring]').forEach((svg) => {
+  function drawAppRing(svg) {
     renderRing(svg, {
       size: Number(svg.dataset.size || 280),
       thickness: Number(svg.dataset.thickness || 32),
       count: Number(svg.dataset.count || 100),
       filled: Number(svg.dataset.filled || 21),
     });
-  });
+  }
+  window.__drawAppRing = drawAppRing;
+
+  document.querySelectorAll('[data-app-ring]').forEach(drawAppRing);
 
   document.querySelectorAll('[data-app-linear]').forEach((el) => {
     renderBar(el, {

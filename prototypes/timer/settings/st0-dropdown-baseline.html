@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ST0 · Dropdown (как сейчас)</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="_settings-proto.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Настройки UI</a>
+  <div class="phone">
+    <span class="proto-badge">ST0</span>
+    <div class="settings-screen">
+      <header class="settings-header">
+        <button class="icon-btn" type="button" aria-label="Назад">‹</button>
+        <h1>Настройки таймера</h1>
+        <span style="width:44px"></span>
+      </header>
+      <div class="settings-scroll">
+        <div class="theme-link">
+          <div>
+            <strong style="display:block;font-size:1rem;">Сменить тему</strong>
+            <span style="font-size:0.78rem;color:var(--text-muted);">Фон, плашки и текст</span>
+          </div>
+          <span class="nav-chev">›</span>
+        </div>
+
+        <p class="sec-label">Вид таймера</p>
+
+        <div class="field-block">
+          <span class="field-label">Тип таймера</span>
+          <div class="dropdown-trigger">
+            <span>Круговой</span>
+            <span class="chev">▾</span>
+          </div>
+          <div class="dropdown-menu">
+            <div class="dropdown-item is-on">Круговой <span>✓</span></div>
+            <div class="dropdown-item">Линейный</div>
+            <div class="dropdown-item">Рамка</div>
+            <div class="dropdown-item">Сетка дней</div>
+            <div class="dropdown-item">Лента событий</div>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Режим прогресс-бара</span>
+          <div class="dropdown-trigger">
+            <span>Проценты</span>
+            <span class="chev">▾</span>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Знаков после запятой</span>
+          <div class="dropdown-trigger">
+            <span>2</span>
+            <span class="chev">▾</span>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Режим плашек</span>
+          <div class="dropdown-trigger">
+            <span>Дни</span>
+            <span class="chev">▾</span>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Событие на таймере</span>
+          <div class="dropdown-trigger">
+            <span>Ближайшее</span>
+            <span class="chev">▾</span>
+          </div>
+        </div>
+
+        <p class="gallery-note" style="margin-top:24px;">
+          Референс: один и тот же паттерн для всех enum-полей. Минимум кода, но много одинаковых блоков и лишний скролл при раскрытии.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

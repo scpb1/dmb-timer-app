@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ST3 · Bottom sheet</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="_settings-proto.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Настройки UI</a>
+  <div class="phone" id="phone">
+    <span class="proto-badge">ST3</span>
+    <div class="settings-screen">
+      <header class="settings-header">
+        <button class="icon-btn" type="button">‹</button>
+        <h1>Настройки таймера</h1>
+        <span style="width:44px"></span>
+      </header>
+      <div class="settings-scroll">
+        <div class="field-block">
+          <span class="field-label">Режим прогресс-бара</span>
+          <div class="seg-row tight" data-seg>
+            <button type="button" class="seg-btn is-on">%</button>
+            <button type="button" class="seg-btn">Дни</button>
+            <button type="button" class="seg-btn">Нед.</button>
+            <button type="button" class="seg-btn">Мес.</button>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">Режим плашек</span>
+          <div class="seg-row tight" data-seg>
+            <button type="button" class="seg-btn is-on">Дни</button>
+            <button type="button" class="seg-btn">Недели</button>
+            <button type="button" class="seg-btn">Месяцы</button>
+          </div>
+        </div>
+
+        <button type="button" class="nav-row" id="open-type">
+          <span class="nav-text">
+            <strong>Тип таймера</strong>
+            <span id="type-summary">Круговой</span>
+          </span>
+          <span class="nav-chev">▾</span>
+        </button>
+
+        <button type="button" class="nav-row" id="open-pin">
+          <span class="nav-text">
+            <strong>Закрепить событие</strong>
+            <span id="pin-summary">День защитника Отечества</span>
+          </span>
+          <span class="nav-chev">▾</span>
+        </button>
+
+        <div class="field-block">
+          <span class="field-label">Событие на таймере</span>
+          <div class="seg-row" data-seg>
+            <button type="button" class="seg-btn">Выкл</button>
+            <button type="button" class="seg-btn is-on">Ближайшее</button>
+            <button type="button" class="seg-btn" id="mode-pinned">Закрепить</button>
+          </div>
+        </div>
+
+        <p class="gallery-note">
+          Короткие enum — сегменты. Длинные списки — одна строка + sheet (как нативный picker).
+        </p>
+      </div>
+    </div>
+
+    <div class="sheet-scrim" id="scrim"></div>
+    <div class="bottom-sheet" id="sheet" role="dialog" aria-hidden="true">
+      <div class="sheet-grab"></div>
+      <div class="sheet-title" id="sheet-title">Выбор</div>
+      <div class="sheet-list" id="sheet-list"></div>
+    </div>
+  </div>
+  <script>
+    const phone = document.getElementById('phone');
+    const scrim = document.getElementById('scrim');
+    const sheetTitle = document.getElementById('sheet-title');
+    const sheetList = document.getElementById('sheet-list');
+
+    const TYPE_OPTIONS = [
+      { id: 'circular', label: 'Круговой', sub: 'Кольцо и сегменты' },
+      { id: 'linear', label: 'Линейный', sub: 'Полоска прогресса' },
+      { id: 'frame', label: 'Рамка', sub: 'Число в обводке' },
+      { id: 'dotGrid', label: 'Сетка дней', sub: '365 ячеек' },
+      { id: 'milestones', label: 'Лента событий', sub: 'Вехи службы' },
+    ];
+
+    const PIN_OPTIONS = [
+      { id: 'h1', glyph: '🎖', label: 'День защитника Отечества', sub: '23 фев' },
+      { id: 'h2', glyph: '🎂', label: 'День рождения', sub: '15 мар' },
+      { id: 'e1', glyph: '★', label: '100 дней службы', sub: 'событие' },
+      { id: 'e2', glyph: '◆', label: 'Половина срока', sub: 'событие' },
+    ];
+
+    let currentKind = null;
+    let selectedType = 'circular';
+    let selectedPin = 'h1';
+
+    function openSheet(kind) {
+      currentKind = kind;
+      const options = kind === 'type' ? TYPE_OPTIONS : PIN_OPTIONS;
+      const selected = kind === 'type' ? selectedType : selectedPin;
+      sheetTitle.textContent = kind === 'type' ? 'Тип таймера' : 'Закрепить';
+      sheetList.innerHTML = options
+        .map(
+          (o) => `
+        <div class="sheet-option ${o.id === selected ? 'is-on' : ''}" data-id="${o.id}">
+          ${o.glyph ? `<span class="glyph">${o.glyph}</span>` : '<span class="glyph">◯</span>'}
+          <span class="meta"><strong>${o.label}</strong><small>${o.sub || ''}</small></span>
+          <span class="check">✓</span>
+        </div>`,
+        )
+        .join('');
+      phone.classList.add('has-sheet');
+    }
+
+    function closeSheet() {
+      phone.classList.remove('has-sheet');
+      currentKind = null;
+    }
+
+    sheetList.addEventListener('click', (e) => {
+      const row = e.target.closest('.sheet-option');
+      if (!row) return;
+      const id = row.dataset.id;
+      if (currentKind === 'type') {
+        selectedType = id;
+        const opt = TYPE_OPTIONS.find((o) => o.id === id);
+        document.getElementById('type-summary').textContent = opt?.label ?? id;
+      } else {
+        selectedPin = id;
+        const opt = PIN_OPTIONS.find((o) => o.id === id);
+        document.getElementById('pin-summary').textContent = opt?.label ?? id;
+      }
+      closeSheet();
+    });
+
+    document.getElementById('open-type').addEventListener('click', () => openSheet('type'));
+    document.getElementById('open-pin').addEventListener('click', () => openSheet('pin'));
+    document.getElementById('mode-pinned').addEventListener('click', () => {
+      setTimeout(() => openSheet('pin'), 120);
+    });
+    scrim.addEventListener('click', closeSheet);
+
+    document.querySelectorAll('[data-seg]').forEach((row) => {
+      row.querySelectorAll('.seg-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          row.querySelectorAll('.seg-btn').forEach((b) => b.classList.remove('is-on'));
+          btn.classList.add('is-on');
+        });
+      });
+    });
+  </script>
+</body>
+</html>
