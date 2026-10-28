@@ -12,12 +12,14 @@ import {
 } from 'react-native';
 
 import { DatePicker } from '@/components/common/DatePicker';
+import { FORM_FIELD_HEIGHT } from '@/components/events/formFieldStyles';
+import { IconColorPicker } from '@/components/events/IconColorPicker';
 import { IconPicker } from '@/components/events/IconPicker';
 import type { HolidayFormData } from '@/hooks/useHolidays';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 import { HOLIDAY_NAME_MAX_LENGTH, type DisplayHoliday } from '@/types/holidays';
-import { DEFAULT_HOLIDAY_ICON, getAutomaticHolidayGlyph, isCatalogIcon } from '@/utils/eventGlyphs';
+import { DEFAULT_HOLIDAY_ICON, getHolidayFormIconDefaults } from '@/utils/eventGlyphs';
 
 interface HolidayFormModalProps {
   visible: boolean;
@@ -33,13 +35,17 @@ function buildInitialForm(holiday: DisplayHoliday | null): HolidayFormData {
       name: '',
       dateValue: null,
       icon: DEFAULT_HOLIDAY_ICON,
+      iconColor: undefined,
     };
   }
+
+  const { icon, iconColor } = getHolidayFormIconDefaults(holiday);
 
   return {
     name: holiday.name,
     dateValue: holiday.date,
-    icon: isCatalogIcon(holiday.icon) ? holiday.icon : holiday.isCustom ? DEFAULT_HOLIDAY_ICON : undefined,
+    icon,
+    iconColor,
   };
 }
 
@@ -53,6 +59,7 @@ export function HolidayFormModal({
   const [name, setName] = useState('');
   const [dateValue, setDateValue] = useState<Date | null>(null);
   const [icon, setIcon] = useState<string | undefined>(DEFAULT_HOLIDAY_ICON);
+  const [iconColor, setIconColor] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const theme = useAppTheme();
@@ -63,13 +70,14 @@ export function HolidayFormModal({
       setName(initial.name);
       setDateValue(initial.dateValue);
       setIcon(initial.icon);
+      setIconColor(initial.iconColor);
       setError(null);
       setIsSaving(false);
     }
   }, [visible, holiday]);
 
   const handleSave = async () => {
-    const form: HolidayFormData = { name, dateValue, icon };
+    const form: HolidayFormData = { name, dateValue, icon, iconColor };
     const trimmedName = name.trim();
 
     if (!trimmedName) {
@@ -96,7 +104,7 @@ export function HolidayFormModal({
     }
   };
 
-  const title = mode === 'add' ? 'Новый праздник' : 'Изменить праздник';
+  const title = mode === 'add' ? 'Новый праздник' : 'Изменение праздника';
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -147,11 +155,8 @@ export function HolidayFormModal({
               {name.length}/{HOLIDAY_NAME_MAX_LENGTH}
             </Text>
 
-            <IconPicker
-              value={icon}
-              onChange={setIcon}
-              autoGlyph={holiday && !holiday.isCustom ? getAutomaticHolidayGlyph(holiday) : undefined}
-            />
+            <IconPicker value={icon} onChange={setIcon} previewColor={iconColor} />
+            <IconColorPicker value={iconColor} onChange={setIconColor} />
 
             <DatePicker
               label="Дата праздника"
@@ -162,10 +167,8 @@ export function HolidayFormModal({
               }}
               labelStyle={styles.datePickerLabel}
               buttonStyle={styles.datePickerButton}
+              buttonTextStyle={styles.datePickerButtonText}
             />
-            <Text style={[styles.hint, { color: theme.text.secondary }]}>
-              Появятся все даты этого дня за время ожидания. День и месяц задают, когда он приходится, иконка — как он выглядит в списке.
-            </Text>
 
             {error ? <Text style={[styles.error, { color: theme.text.accent }]}>{error}</Text> : null}
           </ScrollView>
@@ -199,9 +202,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerTitle: {
-    fontFamily: typography.fontFamily.sans,
+    fontFamily: typography.fontFamily.sansBold,
     fontSize: 16,
-    fontWeight: '600',
   },
   headerAction: {
     fontFamily: typography.fontFamily.sans,
@@ -226,11 +228,13 @@ const styles = StyleSheet.create({
   textInput: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 16,
+    height: FORM_FIELD_HEIGHT,
     borderWidth: 1,
     borderRadius: 4,
-    paddingVertical: 12,
+    paddingVertical: 0,
     paddingHorizontal: 14,
     marginBottom: 4,
+    textAlignVertical: 'center',
   },
   charCount: {
     fontFamily: typography.fontFamily.sans,
@@ -246,12 +250,16 @@ const styles = StyleSheet.create({
   },
   datePickerButton: {
     marginHorizontal: 0,
+    height: FORM_FIELD_HEIGHT,
+    minHeight: FORM_FIELD_HEIGHT,
+    paddingVertical: 0,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
   },
-  hint: {
+  datePickerButtonText: {
     fontFamily: typography.fontFamily.sans,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 8,
+    fontSize: 16,
+    textAlign: 'left',
   },
   error: {
     fontFamily: typography.fontFamily.sans,

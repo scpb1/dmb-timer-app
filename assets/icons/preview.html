@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Иконки</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #000;
+      color: #1c1c1e;
+    }
+    section { padding: 56px 28px 64px; }
+    .light { background: #d8dde6; }
+    .dark {
+      background: radial-gradient(1000px 520px at 70% 0%, #41557a, #14161c 62%);
+      color: #f2f2f7;
+    }
+    h2 {
+      margin: 0 0 28px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+    .row {
+      display: flex;
+      justify-content: center;
+      gap: 36px;
+      flex-wrap: wrap;
+    }
+    figure { margin: 0; text-align: center; }
+    img { display: block; width: 168px; height: 168px; }
+    .small img { width: 60px; height: 60px; }
+    figcaption {
+      margin-top: 10px;
+      font-size: 13px;
+      letter-spacing: -0.01em;
+    }
+    .dark figcaption { color: #f2f2f7; }
+  </style>
+</head>
+<body>
+  <section class="light">
+    <h2>Светлый экран</h2>
+    <div class="row">
+      <figure><img src="date.svg" alt=""><figcaption>Дата</figcaption></figure>
+      <figure><img src="countdown.svg" alt=""><figcaption>Отсчёт</figcaption></figure>
+      <figure><img src="day.svg" alt=""><figcaption>День</figcaption></figure>
+      <figure><img src="night.svg" alt=""><figcaption>Ночь</figcaption></figure>
+    </div>
+  </section>
+  <section class="dark">
+    <h2>Тёмный экран и мелкий размер</h2>
+    <div class="row">
+      <figure><img src="date.svg" alt=""><figcaption>Дата</figcaption></figure>
+      <figure><img src="countdown.svg" alt=""><figcaption>Отсчёт</figcaption></figure>
+      <figure><img src="day.svg" alt=""><figcaption>День</figcaption></figure>
+      <figure><img src="night.svg" alt=""><figcaption>Ночь</figcaption></figure>
+    </div>
+    <div class="row small" style="margin-top: 36px;">
+      <figure><img src="date.svg" alt=""><figcaption>Дата</figcaption></figure>
+      <figure><img src="countdown.svg" alt=""><figcaption>Отсчёт</figcaption></figure>
+      <figure><img src="day.svg" alt=""><figcaption>День</figcaption></figure>
+      <figure><img src="night.svg" alt=""><figcaption>Ночь</figcaption></figure>
+    </div>
+  </section>
+</body>
+</html>

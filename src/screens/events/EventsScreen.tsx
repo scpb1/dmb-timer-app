@@ -24,12 +24,17 @@ import { useHolidays } from '@/hooks/useHolidays';
 import type { DisplayEvent } from '@/types/events';
 import type { DisplayHoliday } from '@/types/holidays';
 import {
+  compareEventsChronologically,
   formatDaysUntilDate,
   formatEventDate,
   formatEventDaysUntilCaption,
   isCalendarToday,
 } from '@/utils/eventCalculations';
 import { getEventGlyph, getHolidayGlyph } from '@/utils/eventGlyphs';
+import {
+  isServiceBoundaryEvent,
+  resolveServiceBoundaryCardStyle,
+} from '@/utils/serviceBoundaryEvents';
 import { formatHolidayDate, formatHolidayName } from '@/utils/holidayCalculations';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
@@ -141,7 +146,13 @@ export function EventsScreen() {
     const next: ListItem[] = [
       ...events.map((event) => ({ kind: 'event' as const, date: event.date, event })),
       ...holidays.map((holiday) => ({ kind: 'holiday' as const, date: holiday.date, holiday })),
-    ].sort((a, b) => a.date.getTime() - b.date.getTime());
+    ].sort((a, b) => {
+      const toSortable = (item: ListItem) =>
+        item.kind === 'event'
+          ? { date: item.date, id: item.event.id, name: item.event.name }
+          : { date: item.date, name: formatHolidayName(item.holiday) };
+      return compareEventsChronologically(toSortable(a), toSortable(b));
+    });
 
     return next.filter((item) => {
       if (filter === 'events') {
@@ -266,6 +277,8 @@ export function EventsScreen() {
           isPast={item.event.isPast}
           isToday={isCalendarToday(item.event.date)}
           glyph={getEventGlyph(item.event)}
+          boundaryStyle={resolveServiceBoundaryCardStyle(item.event)}
+          canDelete={!isServiceBoundaryEvent(item.event.id)}
           onEdit={() => openEditEvent(item.event)}
           onDelete={() => void deleteEvent(item.event)}
         />
@@ -297,13 +310,7 @@ export function EventsScreen() {
             title="События"
             right={
               <Pressable
-                style={[
-                  styles.addButton,
-                  {
-                    backgroundColor: theme.overlay.fill,
-                    borderColor: theme.overlay.border,
-                  },
-                ]}
+                style={styles.addButton}
                 onPress={openAddMenu}
                 hitSlop={8}
                 accessibilityRole="button"
@@ -403,12 +410,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   addButton: {
-    width: 44,
-    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 4,
-    borderWidth: 1,
+    padding: 8,
   },
   loader: {
     flex: 1,

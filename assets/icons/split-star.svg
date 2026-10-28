@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Split star">
+  <defs>
+    <path
+      id="ring"
+      fill-rule="evenodd"
+      d="M 12.000 2.000 L 14.361 9.265 L 22.000 9.265 L 15.820 13.756 L 18.180 21.021 L 12.000 16.531 L 5.820 21.021 L 8.180 13.756 L 2.000 9.265 L 9.639 9.265 Z M 10.820 10.890 L 7.000 10.890 L 10.090 13.135 L 8.910 16.768 L 12.000 14.523 L 15.090 16.768 L 13.910 13.135 L 17.000 10.890 L 13.180 10.890 L 12.000 7.257 Z"
+    />
+    <clipPath id="split-star-top">
+      <rect width="24" height="10.88" />
+    </clipPath>
+    <clipPath id="split-star-bottom">
+      <rect y="12.65" width="24" height="11.35" />
+    </clipPath>
+  </defs>
+  <use href="#ring" clip-path="url(#split-star-top)" fill="#000000" />
+  <use href="#ring" clip-path="url(#split-star-bottom)" fill="#000000" />
+</svg>

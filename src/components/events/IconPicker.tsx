@@ -2,8 +2,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { EventGlyphBadge } from '@/components/events/EventGlyphBadge';
+import { SplitStarIcon, starIconVariantForName } from '@/components/events/SplitStarIcon';
 import {
   EVENT_ICON_CATALOG,
+  type CatalogIconName,
   type EventGlyph,
   type MaterialIconName,
 } from '@/utils/eventGlyphs';
@@ -14,10 +16,40 @@ interface IconPickerProps {
   value?: string;
   onChange: (icon: string | undefined) => void;
   autoGlyph?: EventGlyph;
+  previewColor?: string;
+  /** Белая иконка на заливке previewFillColor (призыв / дембель). */
+  previewOnFill?: boolean;
+  previewFillColor?: string;
 }
 
-export function IconPicker({ value, onChange, autoGlyph }: IconPickerProps) {
+function CatalogIconPreview({
+  name,
+  size,
+  color,
+}: {
+  name: CatalogIconName;
+  size: number;
+  color: string;
+}) {
+  const starVariant = starIconVariantForName(name);
+  if (starVariant) {
+    return <SplitStarIcon size={size} color={color} variant={starVariant} />;
+  }
+
+  return <MaterialCommunityIcons name={name as MaterialIconName} size={size} color={color} />;
+}
+
+export function IconPicker({
+  value,
+  onChange,
+  autoGlyph,
+  previewColor,
+  previewOnFill = false,
+  previewFillColor,
+}: IconPickerProps) {
   const theme = useAppTheme();
+  const fillColor = previewFillColor ?? previewColor ?? theme.text.primary;
+  const iconColor = previewOnFill ? '#FFFFFF' : (previewColor ?? theme.text.primary);
   const isAutoSelected = autoGlyph !== undefined && !value;
 
   return (
@@ -42,7 +74,12 @@ export function IconPicker({ value, onChange, autoGlyph }: IconPickerProps) {
             accessibilityLabel="Иконка по умолчанию"
             accessibilityState={{ selected: isAutoSelected }}
           >
-            <EventGlyphBadge glyph={autoGlyph} compact />
+            <EventGlyphBadge
+              glyph={autoGlyph}
+              compact
+              color={previewOnFill ? '#FFFFFF' : previewColor}
+              backgroundColor={previewOnFill ? fillColor : undefined}
+            />
           </Pressable>
         ) : null}
 
@@ -68,11 +105,18 @@ export function IconPicker({ value, onChange, autoGlyph }: IconPickerProps) {
               accessibilityLabel={option.label}
               accessibilityState={{ selected: isActive }}
             >
-              <MaterialCommunityIcons
-                name={option.name as MaterialIconName}
-                size={22}
-                color={theme.text.primary}
-              />
+              {previewOnFill ? (
+                <View
+                  style={[
+                    styles.fillPreview,
+                    { backgroundColor: fillColor },
+                  ]}
+                >
+                  <CatalogIconPreview name={option.name} size={22} color={iconColor} />
+                </View>
+              ) : (
+                <CatalogIconPreview name={option.name} size={22} color={iconColor} />
+              )}
             </Pressable>
           );
         })}
@@ -101,6 +145,13 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 4,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fillPreview: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" role="img" aria-label="Icon cover concepts">
+  <defs>
+    <pattern id="camo" width="120" height="120" patternUnits="userSpaceOnUse">
+      <rect width="120" height="120" fill="#3d4a32"/>
+      <path fill="#2a3324" d="M0 0h60v45H0zm60 45h60v75H60z"/>
+      <path fill="#556340" d="M20 70h55v50H20zm55-55h45v40H75z"/>
+      <path fill="#1a1f16" d="M70 10h50v35H70zm0 75h40v35H70z"/>
+      <path fill="#6b7548" d="M0 55h35v65H0zm85 0h35v50H85z"/>
+    </pattern>
+    <path id="star" d="M256 72 L298 198 L430 198 L324 278 L366 404 L256 324 L146 404 L188 278 L82 198 L214 198 Z"/>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <clipPath id="star-top-half">
+      <rect x="0" y="0" width="24" height="11"/>
+    </clipPath>
+    <clipPath id="star-bottom-half">
+      <rect x="0" y="13" width="24" height="11"/>
+    </clipPath>
+    <style type="text/css"><![CDATA[
+      .label{font:600 22px system-ui,sans-serif;fill:#e8e4d8}
+      .hint{font:400 15px system-ui,sans-serif;fill:#9a9688}
+      .safe{fill:none;stroke:#f4d03f;stroke-width:2;stroke-dasharray:8 6;opacity:.55}
+      .title{font:700 28px system-ui,sans-serif;fill:#f4f0dc}
+      .sub{font:400 16px system-ui,sans-serif;fill:#a8a498}
+    ]]></style>
+  </defs>
+
+  <rect width="1600" height="1100" fill="#121210"/>
+  <text x="48" y="52" class="title">&#1042;&#1072;&#1088;&#1080;&#1072;&#1085;&#1090;&#1099; &#1086;&#1073;&#1083;&#1086;&#1078;&#1082;&#1080; / &#1080;&#1082;&#1086;&#1085;&#1082;&#1080; (1024x1024)</text>
+  <text x="48" y="82" class="sub">&#1046;&#1105;&#1083;&#1090;&#1099;&#1081; &#1082;&#1088;&#1091;&#1075; &#8212; safe zone Android. &#1042;&#1072;&#1078;&#1085;&#1086;&#1077; &#1074;&#1085;&#1091;&#1090;&#1088;&#1080; &#1082;&#1088;&#1091;&#1075;&#1072;.</text>
+
+  <g transform="translate(48,120)">
+    <rect width="512" height="512" rx="24" fill="url(#camo)"/>
+    <circle cx="256" cy="256" r="157" class="safe"/>
+    <use href="#star" fill="#8f2f2f" filter="url(#soft-shadow)" transform="translate(0,8) scale(0.72) translate(72,72)"/>
+    <text x="256" y="218" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="88" font-weight="900" fill="#f2f0ec" filter="url(#soft-shadow)">&#1044;</text>
+    <text x="256" y="298" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="88" font-weight="900" fill="#f2f0ec" filter="url(#soft-shadow)">&#1044;</text>
+    <text x="256" y="378" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="88" font-weight="900" fill="#f2f0ec" filter="url(#soft-shadow)">&#1044;</text>
+    <text x="0" y="548" class="label">A &#8212; &#1044;&#1044;&#1044; &#1089;&#1090;&#1086;&#1083;&#1073;&#1080;&#1082;&#1086;&#1084;</text>
+    <text x="0" y="574" class="hint">&#1050;&#1072;&#1084;&#1091;&#1092;&#1083;&#1103;&#1078;, &#1079;&#1074;&#1077;&#1079;&#1076;&#1072; &#1084;&#1077;&#1085;&#1100;&#1096;&#1077;, &#1073;&#1077;&#1079; &#1091;&#1075;&#1083;&#1086;&#1074;&#1099;&#1093; &#1073;&#1091;&#1082;&#1074;</text>
+  </g>
+
+  <g transform="translate(568,120)">
+    <rect width="512" height="512" rx="24" fill="#4f5139"/>
+    <circle cx="256" cy="256" r="157" class="safe"/>
+    <use href="#star" fill="#a03535" transform="translate(0,12) scale(0.78) translate(58,58)"/>
+    <text x="200" y="248" font-family="Arial Black, sans-serif" font-size="72" font-weight="900" fill="#f2f0ec">&#1044;</text>
+    <text x="256" y="248" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="52" font-weight="900" fill="#f2f0ec">&#1044;</text>
+    <text x="312" y="248" font-family="Arial Black, sans-serif" font-size="72" font-weight="900" fill="#f2f0ec">&#1044;</text>
+    <text x="0" y="548" class="label">B &#8212; &#1090;&#1088;&#1080; &#1044; &#1074; &#1088;&#1103;&#1076; &#1085;&#1072; &#1086;&#1083;&#1080;&#1074;&#1077;</text>
+    <text x="0" y="574" class="hint">foreground + background &#1076;&#1083;&#1103; Android adaptive icon</text>
+  </g>
+
+  <g transform="translate(1088,120)">
+    <rect width="512" height="512" rx="24" fill="url(#camo)"/>
+    <circle cx="256" cy="256" r="157" class="safe"/>
+    <circle cx="256" cy="256" r="168" fill="#161610" opacity="0.35"/>
+    <use href="#star" fill="#922828" transform="scale(0.85) translate(38,38)"/>
+    <text x="256" y="278" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="120" font-weight="900" fill="#f2f0ec" filter="url(#soft-shadow)">&#1044;</text>
+    <text x="0" y="548" class="label">C &#8212; &#1079;&#1074;&#1077;&#1079;&#1076;&#1072; + &#1086;&#1076;&#1085;&#1072; &#1044;</text>
+    <text x="0" y="574" class="hint">&#1052;&#1080;&#1085;&#1080;&#1084;&#1072;&#1083;, &#1093;&#1086;&#1088;&#1086;&#1096;&#1086; &#1074; &#1084;&#1072;&#1083;&#1077;&#1085;&#1100;&#1082;&#1086;&#1084; &#1088;&#1072;&#1079;&#1084;&#1077;&#1088;&#1077;</text>
+  </g>
+
+  <g transform="translate(48,640)">
+    <rect width="512" height="512" rx="24" fill="#202018"/>
+    <circle cx="256" cy="256" r="157" class="safe"/>
+    <g transform="translate(244,238) scale(10)">
+      <path fill="#f2f0ec" clip-path="url(#star-top-half)" d="M12 2 L14.4 9.3 L22 9.3 L15.8 13.8 L18.2 21 L12 16.5 L5.8 21 L8.2 13.8 L2 9.3 L9.6 9.3 Z"/>
+      <path fill="#a03535" clip-path="url(#star-bottom-half)" d="M12 2 L14.4 9.3 L22 9.3 L15.8 13.8 L18.2 21 L12 16.5 L5.8 21 L8.2 13.8 L2 9.3 L9.6 9.3 Z"/>
+    </g>
+    <text x="256" y="370" text-anchor="middle" font-family="system-ui,sans-serif" font-size="36" font-weight="700" letter-spacing="12" fill="#a8a03a">&#1044; &#1044; &#1044;</text>
+    <text x="0" y="548" class="label">D &#8212; split-star + &#1079;&#1086;&#1083;&#1086;&#1090;&#1099;&#1077; &#1044;</text>
+    <text x="0" y="574" class="hint">&#1041;&#1083;&#1080;&#1078;&#1077; &#1082; &#1090;&#1077;&#1084;&#1077; &#1054;&#1083;&#1080;&#1074;&#1072; &#1074; &#1087;&#1088;&#1080;&#1083;&#1086;&#1078;&#1077;&#1085;&#1080;&#1080;</text>
+  </g>
+
+  <g transform="translate(568,640)">
+    <rect width="512" height="512" rx="24" fill="#2a2a1c"/>
+    <circle cx="256" cy="256" r="157" class="safe"/>
+    <path d="M256 108 L360 148 V248 C360 328 256 392 256 392 C256 392 152 328 152 248 V148 Z" fill="#323024" stroke="#a8a03a" stroke-width="6"/>
+    <use href="#star" fill="#8f2f2f" transform="translate(0,-20) scale(0.42) translate(148,148)"/>
+    <text x="256" y="268" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="64" font-weight="900" fill="#f4f0dc">&#1044;&#1044;&#1044;</text>
+    <text x="0" y="548" class="label">E &#8212; &#1078;&#1077;&#1090;&#1086;&#1085; / &#1097;&#1080;&#1090;</text>
+    <text x="0" y="574" class="hint">&#1060;&#1086;&#1088;&#1084;&#1072; &#1094;&#1077;&#1083;&#1080;&#1082;&#1086;&#1084; &#1074; safe zone</text>
+  </g>
+
+  <g transform="translate(1088,640)">
+    <rect width="512" height="512" rx="24" fill="url(#camo)"/>
+    <circle cx="256" cy="256" r="157" class="safe"/>
+    <rect x="128" y="168" width="256" height="176" rx="16" fill="#161610" opacity="0.75" stroke="#f4f0dc" stroke-opacity="0.25" stroke-width="3"/>
+    <text x="256" y="248" text-anchor="middle" font-family="Courier New, monospace" font-size="56" font-weight="700" fill="#a8a03a">128</text>
+    <text x="256" y="298" text-anchor="middle" font-family="system-ui,sans-serif" font-size="22" fill="#f2f0ec" opacity="0.9">&#1076;&#1085;&#1077;&#1081;</text>
+    <text x="256" y="368" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="40" font-weight="900" fill="#922828">&#1044;</text>
+    <text x="0" y="548" class="label">F &#8212; &#1072;&#1082;&#1094;&#1077;&#1085;&#1090; &#1090;&#1072;&#1081;&#1084;&#1077;&#1088;</text>
+    <text x="0" y="574" class="hint">&#1044;&#1083;&#1103; &#1073;&#1072;&#1085;&#1085;&#1077;&#1088;&#1072; &#1089;&#1090;&#1086;&#1088;&#1072;, &#1085;&#1077; &#1076;&#1083;&#1103; &#1080;&#1082;&#1086;&#1085;&#1082;&#1080;</text>
+  </g>
+</svg>

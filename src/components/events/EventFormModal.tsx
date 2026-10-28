@@ -12,11 +12,24 @@ import {
 } from 'react-native';
 
 import { DatePicker } from '@/components/common/DatePicker';
+import { FORM_FIELD_HEIGHT } from '@/components/events/formFieldStyles';
+import { IconColorPicker } from '@/components/events/IconColorPicker';
 import { IconPicker } from '@/components/events/IconPicker';
 import type { DisplayEvent } from '@/types/events';
-import { EVENT_NAME_MAX_LENGTH, type EventDateFormat } from '@/types/events';
+import {
+  EVENT_NAME_MAX_LENGTH,
+  type EventDateFormat,
+  type ServiceBoundaryDisplayMode,
+} from '@/types/events';
 import type { EventFormData } from '@/hooks/useEvents';
-import { DEFAULT_EVENT_ICON, getAutomaticEventGlyph, isCatalogIcon } from '@/utils/eventGlyphs';
+import {
+  DEFAULT_EVENT_ICON,
+  eventFormUsesAutoIconOption,
+  getAutomaticEventGlyph,
+  getEventFormIconDefaults,
+} from '@/utils/eventGlyphs';
+import { formatEventDate } from '@/utils/eventCalculations';
+import { isServiceBoundaryEvent } from '@/utils/serviceBoundaryEvents';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
@@ -34,6 +47,11 @@ const DATE_FORMAT_OPTIONS: Array<{ value: EventDateFormat; label: string }> = [
   { value: 'date', label: 'Дата' },
 ];
 
+const BOUNDARY_DISPLAY_OPTIONS: Array<{ value: ServiceBoundaryDisplayMode; label: string }> = [
+  { value: 'row', label: 'Выделение строки' },
+  { value: 'icon', label: 'По умолчанию' },
+];
+
 function buildInitialForm(event: DisplayEvent | null): EventFormData {
   if (!event) {
     return {
@@ -43,14 +61,11 @@ function buildInitialForm(event: DisplayEvent | null): EventFormData {
       dppValue: '',
       dateValue: null,
       icon: DEFAULT_EVENT_ICON,
+      iconColor: undefined,
     };
   }
 
-  const storedIcon = isCatalogIcon(event.icon)
-    ? event.icon
-    : event.isCustom
-      ? DEFAULT_EVENT_ICON
-      : undefined;
+  const { icon, iconColor } = getEventFormIconDefaults(event);
 
   return {
     name: event.name,
@@ -58,7 +73,10 @@ function buildInitialForm(event: DisplayEvent | null): EventFormData {
     dddValue: event.dddValue !== undefined ? String(event.dddValue) : '',
     dppValue: event.dppValue !== undefined ? String(event.dppValue) : '',
     dateValue: event.dateValue ? new Date(event.dateValue) : event.date,
-    icon: storedIcon,
+    icon,
+    iconColor,
+    boundaryDisplay: event.boundaryDisplay === 'icon' ? 'icon' : 'row',
+    boundaryIconThemeDefault: event.boundaryIconThemeDefault ?? false,
   };
 }
 
@@ -69,6 +87,9 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
   const [dppValue, setDppValue] = useState('');
   const [dateValue, setDateValue] = useState<Date | null>(null);
   const [icon, setIcon] = useState<string | undefined>(DEFAULT_EVENT_ICON);
+  const [iconColor, setIconColor] = useState<string | undefined>(undefined);
+  const [boundaryDisplay, setBoundaryDisplay] = useState<ServiceBoundaryDisplayMode>('row');
+  const [boundaryIconThemeDefault, setBoundaryIconThemeDefault] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const theme = useAppTheme();
@@ -82,13 +103,35 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
       setDppValue(initial.dppValue);
       setDateValue(initial.dateValue);
       setIcon(initial.icon);
+      setIconColor(initial.iconColor);
+      setBoundaryDisplay(initial.boundaryDisplay ?? 'row');
+      setBoundaryIconThemeDefault(initial.boundaryIconThemeDefault ?? false);
       setError(null);
       setIsSaving(false);
     }
   }, [visible, event]);
 
+  const isBoundary = event != null && isServiceBoundaryEvent(event.id);
+  const boundaryRowMode = isBoundary && boundaryDisplay === 'row';
+  const previewOnFill = boundaryRowMode && !boundaryIconThemeDefault && iconColor != null;
+  const fillPreviewColor = previewOnFill ? iconColor : undefined;
+  const iconPickerPreviewColor =
+    isBoundary && !boundaryIconThemeDefault ? iconColor : iconColor;
+
   const handleSave = async () => {
-    const form: EventFormData = { name, dateFormat, dddValue, dppValue, dateValue, icon };
+    const form: EventFormData = isBoundary
+      ? {
+          name,
+          dateFormat: event!.dateFormat,
+          dddValue: event!.dddValue !== undefined ? String(event.dddValue) : '',
+          dppValue: event!.dppValue !== undefined ? String(event!.dppValue) : '',
+          dateValue: event!.dateValue ? new Date(event!.dateValue) : event!.date,
+          icon,
+          iconColor,
+          boundaryDisplay,
+          boundaryIconThemeDefault,
+        }
+      : { name, dateFormat, dddValue, dppValue, dateValue, icon, iconColor };
 
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -99,21 +142,23 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
       setError(`Название не длиннее ${EVENT_NAME_MAX_LENGTH} символов`);
       return;
     }
-    if (dateFormat === 'ddd') {
-      const parsed = Number(dddValue.trim());
-      if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
-        setError('Введите целое число ддд (дней до дембеля) от 0');
+    if (!isBoundary) {
+      if (dateFormat === 'ddd') {
+        const parsed = Number(dddValue.trim());
+        if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
+          setError('Введите целое число ддд (дней до дембеля) от 0');
+          return;
+        }
+      } else if (dateFormat === 'dpp') {
+        const parsed = Number(dppValue.trim());
+        if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
+          setError('Введите целое число дпп (дней после призыва) от 0');
+          return;
+        }
+      } else if (!dateValue) {
+        setError('Выберите дату');
         return;
       }
-    } else if (dateFormat === 'dpp') {
-      const parsed = Number(dppValue.trim());
-      if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
-        setError('Введите целое число дпп (дней после призыва) от 0');
-        return;
-      }
-    } else if (!dateValue) {
-      setError('Выберите дату');
-      return;
     }
 
     setIsSaving(true);
@@ -127,7 +172,7 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
     }
   };
 
-  const title = mode === 'add' ? 'Новое событие' : 'Изменить событие';
+  const title = mode === 'add' ? 'Новое событие' : 'Изменение события';
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -178,12 +223,92 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
               {name.length}/{EVENT_NAME_MAX_LENGTH}
             </Text>
 
+            {isBoundary ? (
+              <>
+                <Text style={[styles.fieldLabel, { color: theme.text.primary }]}>Оформление</Text>
+                <View style={styles.formatRow}>
+                  {BOUNDARY_DISPLAY_OPTIONS.map((option) => {
+                    const isActive = boundaryDisplay === option.value;
+                    return (
+                      <Pressable
+                        key={option.value}
+                        style={[
+                          styles.formatButton,
+                          {
+                            borderColor: theme.overlay.border,
+                            backgroundColor: theme.overlay.fill,
+                          },
+                          isActive && {
+                            borderColor: theme.text.primary,
+                            backgroundColor: theme.overlay.muted,
+                          },
+                        ]}
+                        onPress={() => {
+                          setBoundaryDisplay(option.value);
+                          setError(null);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.formatButtonText,
+                            { color: theme.text.secondary },
+                            isActive && { color: theme.text.primary, fontWeight: '600' },
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
+
             <IconPicker
               value={icon}
               onChange={setIcon}
-              autoGlyph={event && !event.isCustom ? getAutomaticEventGlyph(event) : undefined}
+              previewColor={iconPickerPreviewColor}
+              previewOnFill={previewOnFill}
+              previewFillColor={fillPreviewColor}
+              autoGlyph={
+                event && eventFormUsesAutoIconOption(event)
+                  ? getAutomaticEventGlyph(event)
+                  : undefined
+              }
+            />
+            <IconColorPicker
+              value={iconColor}
+              onChange={(color) => {
+                if (color) {
+                  setIconColor(color);
+                  setBoundaryIconThemeDefault(false);
+                } else {
+                  setIconColor(undefined);
+                  setBoundaryIconThemeDefault(true);
+                }
+              }}
+              label={
+                isBoundary
+                  ? boundaryDisplay === 'row'
+                    ? 'Цвет заливки'
+                    : 'Цвет иконки'
+                  : undefined
+              }
+              swatchFallbackColor={boundaryIconThemeDefault ? theme.text.primary : undefined}
+              showReset={isBoundary && !boundaryIconThemeDefault && iconColor != null}
             />
 
+            {isBoundary && event ? (
+              <>
+                <Text style={[styles.fieldLabel, { color: theme.text.primary }]}>Дата</Text>
+                <Text style={[styles.readOnlyDate, { color: theme.text.secondary }]}>
+                  {formatEventDate(event.date)}
+                </Text>
+              </>
+            ) : null}
+
+            {!isBoundary ? (
+            <>
             <Text style={[styles.fieldLabel, { color: theme.text.primary }]}>Формат даты</Text>
             <View style={styles.formatRow}>
               {DATE_FORMAT_OPTIONS.map((option) => {
@@ -275,8 +400,11 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
                 }}
                 labelStyle={styles.datePickerLabel}
                 buttonStyle={styles.datePickerButton}
+                buttonTextStyle={styles.datePickerButtonText}
               />
             )}
+            </>
+            ) : null}
 
             {error ? <Text style={[styles.error, { color: theme.text.accent }]}>{error}</Text> : null}
           </ScrollView>
@@ -310,9 +438,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerTitle: {
-    fontFamily: typography.fontFamily.sans,
+    fontFamily: typography.fontFamily.sansBold,
     fontSize: 16,
-    fontWeight: '600',
   },
   headerAction: {
     fontFamily: typography.fontFamily.sans,
@@ -337,16 +464,23 @@ const styles = StyleSheet.create({
   textInput: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 16,
+    height: FORM_FIELD_HEIGHT,
     borderWidth: 1,
     borderRadius: 4,
-    paddingVertical: 12,
+    paddingVertical: 0,
     paddingHorizontal: 14,
     marginBottom: 4,
+    textAlignVertical: 'center',
   },
   charCount: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 12,
     textAlign: 'right',
+    marginBottom: 20,
+  },
+  readOnlyDate: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 16,
     marginBottom: 20,
   },
   formatRow: {
@@ -356,10 +490,11 @@ const styles = StyleSheet.create({
   },
   formatButton: {
     flex: 1,
-    paddingVertical: 12,
+    height: FORM_FIELD_HEIGHT,
     borderRadius: 4,
     borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   formatButtonText: {
     fontFamily: typography.fontFamily.sans,
@@ -373,6 +508,16 @@ const styles = StyleSheet.create({
   },
   datePickerButton: {
     marginHorizontal: 0,
+    height: FORM_FIELD_HEIGHT,
+    minHeight: FORM_FIELD_HEIGHT,
+    paddingVertical: 0,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+  },
+  datePickerButtonText: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 16,
+    textAlign: 'left',
   },
   error: {
     fontFamily: typography.fontFamily.sans,

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <clipPath id="squircle">
+      <rect width="1024" height="1024" rx="230"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#squircle)">
+    <rect width="1024" height="1024" fill="#FF7A1A"/>
+    <circle cx="512" cy="860" r="340" fill="#FFD60A"/>
+    <g fill="#FFFFFF">
+      <rect x="386" y="228" width="60" height="100" rx="30"/>
+      <rect x="578" y="228" width="60" height="100" rx="30"/>
+      <rect x="250" y="292" width="524" height="430" rx="76"/>
+    </g>
+    <polygon fill="#FF9F0A" points="512.0,396.0 534.3,457.3 599.5,459.6 548.1,499.7 566.1,562.4 512.0,526.0 457.9,562.4 475.9,499.7 424.5,459.6 489.7,457.3"/>
+  </g>
+</svg>

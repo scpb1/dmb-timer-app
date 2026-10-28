@@ -43,8 +43,8 @@ export function AddKindMenu({
             style={[
               styles.option,
               {
-                backgroundColor: theme.holiday.cardBackground,
-                borderColor: theme.holiday.cardBorder,
+                backgroundColor: theme.overlay.fill,
+                borderColor: theme.overlay.border,
               },
             ]}
             onPress={onChooseHoliday}

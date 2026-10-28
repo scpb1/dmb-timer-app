@@ -19,6 +19,7 @@ import {
   type HolidayServiceRange,
 } from '@/utils/holidayCalculations';
 import { DEFAULT_HOLIDAY_ICON, isCatalogIcon } from '@/utils/eventGlyphs';
+import { normalizeHex } from '@/utils/color';
 import { rescheduleHolidayNotifications } from '@/services/holidayNotifications';
 import { logger } from '@/utils/logger';
 
@@ -33,6 +34,14 @@ export interface HolidayFormData {
   name: string;
   dateValue: Date | null;
   icon?: string;
+  iconColor?: string;
+}
+
+function storedIconColor(value: string | undefined): string | undefined {
+  if (!value?.trim()) {
+    return undefined;
+  }
+  return normalizeHex(value.trim()) ?? undefined;
 }
 
 interface UseHolidaysResult {
@@ -81,6 +90,7 @@ function formToCustomRecord(form: HolidayFormData, id: string): CustomHolidayRec
     month,
     day,
     icon: isCatalogIcon(form.icon) ? form.icon : DEFAULT_HOLIDAY_ICON,
+    iconColor: storedIconColor(form.iconColor),
   };
 }
 
@@ -91,6 +101,7 @@ function formToOverride(form: HolidayFormData): HolidayOverride {
     month,
     day,
     icon: isCatalogIcon(form.icon) ? form.icon : undefined,
+    iconColor: storedIconColor(form.iconColor),
   };
 }
 

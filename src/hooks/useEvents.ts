@@ -9,12 +9,19 @@ import {
   type EventDateFormat,
   type EventOverride,
   type EventsStorage,
+  type ServiceBoundaryDisplayMode,
   DEFAULT_EVENTS_STORAGE,
   EVENT_NAME_MAX_LENGTH,
 } from '@/types/events';
 import { getConfig, setConfig } from '@/services/database';
-import { buildDisplayEvents, parseEventsStorage } from '@/utils/eventCalculations';
+import {
+  buildDisplayEvents,
+  migrateEventsStorage,
+  parseEventsStorage,
+} from '@/utils/eventCalculations';
 import { DEFAULT_EVENT_ICON, isCatalogIcon } from '@/utils/eventGlyphs';
+import { isServiceBoundaryEvent } from '@/utils/serviceBoundaryEvents';
+import { normalizeHex } from '@/utils/color';
 import { logger } from '@/utils/logger';
 import { rescheduleAppNotifications } from '@/services/holidayNotifications';
 
@@ -32,6 +39,16 @@ interface EventFormData {
   dppValue: string;
   dateValue: Date | null;
   icon?: string;
+  iconColor?: string;
+  boundaryDisplay?: ServiceBoundaryDisplayMode;
+  boundaryIconThemeDefault?: boolean;
+}
+
+function storedIconColor(value: string | undefined): string | undefined {
+  if (!value?.trim()) {
+    return undefined;
+  }
+  return normalizeHex(value.trim()) ?? undefined;
 }
 
 interface UseEventsResult {
@@ -87,10 +104,21 @@ function formToCustomRecord(form: EventFormData, id: string): CustomEventRecord 
         ? formatISO(form.dateValue, { representation: 'date' })
         : undefined,
     icon: isCatalogIcon(form.icon) ? form.icon : DEFAULT_EVENT_ICON,
+    iconColor: storedIconColor(form.iconColor),
   };
 }
 
-function formToOverride(form: EventFormData): EventOverride {
+function formToOverride(form: EventFormData, eventId?: string): EventOverride {
+  if (eventId && isServiceBoundaryEvent(eventId)) {
+    return {
+      name: form.name.trim(),
+      icon: isCatalogIcon(form.icon) ? form.icon : undefined,
+      iconColor: storedIconColor(form.iconColor),
+      boundaryDisplay: form.boundaryDisplay === 'icon' ? 'icon' : 'row',
+      boundaryIconThemeDefault: form.boundaryIconThemeDefault ? true : undefined,
+    };
+  }
+
   return {
     name: form.name.trim(),
     dateFormat: form.dateFormat,
@@ -103,6 +131,7 @@ function formToOverride(form: EventFormData): EventOverride {
         ? formatISO(form.dateValue, { representation: 'date' })
         : undefined,
     icon: isCatalogIcon(form.icon) ? form.icon : undefined,
+    iconColor: storedIconColor(form.iconColor),
   };
 }
 
@@ -138,10 +167,10 @@ export function useEvents(): UseEventsResult {
         getConfig(CONFIG_KEYS.EVENTS_DATA),
       ]);
 
-      const parsedStorage = parseEventsStorage(eventsRaw);
-      setStorage(parsedStorage);
+      let parsedStorage = parseEventsStorage(eventsRaw);
 
       if (!enlistmentRaw || !demobilizationRaw) {
+        setStorage(parsedStorage);
         setEvents([]);
         setIsLoading(false);
         return;
@@ -149,6 +178,12 @@ export function useEvents(): UseEventsResult {
 
       const enlistmentDate = parseISO(enlistmentRaw);
       const demobilizationDate = parseISO(demobilizationRaw);
+      const migration = migrateEventsStorage(parsedStorage, enlistmentDate, demobilizationDate);
+      parsedStorage = migration.storage;
+      if (migration.changed) {
+        await persistStorage(parsedStorage);
+      }
+      setStorage(parsedStorage);
       setEvents(buildDisplayEvents(enlistmentDate, demobilizationDate, parsedStorage));
     } catch (error) {
       logger.error('Ошибка загрузки событий', error);
@@ -222,7 +257,7 @@ export function useEvents(): UseEventsResult {
           ...storageRef.current,
           overrides: {
             ...storageRef.current.overrides,
-            [eventId]: formToOverride(form),
+            [eventId]: formToOverride(form, eventId),
           },
         };
       }
@@ -236,6 +271,10 @@ export function useEvents(): UseEventsResult {
 
   const deleteEvent = useCallback(
     async (event: DisplayEvent) => {
+      if (isServiceBoundaryEvent(event.id)) {
+        return;
+      }
+
       clearUndoTimer();
 
       const snapshot = storageRef.current;

@@ -3,6 +3,10 @@ import { Feather } from '@expo/vector-icons';
 
 import { EventGlyphBadge } from '@/components/events/EventGlyphBadge';
 import type { EventGlyph } from '@/utils/eventGlyphs';
+import {
+  BOUNDARY_GLYPH_ON_FILL,
+  type ServiceBoundaryCardStyle,
+} from '@/utils/serviceBoundaryEvents';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
@@ -14,6 +18,8 @@ interface EventCardProps {
   isToday?: boolean;
   kind: 'event' | 'holiday';
   glyph: EventGlyph;
+  boundaryStyle?: ServiceBoundaryCardStyle | null;
+  canDelete?: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }
@@ -26,69 +32,85 @@ export function EventCard({
   isToday = false,
   kind,
   glyph,
+  boundaryStyle = null,
+  canDelete = true,
   onEdit,
   onDelete,
 }: EventCardProps) {
   const theme = useAppTheme();
   const isHoliday = kind === 'holiday';
-  const pastText = isPast ? { opacity: 0.72 } : null;
+  const rowAccent = boundaryStyle?.rowAccent ?? null;
+  const isAccentRow = rowAccent != null && rowAccent.length > 0;
+  const pastFade = isPast ? { opacity: 0.3 } : null;
 
+  const primaryText = isAccentRow ? BOUNDARY_GLYPH_ON_FILL : theme.text.primary;
+  const secondaryText = isAccentRow ? 'rgba(255, 255, 255, 0.88)' : theme.text.secondary;
+  const actionIconColor = isAccentRow ? 'rgba(255, 255, 255, 0.92)' : theme.text.secondary;
+  const todayBorder = isAccentRow ? BOUNDARY_GLYPH_ON_FILL : theme.text.primary;
+
+  const badgeFill = boundaryStyle?.badgeFill;
+  const glyphOnFill = boundaryStyle?.glyphOnFill ?? false;
+  const glyphColor = boundaryStyle?.glyphColor;
   return (
     <View
       style={[
         styles.card,
-        {
-          backgroundColor: theme.overlay.fill,
-          borderColor: theme.overlay.border,
-        },
-        isHoliday && {
-          backgroundColor: theme.holiday.cardBackground,
-          borderColor: theme.holiday.cardBorder,
-        },
+        isAccentRow && rowAccent
+          ? {
+              backgroundColor: rowAccent,
+              borderColor: 'rgba(255, 255, 255, 0.28)',
+            }
+          : {
+              backgroundColor: theme.overlay.fill,
+              borderColor: theme.overlay.border,
+            },
         isToday && {
-          borderColor: theme.text.primary,
+          borderColor: todayBorder,
           borderWidth: 1.5,
         },
       ]}
     >
-      <EventGlyphBadge glyph={glyph} />
+      <EventGlyphBadge
+        glyph={glyph}
+        color={glyphOnFill ? BOUNDARY_GLYPH_ON_FILL : glyphColor}
+        backgroundColor={badgeFill}
+        opacity={isPast ? 0.3 : undefined}
+      />
       <View style={styles.content}>
         <Text
-          style={[
-            styles.name,
-            { color: isPast ? theme.text.secondary : theme.text.primary },
-            pastText,
-          ]}
+          style={[styles.name, { color: primaryText }, pastFade]}
           numberOfLines={2}
         >
           {name}
         </Text>
-        <Text style={[styles.date, { color: theme.text.secondary }, pastText]}>{dateText}</Text>
+        <Text style={[styles.date, { color: secondaryText }, pastFade]}>{dateText}</Text>
         {subtitle ? (
-          <Text style={[styles.subtitle, { color: theme.text.secondary }, pastText]}>{subtitle}</Text>
+          <Text style={[styles.subtitle, { color: secondaryText }, pastFade]}>{subtitle}</Text>
         ) : null}
       </View>
 
       <View style={styles.actions}>
         <Pressable
-          style={styles.actionButton}
+          style={[styles.actionButton, pastFade]}
           onPress={onEdit}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={isHoliday ? 'Изменить праздник' : 'Изменить событие'}
         >
-          <Feather name="edit-2" size={18} color={theme.text.secondary} />
+          <Feather name="edit-2" size={18} color={actionIconColor} />
         </Pressable>
 
-        <Pressable
-          style={styles.actionButton}
-          onPress={onDelete}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={isHoliday ? 'Удалить праздник' : 'Удалить событие'}
-        >
-          <Feather name="x" size={20} color={theme.text.secondary} />
-        </Pressable>
+        {canDelete ? (
+          <Pressable
+            style={[styles.actionButton, pastFade]}
+            onPress={onDelete}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={isHoliday ? 'Удалить праздник' : 'Удалить событие'}
+          >
+            <Feather name="x" size={20} color={actionIconColor} />
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
