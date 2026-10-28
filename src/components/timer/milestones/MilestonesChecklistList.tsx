@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { MilestonesChecklistMark } from '@/components/timer/milestones/MilestonesChecklistMark';
 import type { EventsTimelineItem } from '@/utils/eventsTimeline';
 import { layout } from '@/theme';
 import { typography } from '@/theme/typography';
@@ -16,6 +17,7 @@ export function MilestonesChecklistList({
   photoBackground = false,
 }: MilestonesChecklistListProps) {
   const colors = useMilestoneVizColors(photoBackground);
+  const markOutline = photoBackground ? '#FFFFFF' : colors.primary;
 
   return (
     <View
@@ -27,11 +29,10 @@ export function MilestonesChecklistList({
         },
       ]}
     >
-      <Text style={[styles.heading, { color: colors.muted }]}>События и праздники</Text>
+      <Text style={[styles.heading, { color: colors.muted }]}>Армейские события</Text>
       {items.map((item, index) => {
         const isHere = item.state === 'here';
-        const isPast = item.state === 'past';
-        const isFuture = !isPast && !isHere;
+        const isFuture = !isHere && item.state === 'future';
         return (
           <View
             key={item.id}
@@ -41,27 +42,11 @@ export function MilestonesChecklistList({
               isHere && { backgroundColor: colors.hereBg, borderTopColor: 'transparent' },
             ]}
           >
-            <View
-              style={[
-                styles.mark,
-                {
-                  borderColor: colors.nodeBorder,
-                  backgroundColor: photoBackground ? 'transparent' : colors.cardFill,
-                },
-                isPast && { backgroundColor: colors.accent, borderColor: colors.accent },
-                isHere && {
-                  borderColor: colors.primary,
-                  backgroundColor: photoBackground ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.7)',
-                },
-                isFuture && { opacity: 0.55 },
-              ]}
-            >
-              {isPast ? (
-                <Text style={styles.markDone}>✓</Text>
-              ) : isHere ? (
-                <Text style={[styles.markHere, { color: colors.accent }]}>●</Text>
-              ) : null}
-            </View>
+            <MilestonesChecklistMark
+              state={item.state}
+              photoBackground={photoBackground}
+              outlineColor={markOutline}
+            />
             <View style={[styles.body, isFuture && styles.bodyFuture]}>
               <Text
                 style={[
@@ -107,24 +92,6 @@ const styles = StyleSheet.create({
   rowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(167, 154, 138, 0.35)',
-  },
-  mark: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  markDone: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 14,
-  },
-  markHere: {
-    fontSize: 14,
-    lineHeight: 16,
   },
   body: {
     flex: 1,

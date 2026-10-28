@@ -11,11 +11,15 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
+import { DembelCongratulationsBody } from '@/components/timer/DembelCongratulationsBody';
 import { TrackerStatGrid } from '@/components/trackers/TrackerStatGrid';
 import type { ServiceSummary } from '@/utils/serviceSummary';
 import { loadServiceSummarySafe, serviceSummaryHeroCaption } from '@/utils/serviceSummary';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
+
+/** Пока показываем только поздравление; блоки звонков/встреч/дневника вернём позже */
+const SHOW_LEGACY_SUMMARY_STATS = false;
 
 interface ServiceSummaryModalProps {
   visible: boolean;
@@ -34,6 +38,7 @@ export function ServiceSummaryModal({
   onClose,
   onOpenLetterBook,
 }: ServiceSummaryModalProps) {
+  const theme = useAppTheme();
   const [summary, setSummary] = useState<ServiceSummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -67,61 +72,90 @@ export function ServiceSummaryModal({
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
+        <View style={[styles.sheet, { backgroundColor: theme.background.start }]}>
+          <View style={[styles.handle, { backgroundColor: theme.overlay.border }]} />
 
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.header}>
-              <Text style={styles.title}>Итоги</Text>
+              <Text style={[styles.title, { color: theme.text.primary }]}>Итоги</Text>
               <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Закрыть">
-                <Feather name="x" size={22} color={colors.light.text.primary} />
+                <Feather name="x" size={22} color={theme.text.primary} />
               </Pressable>
             </View>
 
             {isLoading ? (
               <View style={styles.loader}>
-                <ActivityIndicator size="large" color={colors.light.text.primary} />
+                <ActivityIndicator size="large" color={theme.text.primary} />
               </View>
             ) : summary ? (
               <>
-                <View style={styles.hero}>
-                  {summary.partnerName ? (
-                    <Text style={styles.heroName}>{summary.partnerName}</Text>
-                  ) : null}
-                  <Text style={styles.heroValue}>{summary.totalDays}</Text>
-                  <Text style={styles.heroLabel}>{serviceSummaryHeroCaption(summary.totalDays)}</Text>
-                  <Text style={styles.heroDates}>{summary.dateRangeLabel}</Text>
-                </View>
+                <DembelCongratulationsBody
+                  userName={summary.userName}
+                  timerVisitCount={summary.timerVisitCount}
+                />
 
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Звонки</Text>
-                  <TrackerStatGrid stats={summary.callStats} />
-                </View>
+                {SHOW_LEGACY_SUMMARY_STATS ? (
+                  <>
+                    <View
+                      style={[
+                        styles.hero,
+                        {
+                          backgroundColor: theme.overlay.fill,
+                          borderColor: theme.overlay.border,
+                        },
+                      ]}
+                    >
+                      {summary.partnerName ? (
+                        <Text style={[styles.heroName, { color: theme.text.primary }]}>
+                          {summary.partnerName}
+                        </Text>
+                      ) : null}
+                      <Text style={[styles.heroValue, { color: theme.text.primary }]}>
+                        {summary.totalDays}
+                      </Text>
+                      <Text style={[styles.heroLabel, { color: theme.text.secondary }]}>
+                        {serviceSummaryHeroCaption(summary.totalDays)}
+                      </Text>
+                      <Text style={[styles.heroDates, { color: theme.text.secondary }]}>
+                        {summary.dateRangeLabel}
+                      </Text>
+                    </View>
 
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Встречи</Text>
-                  <TrackerStatGrid stats={summary.meetingStats} />
-                </View>
+                    <View style={styles.section}>
+                      <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Звонки</Text>
+                      <TrackerStatGrid stats={summary.callStats} />
+                    </View>
 
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Дневник</Text>
-                  <TrackerStatGrid stats={summary.diaryStats} />
-                </View>
+                    <View style={styles.section}>
+                      <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Встречи</Text>
+                      <TrackerStatGrid stats={summary.meetingStats} />
+                    </View>
 
-                {onOpenLetterBook ? (
-                  <Pressable
-                    style={styles.bookButton}
-                    onPress={onOpenLetterBook}
-                    accessibilityRole="button"
-                    accessibilityLabel="Собрать книгу писем"
-                  >
-                    <Feather name="book-open" size={18} color={colors.light.background.start} />
-                    <Text style={styles.bookButtonText}>Собрать книгу писем</Text>
-                  </Pressable>
+                    <View style={styles.section}>
+                      <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Дневник</Text>
+                      <TrackerStatGrid stats={summary.diaryStats} />
+                    </View>
+
+                    {onOpenLetterBook ? (
+                      <Pressable
+                        style={[styles.bookButton, { backgroundColor: theme.text.primary }]}
+                        onPress={onOpenLetterBook}
+                        accessibilityRole="button"
+                        accessibilityLabel="Собрать книгу писем"
+                      >
+                        <Feather name="book-open" size={18} color={theme.text.inverse} />
+                        <Text style={[styles.bookButtonText, { color: theme.text.inverse }]}>
+                          Собрать книгу писем
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </>
                 ) : null}
               </>
             ) : (
-              <Text style={styles.errorText}>Не удалось загрузить статистику</Text>
+              <Text style={[styles.errorText, { color: theme.text.secondary }]}>
+                Не удалось загрузить статистику
+              </Text>
             )}
           </ScrollView>
         </View>
@@ -141,7 +175,6 @@ const styles = StyleSheet.create({
   },
   sheet: {
     maxHeight: '92%',
-    backgroundColor: colors.light.background.start,
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
     paddingBottom: Platform.OS === 'ios' ? 24 : 16,
@@ -151,7 +184,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(167, 154, 138, 0.4)',
     marginTop: 10,
     marginBottom: 8,
   },
@@ -168,7 +200,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 22,
-    color: colors.light.text.primary,
   },
   loader: {
     paddingVertical: 48,
@@ -176,35 +207,29 @@ const styles = StyleSheet.create({
   },
   hero: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
     borderRadius: 4,
     paddingVertical: 20,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.25)',
     gap: 4,
   },
   heroName: {
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 16,
-    color: colors.light.text.primary,
     marginBottom: 8,
   },
   heroValue: {
     fontFamily: typography.fontFamily.display,
     fontSize: 48,
-    color: colors.light.text.primary,
     lineHeight: 52,
   },
   heroLabel: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
-    color: colors.light.text.secondary,
   },
   heroDates: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 13,
-    color: colors.light.text.secondary,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -214,12 +239,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 16,
-    color: colors.light.text.primary,
   },
   errorText: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 15,
-    color: colors.light.text.secondary,
     textAlign: 'center',
     paddingVertical: 24,
   },
@@ -228,7 +251,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.light.text.primary,
     borderRadius: 4,
     paddingVertical: 14,
     marginTop: 4,
@@ -236,6 +258,5 @@ const styles = StyleSheet.create({
   bookButtonText: {
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 16,
-    color: colors.light.background.start,
   },
 });
