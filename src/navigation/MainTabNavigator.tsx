@@ -1,6 +1,9 @@
+import { Linking, StyleSheet, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
-import { FEATURES } from '@/constants/features';
+import { FEATURES, TELEGRAM_CHANNEL_TITLE, TELEGRAM_CHANNEL_URL } from '@/constants';
+import { useAppTheme } from '@/theme';
+import { typography } from '@/theme/typography';
 import type { MainTabParamList } from '@/types/navigation';
 import { PlaceholderScreen } from '@/screens/common/PlaceholderScreen';
 import { TrackersScreen } from '@/screens/trackers/TrackersScreen';
@@ -10,6 +13,24 @@ import { HomeStackNavigator } from './HomeStackNavigator';
 import { CustomTabBar } from './CustomTabBar';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
+function DiaryPlaceholderMessage() {
+  const theme = useAppTheme();
+
+  return (
+    <Text style={[styles.diaryMessage, { color: theme.text.secondary }]}>
+      Раздел ещё собираем. Если есть идеи, напишите нам в тгк{' '}
+      <Text
+        style={[styles.diaryLink, { color: theme.text.accent }]}
+        onPress={() => void Linking.openURL(TELEGRAM_CHANNEL_URL)}
+        accessibilityRole="link"
+        accessibilityLabel={`Telegram-канал ${TELEGRAM_CHANNEL_TITLE}`}
+      >
+        {TELEGRAM_CHANNEL_TITLE}
+      </Text>
+    </Text>
+  );
+}
 
 interface MainTabNavigatorProps {
   onResetToOnboarding: () => void;
@@ -50,7 +71,7 @@ export function MainTabNavigator({ onResetToOnboarding }: MainTabNavigatorProps)
             <PlaceholderScreen
               title="Дневник"
               eyebrow="В разработке"
-              message="Раздел ещё собираем. Если есть идеи, напишите нам в тгк @klvcva"
+              message={<DiaryPlaceholderMessage />}
             />
           ) : (
             <DiaryStackNavigator />
@@ -61,3 +82,16 @@ export function MainTabNavigator({ onResetToOnboarding }: MainTabNavigatorProps)
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  diaryMessage: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  diaryLink: {
+    fontFamily: typography.fontFamily.sansBold,
+    textDecorationLine: 'underline',
+  },
+});

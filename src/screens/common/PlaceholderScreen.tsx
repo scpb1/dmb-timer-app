@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -10,7 +11,7 @@ import { typography } from '@/theme/typography';
 interface PlaceholderScreenProps {
   title: string;
   eyebrow?: string;
-  message?: string;
+  message?: ReactNode;
 }
 
 export function PlaceholderScreen({ title, eyebrow, message }: PlaceholderScreenProps) {
@@ -45,7 +46,11 @@ export function PlaceholderScreen({ title, eyebrow, message }: PlaceholderScreen
               <Text style={[styles.eyebrow, { color: theme.text.primary }]}>{eyebrow}</Text>
             ) : null}
             {message ? (
-              <Text style={[styles.message, { color: theme.text.secondary }]}>{message}</Text>
+              typeof message === 'string' ? (
+                <Text style={[styles.message, { color: theme.text.secondary }]}>{message}</Text>
+              ) : (
+                <View style={styles.messageWrap}>{message}</View>
+              )
             ) : null}
           </View>
         ) : null}
@@ -89,5 +94,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
+  },
+  messageWrap: {
+    alignItems: 'center',
   },
 });

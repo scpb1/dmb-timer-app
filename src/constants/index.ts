@@ -2,6 +2,10 @@ export { FEATURES } from './features';
 
 export const APP_NAME = 'Счётчик ДДД';
 
+/** Telegram-канал «Девичья служба» (заглушка дневника и поддержка) */
+export const TELEGRAM_CHANNEL_TITLE = 'Девичья служба';
+export const TELEGRAM_CHANNEL_URL = 'https://t.me/girly_ddd';
+
 export const DEFAULT_LOCALE = 'ru-RU';
 
 export const AUTO_LOCK_TIMEOUT_MS = 60_000;
