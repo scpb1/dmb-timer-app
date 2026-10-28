@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AC7 · Чеклист по группам</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="../_app.css" />
+  <link rel="stylesheet" href="../_viz.css" />
+  <link rel="stylesheet" href="_army.css" />
+  <style>
+    .group {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.48);
+      border: 1px solid rgba(167, 154, 138, 0.35);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .group-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .group-head span { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+    .group-body { padding: 0 12px 10px; font-size: 12px; color: var(--text-muted); }
+    .group-body .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-top: 1px solid rgba(167, 154, 138, 0.15);
+    }
+    .group-body .row.done { text-decoration: line-through; opacity: 0.55; }
+    .group-body .row.here { color: var(--text); font-weight: 600; }
+    .group.collapsed .group-body { display: none; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Армейский календарь</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen army-scroll app-stack viz" style="--app-gap:10px;justify-content:flex-start;">
+      <div class="ms-summary">
+        <div class="row-top">
+          <div class="weeks"><div class="n">50</div><div class="l">ддд</div></div>
+          <div class="meta"><strong>Хвост</strong><span>🧊 сегодня</span></div>
+        </div>
+        <div class="badge">🧊 Водка в холодильник</div>
+      </div>
+
+      <div class="group">
+        <div class="group-head">🥃 Хвост · водка и финал <span>развернуть</span></div>
+        <div class="group-body">
+          <div class="row done"><span>50 · холодильник</span><span>✓</span></div>
+          <div class="row"><span>40 · паркет</span><span>10 дн.</span></div>
+          <div class="row"><span>30 · у дверей</span><span>20 дн.</span></div>
+          <div class="row"><span>20 · пачка</span><span>30 дн.</span></div>
+          <div class="row"><span>3–2–1 · светофор</span><span>47 дн.</span></div>
+        </div>
+      </div>
+      <div class="group collapsed">
+        <div class="group-head">🪞 Зеркала <span>7 вех · свернуто</span></div>
+        <div class="group-body">
+          <div class="row done"><span>11 дпп</span><span>✓</span></div>
+          <div class="row done"><span>22 … 66</span><span>✓</span></div>
+        </div>
+      </div>
+      <div class="group collapsed">
+        <div class="group-head">🪓 Малые / большие <span>топорики · забор · гуси</span></div>
+        <div class="group-body">
+          <div class="row done"><span>Малые топорики 77 дпп</span><span>✓</span></div>
+          <div class="row"><span>Большой заборчик 111 ддд</span><span>61 дн.</span></div>
+        </div>
+      </div>
+      <div class="group collapsed">
+        <div class="group-head">💍 Семья дембеля <span>250 · 300 дпп</span></div>
+        <div class="group-body">
+          <div class="row"><span>Невеста дембеля</span><span>200 дпп</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

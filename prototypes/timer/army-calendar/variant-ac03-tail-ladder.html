@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AC3 · Лестница хвоста</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="../_app.css" />
+  <link rel="stylesheet" href="_army.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Армейский календарь</a>
+  <p style="max-width:390px;font-size:12px;color:#5a524a;margin:0 0 8px;text-align:center;">
+    Главное — 287 ддд; блок ниже только для хвоста (можно показывать при ддд ≤ 50)
+  </p>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz" style="--app-gap:14px;justify-content:flex-start;padding-top:8px;">
+      <div class="app-frame" style="max-width:320px;">
+        <div class="num">25</div>
+        <div class="unit">ддд</div>
+        <div class="upcoming-line">
+          <span>🥃</span>
+          <span>Начинаем наливать · сегодня</span>
+        </div>
+      </div>
+      <div class="tail-ladder">
+        <h3>Хвост службы</h3>
+        <div class="tail-step done"><div class="ddd">50</div><div>🧊 В холодильник</div><div style="font-size:11px;color:var(--text-muted);">✓</div></div>
+        <div class="tail-step done"><div class="ddd">40</div><div>🪵 На паркет</div><div style="font-size:11px;color:var(--text-muted);">✓</div></div>
+        <div class="tail-step done"><div class="ddd">30</div><div>🚪 У дверей</div><div style="font-size:11px;color:var(--text-muted);">✓</div></div>
+        <div class="tail-step here"><div class="ddd">25</div><div><strong>Начинаем наливать</strong></div><div style="font-size:11px;color:var(--accent);">сегодня</div></div>
+        <div class="tail-step future"><div class="ddd">20</div><div>📦 Пачка</div><div style="font-size:11px;">5 дн.</div></div>
+        <div class="tail-step future"><div class="ddd">11</div><div>🥁 Барабанная дробь</div><div style="font-size:11px;">14 дн.</div></div>
+        <div class="tail-step future"><div class="ddd">10</div><div>🌌 Космос</div><div style="font-size:11px;">15 дн.</div></div>
+        <div class="tail-step future"><div class="ddd">3</div><div>🔴🟡🟢 Светофор</div><div style="font-size:11px;">22 дн.</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

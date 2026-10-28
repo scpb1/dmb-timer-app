@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Армейский год в датах — прототипы UI</title>
+  <style>
+    :root {
+      --text: #3e3630;
+      --muted: #a79a8a;
+      --card: rgba(255, 255, 255, 0.55);
+      --border: rgba(167, 154, 138, 0.35);
+      --pick: rgba(229, 57, 53, 0.12);
+      --pick-border: rgba(229, 57, 53, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: linear-gradient(165deg, #fcf7df 0%, #ede8d5 45%, #c7d3db 100%);
+      min-height: 100vh;
+      color: var(--text);
+      padding: 2rem 1.5rem 3rem;
+    }
+    h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.35rem; }
+    p.lead {
+      margin: 0 0 1.25rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+      max-width: 44rem;
+      line-height: 1.55;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.1rem;
+      max-width: 1100px;
+    }
+    a.card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.15rem 1.25rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    a.card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(62, 54, 48, 0.08);
+    }
+    a.card.pick {
+      background: var(--pick);
+      border-color: var(--pick-border);
+    }
+    a.card h2 { margin: 0 0 0.45rem; font-size: 1.02rem; }
+    a.card .tag {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    a.card p { margin: 0; font-size: 0.86rem; color: var(--muted); line-height: 1.45; }
+    .back-hub {
+      display: inline-block;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      color: #5a524a;
+    }
+  </style>
+</head>
+<body>
+  <a class="back-hub" href="../index.html">← Все прототипы таймера</a>
+  <h1>Армейский год в датах</h1>
+  <p class="lead">
+    Как вместить зеркала, малые/большие, водку, пачку и светофор в <strong>главный экран</strong>, не превращая его в простыню.
+    В макетах <strong>AC0</strong> — ползунок «день службы» (дпп), чтобы прокрутить хвост и зеркала. Приложение не меняется.
+  </p>
+
+  <div class="grid">
+    <a class="card pick" href="variant-ac00-scrubber.html">
+      <span class="tag">AC0 · старт</span>
+      <h2>Ползунок дня службы</h2>
+      <p>Кольцо + «праздник дня» + зона. Один макет, все даты — крути дпп.</p>
+    </a>
+    <a class="card" href="variant-ac01-today-ring.html">
+      <span class="tag">AC1</span>
+      <h2>Кольцо + баннер дня</h2>
+      <p>287 ддд как сейчас, сверху/снизу — «Сегодня: зеркало 44» без списка на 60 строк.</p>
+    </a>
+    <a class="card" href="variant-ac02-poster-peek.html">
+      <span class="tag">AC2</span>
+      <h2>Плакат-выдвижка</h2>
+      <p>Две колонки как на постере; на главной только текущая строка + «развернуть календарь».</p>
+    </a>
+    <a class="card" href="variant-ac03-tail-ladder.html">
+      <span class="tag">AC3</span>
+      <h2>Лестница хвоста</h2>
+      <p>50→10 ддд: холодильник, двери, пачка, космос, светофор — вертикальные ступени.</p>
+    </a>
+    <a class="card" href="variant-ac04-mirror-split.html">
+      <span class="tag">AC4</span>
+      <h2>Зеркало дпп ↔ ддд</h2>
+      <p>Две колонки синхронно: «сколько прошло» и «сколько осталось» с подсветкой пары.</p>
+    </a>
+    <a class="card" href="variant-ac05-dense-track.html">
+      <span class="tag">AC5</span>
+      <h2>Рельс с пинами</h2>
+      <p>Горизонтальный скролл всего года; иконки на 11, 77, 111, 50, 3…</p>
+    </a>
+    <a class="card" href="variant-ac06-frame-phase.html">
+      <span class="tag">AC6</span>
+      <h2>Рамка + фаза</h2>
+      <p>Число ддд, под ним «Малые · топорики впереди», карточка ближайшей вехи.</p>
+    </a>
+    <a class="card" href="variant-ac07-checklist-groups.html">
+      <span class="tag">AC7</span>
+      <h2>Чеклист по группам</h2>
+      <p>Свёрнутые блоки: Зеркала, Хвост, Семья дембеля — режим «лента событий».</p>
+    </a>
+    <a class="card pick" href="illustrated-index.html" style="border-style:dashed;">
+      <span class="tag">ILL · SVG</span>
+      <h2>Иллюстрации под даты</h2>
+      <p>7 сцен + композит и галерея: водка, гуси, забор, светофор, космос, матрёшки, пачка.</p>
+    </a>
+  </div>
+</body>
+</html>

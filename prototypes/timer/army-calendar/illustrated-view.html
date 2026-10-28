@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Иллюстрация · армейский календарь</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="../_app.css" />
+  <link rel="stylesheet" href="_illustrated.css" />
+</head>
+<body>
+  <a class="back" href="illustrated-index.html">← Все иллюстрации</a>
+  <p class="ill-title" id="sceneTitle">…</p>
+  <p class="ill-sub" id="sceneHint"></p>
+
+  <div class="phone app ill-phone">
+    <div class="ill-scene" id="scene"></div>
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>служба ▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack">
+      <div class="app-ring-block" style="--ring-size:260px;margin-top:8px;">
+        <svg data-app-ring data-size="260" data-thickness="28" data-count="100" data-filled="21" aria-hidden="true"></svg>
+        <div class="app-ring-center">
+          <span class="pct" id="pctLabel">21,0%</span>
+          <span class="num" id="dddLabel">287</span>
+          <span class="unit">ддд</span>
+        </div>
+      </div>
+      <div class="ill-caption-card">
+        <div class="k">На постере</div>
+        <div class="t" id="captionText">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="proto-controls ill-controls">
+    <label><span>День службы (дпп)</span><strong id="dppLabel">78</strong></label>
+    <input type="range" id="dppSlider" min="0" max="365" value="78" />
+    <p class="hint" id="controlHint"></p>
+  </div>
+
+  <script src="../app-setup.js"></script>
+  <script src="_army.js"></script>
+  <script src="_illustrations.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const sceneId = params.get('scene') || 'vodka';
+    const scene = ArmyIllustrations.SCENES[sceneId];
+    if (!scene) {
+      document.body.innerHTML = '<p>Неизвестная сцена. <a href="illustrated-index.html">Назад</a></p>';
+    } else {
+      document.getElementById('sceneTitle').textContent = scene.title;
+      document.getElementById('sceneHint').textContent = scene.hint;
+      document.getElementById('controlHint').textContent = scene.hint;
+
+      const sceneEl = document.getElementById('scene');
+      const slider = document.getElementById('dppSlider');
+      const ring = document.querySelector('[data-app-ring]');
+
+      const captions = {
+        vodka: (v) => (v.ddd <= 50 && v.ddd > 40 ? 'В холодильник' : v.ddd <= 40 && v.ddd > 30 ? 'На паркет' : v.ddd <= 30 && v.ddd > 25 ? 'У дверей' : v.ddd <= 25 ? 'Наливаем / стол' : 'Ещё рано'),
+        geese: () => 'Гуси-лебедi летели…',
+        fence: (v) => (v.ddd <= 111 ? `Заборчик · ${v.ddd} ддд` : 'До заборчика далеко'),
+        traffic: (v) => (v.ddd === 3 ? 'Красный' : v.ddd === 2 ? 'Жёлтый' : v.ddd === 1 ? 'Зелёный' : v.ddd === 0 ? 'Дембель' : 'Светофор впереди'),
+        cosmos: (v) => (v.ddd <= 10 ? 'Космос (10 ддд)' : v.ddd > 200 ? 'Космос' : 'Снижение'),
+        matryoshka: (v) => (v.dpp >= 88 ? 'Матрёшки · веха' : v.dpp >= 182 ? 'Большие' : 'Малые'),
+        pack: (v) => (v.ddd <= 20 ? `Пачка · ${20 - v.ddd}/20` : 'До пачки ещё'),
+      };
+
+      function render() {
+        const dpp = Number(slider.value);
+        const v = ArmyIllustrations.valuesFromDpp(dpp);
+        document.getElementById('dppLabel').textContent = String(v.dpp);
+        document.getElementById('dddLabel').textContent = String(v.ddd);
+        document.getElementById('pctLabel').textContent = v.pct.toFixed(1).replace('.', ',') + '%';
+        sceneEl.innerHTML = scene.render(v);
+        const cap = captions[sceneId];
+        document.getElementById('captionText').textContent = cap ? cap(v) : '';
+        const today = ArmyCalendarProto.todayCelebrations(dpp);
+        if (today.length) {
+          document.getElementById('captionText').textContent += ' · ' + today.map((t) => t.name).join(', ');
+        }
+        ring.dataset.filled = String(Math.round(v.pct));
+        window.__drawAppRing(ring);
+      }
+
+      slider.addEventListener('input', render);
+      if (sceneId === 'traffic') slider.value = '362';
+      if (sceneId === 'pack') slider.value = '350';
+      if (sceneId === 'vodka') slider.value = '315';
+      if (sceneId === 'fence') slider.value = '254';
+      render();
+    }
+  </script>
+</body>
+</html>

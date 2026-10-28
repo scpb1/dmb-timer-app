@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AC5 · Рельс с пинами</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="../_app.css" />
+  <link rel="stylesheet" href="_army.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Армейский календарь</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz" style="--app-gap:14px;justify-content:flex-start;">
+      <div class="ms-summary">
+        <div class="row-top">
+          <div class="weeks">
+            <div class="n">287</div>
+            <div class="l">ддд</div>
+          </div>
+          <div class="meta">
+            <strong>Малые · зеркало впереди</strong>
+            <span>листай год →</span>
+          </div>
+        </div>
+      </div>
+      <div class="dense-track-wrap">
+        <div class="dense-track" id="track"></div>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);padding:0 8px;line-height:1.45;">
+        Идея: весь постер на одной оси; мелкие тики — зеркала, крупные — 77/111/222/50/дембель. Автоскролл к «сейчас».
+      </p>
+    </div>
+  </div>
+  <script src="_army.js"></script>
+  <script>
+    const dpp = 78;
+    const track = document.getElementById('track');
+    const TOTAL = 365;
+    const ticks = ArmyCalendarProto.MILESTONES.filter((m) => m.dpp !== undefined)
+      .concat(ArmyCalendarProto.MILESTONES.filter((m) => m.ddd !== undefined && m.ddd <= 50))
+      .filter((m, i, arr) => arr.findIndex((x) => x.name === m.name) === i);
+
+    const rail = document.createElement('div');
+    rail.className = 'rail';
+    const fill = document.createElement('div');
+    fill.className = 'rail-fill';
+    fill.style.width = (dpp / TOTAL) * 100 + '%';
+    rail.appendChild(fill);
+    track.appendChild(rail);
+
+    const major = new Set(['77', '88', '111', '222', '50', 'Экватор', 'Дембель']);
+    for (const m of ticks) {
+      const day = m.dpp !== undefined ? m.dpp : TOTAL - m.ddd;
+      const pct = (day / TOTAL) * 100;
+      const tick = document.createElement('div');
+      tick.className = 'tick' + (major.has(String(m.dpp || m.ddd)) || m.group === 'equator' || m.group === 'end' ? ' major' : '');
+      tick.style.left = pct + '%';
+      tick.innerHTML = `<div class="icon">${m.icon}</div><div class="lbl">${m.dpp ?? m.ddd}</div>`;
+      track.appendChild(tick);
+    }
+    const you = document.createElement('div');
+    you.className = 'you';
+    you.style.left = (dpp / TOTAL) * 100 + '%';
+    track.appendChild(you);
+    track.parentElement.scrollLeft = (dpp / TOTAL) * track.offsetWidth - 120;
+  </script>
+</body>
+</html>

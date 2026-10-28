@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AC2 · Плакат-выдвижка</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="../_app.css" />
+  <link rel="stylesheet" href="_army.css" />
+  <style>
+    .peek-hero {
+      width: 100%;
+      text-align: center;
+      font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+      font-size: 48px;
+    }
+    .peek-bar {
+      width: 100%;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.55);
+      border: 1px solid var(--overlay-border);
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    .peek-bar strong { font-size: 14px; }
+    .chev { color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Армейский календарь</a>
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen army-scroll app-stack" style="--app-gap:12px;">
+      <div class="peek-hero">50</div>
+      <div style="font-size:14px;color:var(--text-muted);margin-top:-8px;">ддд · полтинник</div>
+      <div class="peek-bar">
+        <div>
+          <strong>🧊 Водка в холодильник</strong>
+          <div style="font-size:12px;color:var(--text-muted);">сегодня на постере</div>
+        </div>
+        <span class="chev">Календарь ▾</span>
+      </div>
+      <div class="poster-scroll">
+        <div class="poster-card" id="poster"></div>
+      </div>
+    </div>
+  </div>
+  <script src="_army.js"></script>
+  <script>
+    const dpp = 315;
+    const ddd = ArmyCalendarProto.dppToDdd(dpp);
+    const el = document.getElementById('poster');
+    const items = ArmyCalendarProto.MILESTONES.filter((m) => m.dpp !== undefined || m.ddd !== undefined)
+      .sort((a, b) => {
+        const da = a.dpp ?? 999 - (a.ddd ?? 0);
+        const db = b.dpp ?? 999 - (b.ddd ?? 0);
+        return da - db;
+      });
+    el.innerHTML = '<h2>АРМЕЙСКИЙ ГОД В ДАТАХ</h2><div class="poster-cols" id="cols"></div>';
+    const cols = document.getElementById('cols');
+    const left = document.createElement('div');
+    const right = document.createElement('div');
+    items.forEach((m, i) => {
+      const line = document.createElement('div');
+      line.className = 'poster-item';
+      const label = m.dpp !== undefined ? `${m.name}` : `${m.name}`;
+      line.textContent = label;
+      const isHere =
+        m.dpp === dpp || m.ddd === ddd ||
+        (m.dpp !== undefined && m.dpp <= dpp && !items.find((x) => x.dpp === dpp));
+      if (m.dpp === dpp || m.ddd === ddd) line.classList.add('here');
+      else if ((m.dpp !== undefined && m.dpp < dpp) || (m.ddd !== undefined && m.ddd > ddd))
+        line.classList.add('passed');
+      (i % 2 === 0 ? left : right).appendChild(line);
+    });
+    cols.appendChild(left);
+    cols.appendChild(right);
+  </script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Иллюстрация · полоска сцен</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="../_app.css" />
+  <link rel="stylesheet" href="_illustrated.css" />
+  <style>
+    .strip {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 4px 2px 8px;
+      scroll-snap-type: x mandatory;
+    }
+    .strip-card {
+      flex: 0 0 120px;
+      scroll-snap-align: center;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      background: rgba(255,255,255,0.5);
+    }
+    .strip-card.on { border-color: var(--accent); }
+    .strip-card svg { display: block; width: 120px; height: 160px; }
+    .strip-card .lbl {
+      font-size: 9px;
+      text-align: center;
+      padding: 4px;
+      color: var(--text-muted);
+    }
+    .hero-ill {
+      width: 100%;
+      height: 200px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(167,154,138,0.35);
+    }
+    .hero-ill svg { width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+  <a class="back" href="illustrated-index.html">← Иллюстрации</a>
+  <p class="ill-title">Галерея метафор</p>
+  <p class="ill-sub">Под кольцом — большая сцена; ниже — свайп миниатюр (как темы фона). Тап = сменить иллюстрацию вехи.</p>
+
+  <div class="phone app">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz" style="--app-gap:12px;justify-content:flex-start;">
+      <div class="app-ring-block" style="--ring-size:220px;">
+        <svg data-app-ring data-size="220" data-thickness="24" data-count="100" data-filled="86" aria-hidden="true"></svg>
+        <div class="app-ring-center">
+          <span class="pct">86,3%</span>
+          <span class="num" style="font-size:44px;">50</span>
+          <span class="unit">ддд</span>
+        </div>
+      </div>
+      <div class="hero-ill" id="hero"></div>
+      <div class="ill-caption-card" style="max-width:100%;">
+        <div class="k">Выбранная метафора</div>
+        <div class="t" id="heroTitle">Водка в холодильник</div>
+      </div>
+      <div class="strip" id="strip"></div>
+    </div>
+  </div>
+
+  <script src="../app-setup.js"></script>
+  <script src="_illustrations.js"></script>
+  <script>
+    const dpp = 315;
+    const v = ArmyIllustrations.valuesFromDpp(dpp);
+    const items = [
+      { id: 'cosmos', label: 'Космос', render: () => ArmyIllustrations.renderCosmosLand(280) },
+      { id: 'geese', label: 'Гуси', render: () => ArmyIllustrations.renderGeeseLebedi(60) },
+      { id: 'fence', label: 'Забор', render: () => ArmyIllustrations.renderZaborchik(80) },
+      { id: 'vodka', label: 'Водка', render: () => ArmyIllustrations.renderVodkaJourney(50) },
+      { id: 'pack', label: 'Пачка', render: () => ArmyIllustrations.renderDembelPack(12) },
+      { id: 'traffic', label: 'Свет', render: () => ArmyIllustrations.renderSvetofor(2) },
+    ];
+    const hero = document.getElementById('hero');
+    const strip = document.getElementById('strip');
+    let active = 'vodka';
+
+    function setActive(id) {
+      active = id;
+      const item = items.find((x) => x.id === id);
+      hero.innerHTML = item.render();
+      document.getElementById('heroTitle').textContent = item.label;
+      strip.querySelectorAll('.strip-card').forEach((el) => {
+        el.classList.toggle('on', el.dataset.id === id);
+      });
+    }
+
+    items.forEach((item) => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'strip-card' + (item.id === active ? ' on' : '');
+      card.dataset.id = item.id;
+      card.innerHTML = item.render() + `<div class="lbl">${item.label}</div>`;
+      card.addEventListener('click', () => setActive(item.id));
+      strip.appendChild(card);
+    });
+    setActive('vodka');
+  </script>
+</body>
+</html>

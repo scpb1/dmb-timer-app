@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Иллюстрации · армейский календарь</title>
+  <style>
+    :root {
+      --text: #3e3630;
+      --muted: #a79a8a;
+      --card: rgba(255, 255, 255, 0.55);
+      --border: rgba(167, 154, 138, 0.35);
+      --pick: rgba(229, 57, 53, 0.12);
+      --pick-border: rgba(229, 57, 53, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: linear-gradient(165deg, #fcf7df 0%, #ede8d5 45%, #c7d3db 100%);
+      min-height: 100vh;
+      color: var(--text);
+      padding: 2rem 1.5rem 3rem;
+    }
+    h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.35rem; }
+    p.lead {
+      margin: 0 0 1.25rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+      max-width: 44rem;
+      line-height: 1.55;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.1rem;
+      max-width: 1100px;
+    }
+    a.card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    a.card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(62, 54, 48, 0.08);
+    }
+    a.card.pick { background: var(--pick); border-color: var(--pick-border); }
+    .thumb {
+      height: 140px;
+      background: #2a3544;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+    .thumb.light { background: linear-gradient(180deg, #ede8d5, #c9b896); font-size: 40px; }
+    .body { padding: 1rem 1.15rem 1.15rem; }
+    .body h2 { margin: 0 0 0.4rem; font-size: 1rem; }
+    .body p { margin: 0; font-size: 0.84rem; color: var(--muted); line-height: 1.45; }
+    .back-hub {
+      display: inline-block;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      color: #5a524a;
+    }
+  </style>
+</head>
+<body>
+  <a class="back-hub" href="index.html">← Армейский календарь (без иллюстраций)</a>
+  <h1>Иллюстрации под даты</h1>
+  <p class="lead">
+    SVG-сцены как у <strong>branches/</strong>: фон за кольцом, подпись вехи с постера. На каждой странице — ползунок <strong>дпп</strong>, чтобы прокрутить сюжет.
+  </p>
+
+  <div class="grid">
+    <a class="card pick" href="illustrated-view.html?scene=vodka">
+      <div class="thumb light">🧊🚪</div>
+      <div class="body">
+        <h2>Путь «водки»</h2>
+        <p>Комната: холодильник → паркет → дверь → стол. 50, 40, 30, 25 ддд.</p>
+      </div>
+    </a>
+    <a class="card" href="illustrated-view.html?scene=geese">
+      <div class="thumb">🦢</div>
+      <div class="body">
+        <h2>Гуси-лебеди</h2>
+        <p>Стая с неба к дому — прогресс % службы, якорь 222.</p>
+      </div>
+    </a>
+    <a class="card" href="illustrated-view.html?scene=fence">
+      <div class="thumb light">🚧</div>
+      <div class="body">
+        <h2>Заборчик</h2>
+        <p>Секции зажигаются от 111 ддд; ворота в конце.</p>
+      </div>
+    </a>
+    <a class="card" href="illustrated-view.html?scene=traffic">
+      <div class="thumb">🚦</div>
+      <div class="body">
+        <h2>Светофор</h2>
+        <p>Ночная дорога, 3 · 2 · 1 ддд — загорается нужный круг.</p>
+      </div>
+    </a>
+    <a class="card" href="illustrated-view.html?scene=cosmos">
+      <div class="thumb">🌌</div>
+      <div class="body">
+        <h2>Космос → посадка</h2>
+        <p>350…10 ддд: звёзды и «капсула» к земле (10 ддд = финальный «космос»).</p>
+      </div>
+    </a>
+    <a class="card" href="illustrated-view.html?scene=matryoshka">
+      <div class="thumb light">🪆</div>
+      <div class="body">
+        <h2>Малые / большие матрёшки</h2>
+        <p>Масштаб куклы меняется на экватore, 88 дпп/ддд.</p>
+      </div>
+    </a>
+    <a class="card" href="illustrated-view.html?scene=pack">
+      <div class="thumb light">📦</div>
+      <div class="body">
+        <h2>Дембельская пачка</h2>
+        <p>20 клеток на «пачке», вычёркиваются по дням до дембеля.</p>
+      </div>
+    </a>
+    <a class="card" href="variant-ac-ill-composite.html">
+      <div class="thumb light">✨</div>
+      <div class="body">
+        <h2>Композит: сцена по зоне</h2>
+        <p>Один экран — фон сам меняется (космос / комната / забор / светофор / пачка).</p>
+      </div>
+    </a>
+  </div>
+</body>
+</html>

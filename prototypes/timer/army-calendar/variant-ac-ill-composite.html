@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Композит · сцена по зоне службы</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="../_app.css" />
+  <link rel="stylesheet" href="_illustrated.css" />
+</head>
+<body>
+  <a class="back" href="illustrated-index.html">← Иллюстрации</a>
+  <p class="ill-title">Авто-сцена по ддд</p>
+  <p class="ill-sub">Не выбирать метафору вручную: &gt;200 космос, 112–50 забор+комната, ≤20 пачка, ≤3 светофор, иначе гуси.</p>
+
+  <div class="phone app ill-phone">
+    <div class="ill-scene" id="scene"></div>
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack">
+      <div class="app-frame" style="background:rgba(255,255,255,0.55);padding:16px 20px;border-radius:12px;border:1px solid rgba(167,154,138,0.4);">
+        <div class="num" id="dddLabel">287</div>
+        <div class="unit">ддд</div>
+        <div style="font-size:13px;font-weight:600;margin-top:6px;" id="zoneLabel">—</div>
+      </div>
+      <div class="ill-caption-card">
+        <div class="k">Праздник дня</div>
+        <div class="t" id="captionText">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="proto-controls ill-controls">
+    <label><span>дпп</span><strong id="dppLabel">78</strong></label>
+    <input type="range" id="dppSlider" min="0" max="365" value="78" />
+    <p class="hint" id="sceneName">—</p>
+  </div>
+
+  <script src="_army.js"></script>
+  <script src="_illustrations.js"></script>
+  <script>
+    const I = ArmyIllustrations;
+    const sceneEl = document.getElementById('scene');
+    const slider = document.getElementById('dppSlider');
+
+    function pickScene(v) {
+      if (v.ddd <= 3) return { id: 'traffic', name: 'Светофор', html: I.renderSvetofor(v.ddd) };
+      if (v.ddd <= 20) return { id: 'pack', name: 'Пачка (+ хвост)', html: I.renderDembelPack(v.ddd) };
+      if (v.ddd <= 50) return { id: 'vodka', name: 'До дома · водка', html: I.renderVodkaJourney(v.ddd) };
+      if (v.ddd <= 111) return { id: 'fence', name: 'Заборчик', html: I.renderZaborchik(v.ddd) };
+      if (v.ddd > 200) return { id: 'cosmos', name: 'Космос', html: I.renderCosmosLand(v.ddd) };
+      return { id: 'geese', name: 'Гуси-лебедi', html: I.renderGeeseLebedi(v.pct) };
+    }
+
+    function render() {
+      const dpp = Number(slider.value);
+      const v = I.valuesFromDpp(dpp);
+      document.getElementById('dppLabel').textContent = String(v.dpp);
+      document.getElementById('dddLabel').textContent = String(v.ddd);
+      const zone = ArmyCalendarProto.serviceZone(v.dpp);
+      document.getElementById('zoneLabel').textContent = zone.label + ' · ' + zone.hint;
+      const picked = pickScene(v);
+      sceneEl.innerHTML = picked.html;
+      document.getElementById('sceneName').textContent = 'Фон: ' + picked.name;
+      const today = ArmyCalendarProto.todayCelebrations(dpp);
+      document.getElementById('captionText').textContent = today.length
+        ? today.map((t) => t.icon + ' ' + t.name).join(' · ')
+        : 'Обычный день — смотри только фон';
+    }
+    slider.addEventListener('input', render);
+    render();
+  </script>
+</body>
+</html>

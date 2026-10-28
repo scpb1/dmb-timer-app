@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AC4 · Зеркало дпп ↔ ддд</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="../_app.css" />
+  <link rel="stylesheet" href="_army.css" />
+  <style>
+    .sync-head {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+      font-size: 36px;
+    }
+    .sync-head small {
+      display: block;
+      font-family: "dmb-timer-sans", "Segoe UI", sans-serif;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      font-weight: 400;
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Армейский календарь</a>
+  <div class="phone app" id="root">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack viz" style="--app-gap:12px;justify-content:flex-start;">
+      <div class="sync-head">
+        <div><span data-out-dpp>88</span><small>дпп</small></div>
+        <div style="font-size:20px;align-self:center;color:var(--text-muted);">↔</div>
+        <div><span data-out-ddd>277</span><small>ддд</small></div>
+      </div>
+      <div class="army-today-banner" style="max-width:100%;">
+        <div class="kicker">Пара на календаре</div>
+        <div class="title">🪆 Малые матрёшки · 88 дпп</div>
+      </div>
+      <div class="mirror-split">
+        <div class="mirror-col" id="col-dpp"><h4>После призыва</h4></div>
+        <div class="mirror-col" id="col-ddd"><h4>До дембеля</h4></div>
+      </div>
+      <input type="range" data-army-dpp min="0" max="365" value="88" style="width:100%;accent-color:var(--accent);" />
+    </div>
+  </div>
+  <script src="_army.js"></script>
+  <script>
+    const root = document.getElementById('root');
+    const colDpp = document.getElementById('col-dpp');
+    const colDdd = document.getElementById('col-ddd');
+    const mirrors = ArmyCalendarProto.MILESTONES.filter((m) => m.group === 'mirror');
+
+    function renderMirrorCols(dpp) {
+      const ddd = ArmyCalendarProto.dppToDdd(dpp);
+      colDpp.innerHTML = '<h4>После призыва</h4>';
+      colDdd.innerHTML = '<h4>До дембеля</h4>';
+      for (const m of mirrors) {
+        if (m.dpp !== undefined) {
+          const line = document.createElement('div');
+          line.className = 'mirror-line' + (m.dpp === dpp ? ' on' : '');
+          line.textContent = m.name;
+          colDpp.appendChild(line);
+        }
+        if (m.ddd !== undefined) {
+          const line = document.createElement('div');
+          line.className = 'mirror-line' + (m.ddd === ddd ? ' on' : '');
+          line.textContent = m.name;
+          colDdd.appendChild(line);
+        }
+      }
+    }
+
+    ArmyCalendarProto.bindSlider(root);
+    root.addEventListener('army-dpp-change', (e) => renderMirrorCols(e.detail.dpp));
+    renderMirrorCols(88);
+  </script>
+</body>
+</html>

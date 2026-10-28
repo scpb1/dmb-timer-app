@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AC0 · Ползунок дня службы</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="../_app.css" />
+  <link rel="stylesheet" href="_army.css" />
+  <style>
+    .phone.app .screen { position: relative; padding-bottom: 120px; }
+    .app-ring-center .num { font-size: 52px; }
+    .army-today-banner { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Армейский календарь</a>
+  <div class="phone app" id="root">
+    <header class="topbar">
+      <button class="icon-btn" type="button">⚙</button>
+      <div class="topbar-center app-switcher">Алексей<small>служба ▾</small></div>
+      <button class="icon-btn right" type="button">↗</button>
+    </header>
+    <div class="screen app-stack">
+      <div class="army-today-banner">
+        <div class="kicker">Праздник дня</div>
+        <div class="title" data-out-today-title><span class="muted">—</span></div>
+        <div class="sub"><span class="army-zone-chip" data-out-zone>—</span></div>
+      </div>
+      <div class="app-ring-block" style="--ring-size:260px;">
+        <svg data-app-ring data-size="260" data-thickness="28" data-count="100" data-filled="21" aria-hidden="true"></svg>
+        <div class="app-ring-center">
+          <span class="pct"><span data-out-pct>21,4</span>%</span>
+          <span class="num" data-out-ddd>287</span>
+          <span class="unit">ддд · <span data-out-dpp>78</span> дпп</span>
+        </div>
+      </div>
+      <div class="app-upcoming" style="max-width:340px;width:100%;">
+        <div class="glyph">📅</div>
+        <div>
+          <div class="name">Дальше</div>
+          <div class="meta" data-out-next>—</div>
+        </div>
+      </div>
+    </div>
+    <div class="army-slider-dock">
+      <label><span>День службы (дпп)</span><span>0 … 365</span></label>
+      <input type="range" data-army-dpp min="0" max="365" value="78" />
+      <div class="today-pills" data-out-today-dock></div>
+    </div>
+  </div>
+  <script src="../app-setup.js"></script>
+  <script src="_army.js"></script>
+  <script>
+    const root = document.getElementById('root');
+    ArmyCalendarProto.bindSlider(root);
+    root.addEventListener('army-dpp-change', (e) => {
+      const dock = root.querySelector('[data-out-today-dock]');
+      const { today } = e.detail;
+      dock.innerHTML = today.length
+        ? today.map((t) => `<span class="pill">${t.icon} ${t.name}</span>`).join('')
+        : '<span class="muted">Сегодня без именной вехи</span>';
+    });
+  </script>
+</body>
+</html>
