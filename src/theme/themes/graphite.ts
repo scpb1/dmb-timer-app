@@ -8,15 +8,15 @@ export const graphiteTheme = defineTheme({
   colors: {
     background: {
       start: '#1A1A1C',
-      mid: '#242427',
-      end: '#2D2D30',
+      mid: '#1F1F22',
+      end: '#27272B',
       sheen: {
         start: '#45454B',
-        startOpacity: 0.45,
+        startOpacity: 0,
         mid: '#1A1A1C',
         midOpacity: 0,
         end: '#35353A',
-        endOpacity: 0.35,
+        endOpacity: 0,
       },
     },
     text: {

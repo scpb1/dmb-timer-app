@@ -9,14 +9,14 @@ export const linenTheme = defineTheme({
     background: {
       start: '#FCF7DF',
       mid: '#EDE8D5',
-      end: '#C7D3DB',
+      end: '#E4D0B4',
       sheen: {
-        start: '#D8E4EA',
-        startOpacity: 0.65,
+        start: '#F0E2CC',
+        startOpacity: 0.52,
         mid: '#FCF7DF',
         midOpacity: 0,
-        end: '#B8C8D2',
-        endOpacity: 0.5,
+        end: '#D4BC98',
+        endOpacity: 0.42,
       },
     },
     text: {

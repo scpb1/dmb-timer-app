@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Темы — прототипы</title>
+  <style>
+    :root {
+      --text: #3e3630;
+      --muted: #a79a8a;
+      --card: rgba(255, 255, 255, 0.55);
+      --border: rgba(167, 154, 138, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: linear-gradient(165deg, #fcf7df 0%, #ede8d5 45%, #e6ddd4 100%);
+      min-height: 100vh;
+      color: var(--text);
+      padding: 2rem 1.5rem 3rem;
+    }
+    h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.35rem; }
+    p.lead { margin: 0 0 1.25rem; color: var(--muted); font-size: 0.92rem; max-width: 36rem; line-height: 1.55; }
+    a.card {
+      display: block;
+      max-width: 420px;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.15rem 1.25rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    a.card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(62, 54, 48, 0.08);
+    }
+    a.card h2 { margin: 0 0 0.45rem; font-size: 1.02rem; }
+    a.card p { margin: 0; font-size: 0.88rem; color: var(--muted); line-height: 1.45; }
+  </style>
+</head>
+<body>
+  <h1>Темы приложения</h1>
+  <p class="lead">HTML-макеты для подбора палитры вне React Native.</p>
+  <a class="card" href="linen-gradient-ends.html">
+    <h2>Лён — низ градиента</h2>
+    <p>10 альтернатив синему <code>end</code> + sheen, с мини-превью экрана.</p>
+  </a>
+</body>
+</html>

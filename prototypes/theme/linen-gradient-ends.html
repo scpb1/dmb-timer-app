@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Лён — 10 замен синего низа градиента</title>
+  <style>
+    :root {
+      --text: #3e3630;
+      --muted: #a79a8a;
+      --accent: #e53935;
+      --card: rgba(255, 255, 255, 0.48);
+      --border: rgba(167, 154, 138, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #f0ebe3;
+      min-height: 100vh;
+      color: var(--text);
+      padding: 2rem 1.25rem 3rem;
+    }
+    h1 { font-size: 1.3rem; font-weight: 600; margin: 0 0 0.35rem; }
+    p.lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      max-width: 44rem;
+    }
+    h2.section {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin: 2rem 0 0.75rem;
+      max-width: 1200px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+      max-width: 1200px;
+    }
+    .grid.refs {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      max-width: 640px;
+    }
+    .variant {
+      background: #fff;
+      border: 1px solid rgba(167, 154, 138, 0.25);
+      border-radius: 16px;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .variant.ref-blue { border-color: rgba(90, 130, 160, 0.35); }
+    .variant.ref-current { border-color: rgba(229, 57, 53, 0.28); background: rgba(252, 247, 223, 0.5); }
+    .variant h3 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    .variant .note {
+      margin: -0.35rem 0 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .phone {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      aspect-ratio: 9 / 16;
+      max-height: 320px;
+      background: #fcf7df;
+    }
+    .phone svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .mock {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      top: 38%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 11px;
+      backdrop-filter: blur(6px);
+    }
+    .mock .line1 {
+      font-size: 9px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .mock .line2 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .mock .line2 span {
+      font-size: 10px;
+      font-weight: 400;
+      color: var(--muted);
+    }
+    .mock .bar {
+      margin-top: 8px;
+      height: 3px;
+      border-radius: 99px;
+      background: rgba(167, 154, 138, 0.35);
+      overflow: hidden;
+    }
+    .mock .bar i {
+      display: block;
+      width: 62%;
+      height: 100%;
+      background: var(--accent);
+      border-radius: 99px;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .chip {
+      font-size: 0.62rem;
+      font-family: ui-monospace, "Cascadia Code", monospace;
+      padding: 3px 6px;
+      border-radius: 6px;
+      background: rgba(62, 54, 48, 0.06);
+      color: var(--muted);
+    }
+    .chip strong { color: var(--text); font-weight: 600; }
+    a.back {
+      display: inline-block;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Темы</a>
+  <h1>Лён: низ градиента вместо синего</h1>
+  <p class="lead">
+    Верх фиксирован: <code>#FCF7DF</code> → <code>#EDE8D5</code>, как в приложении. Меняются только
+    <code>background.end</code> и <code>sheen</code>. Превью повторяет два слоя из
+    <code>ScreenBackground</code> (база + блик).
+  </p>
+
+  <h2 class="section">Для сравнения</h2>
+  <div class="grid refs" id="refs"></div>
+
+  <h2 class="section">10 альтернатив</h2>
+  <div class="grid" id="grid"></div>
+
+  <script>
+    const START = "#FCF7DF";
+    const MID = "#EDE8D5";
+
+    const refs = [
+      {
+        id: "blue",
+        className: "ref-blue",
+        title: "Было · синий лён",
+        note: "Оригинал — холодный низ, «флаговый» перелив с жёлтым верхом.",
+        end: "#C7D3DB",
+        sheen: { start: "#D8E4EA", startOpacity: 0.65, end: "#B8C8D2", endOpacity: 0.5 },
+      },
+      {
+        id: "current",
+        className: "ref-current",
+        title: "Сейчас в коде · перламутр",
+        note: "Текущий вариант после правок в linen.ts.",
+        end: "#E6DDD4",
+        sheen: { start: "#F5EDE6", startOpacity: 0.5, end: "#DDD2C8", endOpacity: 0.35 },
+      },
+    ];
+
+    const alternatives = [
+      {
+        id: "01",
+        title: "01 · Шампань",
+        note: "Нейтральный тёплый серо-беж — чисто, без грязи и без холода.",
+        end: "#E4DBCE",
+        sheen: { start: "#F2EBE0", startOpacity: 0.52, end: "#D4CABC", endOpacity: 0.38 },
+      },
+      {
+        id: "02",
+        title: "02 · Румянец",
+        note: "Лёгкий розовый низ, стыкуется с красным акцентом и праздничными карточками.",
+        end: "#EAD6D2",
+        sheen: { start: "#F5E6E2", startOpacity: 0.48, end: "#DCC4BE", endOpacity: 0.36 },
+      },
+      {
+        id: "03",
+        title: "03 · Персик",
+        note: "Солнечный персик — теплее «лён», но не уходит в мёд.",
+        end: "#EDD4C4",
+        sheen: { start: "#F8E6DA", startOpacity: 0.5, end: "#DFC4B0", endOpacity: 0.4 },
+      },
+      {
+        id: "04",
+        title: "04 · Песок",
+        note: "Пляжный песок, чуть насыщеннее — заметный низ без синего.",
+        end: "#E0D0BC",
+        sheen: { start: "#EDE2D2", startOpacity: 0.55, end: "#CFC0A8", endOpacity: 0.42 },
+      },
+      {
+        id: "05",
+        title: "05 · Солома",
+        note: "Золотистая солома — самый «жёлтый» низ, близко к верху по тону.",
+        end: "#E8DCB4",
+        sheen: { start: "#F2EAC8", startOpacity: 0.45, end: "#D8CC98", endOpacity: 0.38 },
+      },
+      {
+        id: "06",
+        title: "06 · Шалфей",
+        note: "Светлая зелень — свежо, но осторожно: не уходить в «армию/камуфляж».",
+        end: "#D4DCC8",
+        sheen: { start: "#E4EADC", startOpacity: 0.5, end: "#BEC8B4", endOpacity: 0.4 },
+      },
+      {
+        id: "07",
+        title: "07 · Лаванда",
+        note: "Пыльная лаванда — фиолетово-серый, не синий и не флаг.",
+        end: "#DCD4E4",
+        sheen: { start: "#EAE4F0", startOpacity: 0.48, end: "#C8BED4", endOpacity: 0.36 },
+      },
+      {
+        id: "08",
+        title: "08 · Карамель",
+        note: "Крем-карамель — тёплый «выпечка + лён», выразительный низ.",
+        end: "#E4D0B4",
+        sheen: { start: "#F0E2CC", startOpacity: 0.52, end: "#D4BC98", endOpacity: 0.42 },
+      },
+      {
+        id: "09",
+        title: "09 · Почти моно",
+        note: "Минимальный контраст — один крем, блик едва заметен.",
+        end: "#EDE6DA",
+        sheen: { start: "#F7F2EA", startOpacity: 0.35, end: "#E0D8CC", endOpacity: 0.22 },
+      },
+      {
+        id: "10",
+        title: "10 · Пыльная роза",
+        note: "Приглушённая rose-gray — мягко и «тканево», без кислотности.",
+        end: "#E2D4CE",
+        sheen: { start: "#EFE4DE", startOpacity: 0.5, end: "#D4C4BC", endOpacity: 0.38 },
+      },
+    ];
+
+    function hexToRgb(hex) {
+      const h = hex.replace("#", "");
+      return {
+        r: parseInt(h.slice(0, 2), 16),
+        g: parseInt(h.slice(2, 4), 16),
+        b: parseInt(h.slice(4, 6), 16),
+      };
+    }
+
+    function rgba(hex, a) {
+      const { r, g, b } = hexToRgb(hex);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+
+    function gradientSvg(uid, v) {
+      const s = v.sheen;
+      return `
+        <svg viewBox="0 0 100 178" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="${uid}-base" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="${START}" />
+              <stop offset="45%" stop-color="${MID}" />
+              <stop offset="100%" stop-color="${v.end}" />
+            </linearGradient>
+            <linearGradient id="${uid}-sheen" x1="100%" y1="0%" x2="0%" y2="85%">
+              <stop offset="0%" stop-color="${s.start}" stop-opacity="${s.startOpacity}" />
+              <stop offset="50%" stop-color="${START}" stop-opacity="0" />
+              <stop offset="100%" stop-color="${s.end}" stop-opacity="${s.endOpacity}" />
+            </linearGradient>
+          </defs>
+          <rect width="100" height="178" fill="url(#${uid}-base)" />
+          <rect width="100" height="178" fill="url(#${uid}-sheen)" />
+        </svg>`;
+    }
+
+    function renderCard(v, extraClass) {
+      const uid = "g-" + v.id;
+      const chips = [
+        `<span class="chip"><strong>end</strong> ${v.end}</span>`,
+        `<span class="chip"><strong>sheen</strong> ${v.sheen.start}</span>`,
+        `<span class="chip">${v.sheen.end}</span>`,
+      ].join("");
+      return `
+        <article class="variant ${extraClass || ""}">
+          <div>
+            <h3>${v.title}</h3>
+            <p class="note">${v.note}</p>
+          </div>
+          <div class="phone">
+            ${gradientSvg(uid, v)}
+            <div class="mock">
+              <div class="line1">Новый год · через 12 дней</div>
+              <div class="line2">303<span> ддд</span></div>
+              <div class="bar"><i></i></div>
+            </div>
+          </div>
+          <div class="chips">${chips}</div>
+        </article>`;
+    }
+
+    document.getElementById("refs").innerHTML = refs
+      .map((v) => renderCard(v, v.className))
+      .join("");
+    document.getElementById("grid").innerHTML = alternatives.map((v) => renderCard(v)).join("");
+  </script>
+</body>
+</html>
