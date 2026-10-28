@@ -4,9 +4,11 @@ import { PREDEFINED_EVENT_IDS } from '@/types/events';
 import type { DisplayEvent } from '@/types/events';
 import type { DisplayHoliday } from '@/types/holidays';
 import {
+  formatTimerUpcomingCountdown,
   formatTimerVizUpcomingHeadline,
   isTimerUpcomingDemobilization,
   resolveTimerUpcomingItem,
+  shouldOmitDemobilizationCountdown,
 } from '@/utils/timerUpcoming';
 
 const enlist = startOfDay(new Date(2025, 0, 1));
@@ -74,12 +76,33 @@ describe('resolveTimerUpcomingItem', () => {
     expect(formatTimerVizUpcomingHeadline(today, now)).toBe('Свидание · сегодня');
   });
 
-  it('formats demobilization without day count', () => {
+  it('formats demobilization with days until date', () => {
     const demobItem = {
       kind: 'event' as const,
       event: event(PREDEFINED_EVENT_IDS.DEMOBILIZATION, 'Дембель', demob),
     };
-    expect(formatTimerVizUpcomingHeadline(demobItem, now)).toBe('Дембель · Финишная прямая');
+    expect(formatTimerVizUpcomingHeadline(demobItem, now)).toBe('Дембель · через 214 дней');
+    expect(formatTimerUpcomingCountdown(demobItem, now)).toBe('До даты 214 дней');
+  });
+
+  it('hides future demobilization countdown when the timer already shows days', () => {
+    const demobItem = {
+      kind: 'event' as const,
+      event: event(PREDEFINED_EVENT_IDS.DEMOBILIZATION, 'Дембель', demob),
+    };
+    expect(formatTimerVizUpcomingHeadline(demobItem, now, true)).toBe('Дембель');
+    expect(formatTimerUpcomingCountdown(demobItem, now, true)).toBeNull();
+    expect(formatTimerUpcomingCountdown(demobItem, demob, true)).toBe('Сегодня');
+  });
+
+  it('omits demobilization countdown when days show on timer or stat cards', () => {
+    expect(shouldOmitDemobilizationCountdown('circular', 'days', 'weeks')).toBe(true);
+    expect(shouldOmitDemobilizationCountdown('circular', 'percent', 'days')).toBe(true);
+    expect(shouldOmitDemobilizationCountdown('circular', 'percent', 'weeks')).toBe(false);
+    expect(shouldOmitDemobilizationCountdown('linear', 'weeks', 'months')).toBe(false);
+    expect(shouldOmitDemobilizationCountdown('dotGrid', 'days', 'days')).toBe(true);
+    expect(shouldOmitDemobilizationCountdown('frame', 'percent', 'weeks')).toBe(true);
+    expect(shouldOmitDemobilizationCountdown('milestones', 'percent', 'weeks')).toBe(true);
   });
 
   it('respects pinned demobilization', () => {

@@ -5,8 +5,14 @@ import { CONFIG_KEYS } from '@/types/config';
 import type { DisplayEvent } from '@/types/events';
 import type { DisplayHoliday } from '@/types/holidays';
 import type { TimerSettings } from '@/types/timer';
-import { getConfig } from '@/services/database';
-import { buildDisplayEvents, formatEventDate, parseEventsStorage } from '@/utils/eventCalculations';
+import { getConfig, setConfig } from '@/services/database';
+import {
+  buildDisplayEvents,
+  formatEventDate,
+  getDefaultEventListIds,
+  migrateEventsStorageDefaultList,
+  parseEventsStorage,
+} from '@/utils/eventCalculations';
 import {
   buildDisplayHolidays,
   formatHolidayDate,
@@ -36,6 +42,8 @@ interface UseTimerUpcomingResult {
   pinOptions: TimerUpcomingPinOption[];
   events: DisplayEvent[];
   holidays: DisplayHoliday[];
+  /** «Список событий по умолчанию» для армейского чеклиста */
+  defaultListEventIds: string[];
   reload: () => Promise<void>;
 }
 
@@ -51,6 +59,7 @@ export function useTimerUpcoming(
 ): UseTimerUpcomingResult {
   const [events, setEvents] = useState<DisplayEvent[]>([]);
   const [holidays, setHolidays] = useState<DisplayHoliday[]>([]);
+  const [defaultListEventIds, setDefaultListEventIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const reload = useCallback(async () => {
@@ -65,6 +74,7 @@ export function useTimerUpcoming(
       if (!enlistmentRaw || !demobilizationRaw) {
         setEvents([]);
         setHolidays([]);
+        setDefaultListEventIds([]);
         return;
       }
 
@@ -73,7 +83,21 @@ export function useTimerUpcoming(
       const serviceRange = { start: enlistmentDate, end: demobilizationDate };
       const now = new Date();
 
-      setEvents(buildDisplayEvents(enlistmentDate, demobilizationDate, parseEventsStorage(eventsRaw), now));
+      let eventsStorage = parseEventsStorage(eventsRaw);
+      const migration = migrateEventsStorageDefaultList(
+        eventsStorage,
+        enlistmentDate,
+        demobilizationDate,
+      );
+      eventsStorage = migration.storage;
+      if (migration.changed) {
+        await setConfig(CONFIG_KEYS.EVENTS_DATA, JSON.stringify(eventsStorage));
+      }
+
+      setDefaultListEventIds(
+        getDefaultEventListIds(eventsStorage, enlistmentDate, demobilizationDate),
+      );
+      setEvents(buildDisplayEvents(enlistmentDate, demobilizationDate, eventsStorage, now));
       setHolidays(
         buildDisplayHolidays(parseHolidaysStorage(holidaysRaw), now, serviceRange),
       );
@@ -81,6 +105,7 @@ export function useTimerUpcoming(
       logger.error('Ошибка загрузки ближайшего события для таймера', error);
       setEvents([]);
       setHolidays([]);
+      setDefaultListEventIds([]);
     } finally {
       setIsLoading(false);
     }
@@ -124,5 +149,14 @@ export function useTimerUpcoming(
     );
   }, [events, holidays, settings.timerUpcomingPinnedRef, settings.timerUpcomingPreview]);
 
-  return { isLoading, item, frameItem, pinOptions, events, holidays, reload };
+  return {
+    isLoading,
+    item,
+    frameItem,
+    pinOptions,
+    events,
+    holidays,
+    defaultListEventIds,
+    reload,
+  };
 }

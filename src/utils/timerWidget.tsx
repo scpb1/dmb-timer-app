@@ -1,9 +1,9 @@
 import { Platform } from 'react-native';
 
-import { APP_NAME } from '@/constants';
+import { APP_NAME, FEATURES } from '@/constants';
 import type { ActiveTimer, TimerPhase } from '@/types/timer';
 import type { ServiceProgress } from '@/utils/timerCalculations';
-import { getCenterDisplayLabels } from '@/utils/timerCalculations';
+import { getPhaseUnitLabel } from '@/utils/timerCalculations';
 import { isAndroidWidgetAvailable } from '@/utils/nativeAvailability';
 import { logger } from '@/utils/logger';
 
@@ -31,13 +31,11 @@ export function buildTimerWidgetPayload(
     return EMPTY_WIDGET_PAYLOAD;
   }
 
-  const labels = getCenterDisplayLabels(timer.kind);
-
   if (progress.phase === 'before') {
     return {
       name: timer.name,
       primary: String(progress.daysUntilStart),
-      label: labels.before,
+      label: getPhaseUnitLabel(progress.daysUntilStart, 'day', 'before', timer.kind),
       percent: '0%',
       phase: progress.phase,
     };
@@ -47,7 +45,7 @@ export function buildTimerWidgetPayload(
     return {
       name: timer.name,
       primary: String(progress.daysAfterEnd),
-      label: labels.after,
+      label: getPhaseUnitLabel(progress.daysAfterEnd, 'day', 'after', timer.kind),
       percent: '100%',
       phase: progress.phase,
     };
@@ -68,6 +66,10 @@ export async function updateTimerWidgets(
   timer: ActiveTimer | null,
   progress: ServiceProgress | null,
 ): Promise<void> {
+  if (!FEATURES.widgets) {
+    return;
+  }
+
   const payload = buildTimerWidgetPayload(timer, progress);
   const key = `${payload.name}|${payload.primary}|${payload.label}|${payload.percent}`;
   if (key === lastWidgetKey) {

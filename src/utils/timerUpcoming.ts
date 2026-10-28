@@ -1,15 +1,16 @@
 import { differenceInCalendarDays, startOfDay } from 'date-fns';
 
 import type { DisplayEvent } from '@/types/events';
-import {
-  DEMOBILIZATION_COUNTDOWN_CAPTION,
-  formatDaysUntilDate,
-  formatEventDaysUntilCaption,
-} from '@/utils/eventCalculations';
+import { formatDaysUntilDate, formatEventDaysUntilCaption } from '@/utils/eventCalculations';
 import { PREDEFINED_EVENT_IDS } from '@/types/events';
 import type { DisplayHoliday } from '@/types/holidays';
 import { formatCount } from '@/utils/inflection';
-import type { TimerUpcomingPreviewMode } from '@/types/timer';
+import type {
+  ProgressBarMode,
+  StatCardMode,
+  TimerType,
+  TimerUpcomingPreviewMode,
+} from '@/types/timer';
 
 export type TimerUpcomingItem =
   | { kind: 'event'; event: DisplayEvent }
@@ -52,6 +53,21 @@ export function mergeTimerUpcomingItems(
 
 export function isTimerUpcomingDemobilization(item: TimerUpcomingItem): boolean {
   return item.kind === 'event' && item.event.id === PREDEFINED_EVENT_IDS.DEMOBILIZATION;
+}
+
+/** Дни уже на таймере или на плашках «прошло / осталось» — строка «до даты» у дембеля дублировала бы счётчик */
+export function shouldOmitDemobilizationCountdown(
+  timerType: TimerType,
+  progressBarMode: ProgressBarMode,
+  statCardMode: StatCardMode = 'days',
+): boolean {
+  if (timerType === 'frame' || timerType === 'milestones') {
+    return true;
+  }
+  if (progressBarMode === 'days' || statCardMode === 'days') {
+    return true;
+  }
+  return false;
 }
 
 function findNearestUpcoming(items: TimerUpcomingItem[], now: Date): TimerUpcomingItem | null {
@@ -117,11 +133,26 @@ export function timerUpcomingDisplayName(item: TimerUpcomingItem): string {
   return `${item.holiday.name} ${item.holiday.date.getFullYear()}`;
 }
 
-/** Подпись под событием на таймере / в рамке (без «N дней» для дембеля) */
+function omitFutureDemobilizationCountdown(
+  item: TimerUpcomingItem,
+  now: Date,
+  omit: boolean,
+): boolean {
+  if (!omit || !isTimerUpcomingDemobilization(item)) {
+    return false;
+  }
+  return differenceInCalendarDays(startOfDay(upcomingDate(item)), startOfDay(now)) > 0;
+}
+
+/** Подпись под событием на таймере / в рамке; у дембеля в режиме «дни» строка скрыта */
 export function formatTimerUpcomingCountdown(
   item: TimerUpcomingItem,
   now: Date = new Date(),
+  omitDemobilizationCountdown = false,
 ): string | null {
+  if (omitFutureDemobilizationCountdown(item, now, omitDemobilizationCountdown)) {
+    return null;
+  }
   if (item.kind === 'event') {
     return formatEventDaysUntilCaption(item.event, now);
   }
@@ -132,16 +163,14 @@ export function formatTimerUpcomingCountdown(
 export function formatTimerVizUpcomingHeadline(
   item: TimerUpcomingItem,
   now: Date = new Date(),
+  omitDemobilizationCountdown = false,
 ): string {
   const date = upcomingDate(item);
   const days = differenceInCalendarDays(startOfDay(date), startOfDay(now));
   const name = timerUpcomingDisplayName(item);
 
-  if (isTimerUpcomingDemobilization(item)) {
-    if (days <= 0) {
-      return `${name} · сегодня`;
-    }
-    return `${name} · ${DEMOBILIZATION_COUNTDOWN_CAPTION}`;
+  if (omitFutureDemobilizationCountdown(item, now, omitDemobilizationCountdown)) {
+    return name;
   }
 
   if (days <= 0) {

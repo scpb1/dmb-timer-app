@@ -1,11 +1,15 @@
+import { addDays } from 'date-fns';
+
 import {
   calculateServiceProgress,
   formatProgressPercent,
+  getCenterDisplayLabels,
   getCenterDisplayValues,
   getDotGridColumnCount,
   getDotGridMetrics,
   getDotGridUnitTotal,
   getPhaseCardTitle,
+  getProgressBarSegmentCount,
   getServiceTimeBreakdowns,
   getStatCardDisplay,
   getTimeBreakdown,
@@ -102,6 +106,51 @@ describe('calculateServiceProgress', () => {
       getCenterDisplayValues('percent', service, 2, 'remaining').primaryValue,
     );
   });
+
+  it('число сегментов совпадает с целыми единицами срока', () => {
+    const year = calculateServiceProgress(ENLISTMENT, DEMOBILIZATION, at('2026-01-01'));
+
+    expect(year.segmentCounts).toEqual({ percent: 100, days: 100, weeks: 52, months: 12 });
+    expect(year.filledSegments).toEqual(year.segmentCounts);
+
+    const longEnd = addDays(ENLISTMENT, 547);
+    const done = calculateServiceProgress(ENLISTMENT, longEnd, longEnd);
+
+    expect(done.totalDays).toBe(547);
+    expect(done.segmentCounts).toEqual({ percent: 100, days: 100, weeks: 78, months: 18 });
+    expect(done.filledSegments).toEqual(done.segmentCounts);
+  });
+
+  it('в длинном сроке закрашивает целые недели, а не обрезает их до 52', () => {
+    const longEnd = addDays(ENLISTMENT, 547);
+    const progress = calculateServiceProgress(ENLISTMENT, longEnd, addDays(ENLISTMENT, 400));
+
+    expect(progress.daysPassed).toBe(400);
+    expect(progress.segmentCounts.weeks).toBe(78);
+    expect(progress.filledSegments.weeks).toBe(57);
+    expect(progress.filledSegments.days).toBe(Math.floor((400 / 547) * 100));
+    expect(progress.filledSegments.months).toBe(Math.floor(400 / 30));
+    expect(progress.segmentCounts.percent).toBe(100);
+    expect(progress.filledSegments.percent).toBe(Math.floor((400 / 547) * 100));
+  });
+});
+
+describe('getProgressBarSegmentCount', () => {
+  it('проценты и дни — 100 сегментов, недели и месяцы только целые', () => {
+    expect(getProgressBarSegmentCount('percent', 10)).toBe(100);
+    expect(getProgressBarSegmentCount('percent', 547)).toBe(100);
+    expect(getProgressBarSegmentCount('days', 365)).toBe(100);
+    expect(getProgressBarSegmentCount('days', 547)).toBe(100);
+    expect(getProgressBarSegmentCount('weeks', 365)).toBe(52);
+    expect(getProgressBarSegmentCount('weeks', 547)).toBe(78);
+    expect(getProgressBarSegmentCount('months', 365)).toBe(12);
+    expect(getProgressBarSegmentCount('months', 547)).toBe(18);
+  });
+
+  it('срок короче единицы даёт один сегмент', () => {
+    expect(getProgressBarSegmentCount('weeks', 6)).toBe(1);
+    expect(getProgressBarSegmentCount('months', 20)).toBe(1);
+  });
 });
 
 describe('getServiceTimeBreakdowns', () => {
@@ -123,11 +172,21 @@ describe('center and cards', () => {
   const progress = calculateServiceProgress(ENLISTMENT, DEMOBILIZATION, at('2025-07-01'));
 
   it('в режиме remaining показывает ддд', () => {
-    const display = getCenterDisplayValues('percent', progress, 2, 'remaining');
+    const display = getCenterDisplayValues('days', progress, 2, 'remaining');
 
     expect(display.primaryValue).toBe('184');
     expect(display.unitLabel).toBe('ддд');
     expect(display.secondaryValue).toBe(formatProgressPercent((1 - progress.progressRatio) * 100, 2));
+  });
+
+  it('в режиме percent по центру только проценты', () => {
+    const display = getCenterDisplayValues('percent', progress, 2, 'remaining');
+
+    expect(display.primaryValue).toBe(
+      formatProgressPercent((1 - progress.progressRatio) * 100, 2),
+    );
+    expect(display.secondaryValue).toBeNull();
+    expect(display.unitLabel).toBe('');
   });
 
   it('в режиме elapsed показывает дпп', () => {
@@ -138,9 +197,39 @@ describe('center and cards', () => {
   });
 
   it('подписывает плашки по фазе', () => {
-    expect(getPhaseCardTitle('before', 'service')).toBe('ДО ПРИЗЫВА');
-    expect(getPhaseCardTitle('after', 'service')).toBe('ПОСЛЕ ДЕМБЕЛЯ');
+    expect(getPhaseCardTitle('before', 'service')).toBe('осталось');
+    expect(getPhaseCardTitle('after', 'service')).toBe('прошло');
+    expect(getPhaseCardTitle('before', 'custom')).toBe('осталось');
+    expect(getPhaseCardTitle('after', 'custom')).toBe('прошло');
     expect(getPhaseCardTitle('active', 'custom')).toBe('осталось');
+  });
+
+  it('до призыва в days показывает склонённые дни до призыва', () => {
+    const beforeProgress = calculateServiceProgress(
+      ENLISTMENT,
+      DEMOBILIZATION,
+      at('2024-12-01'),
+    );
+    const labels = getCenterDisplayLabels('service');
+    const display = getCenterDisplayValues('days', beforeProgress, 0, 'remaining', labels);
+
+    expect(beforeProgress.phase).toBe('before');
+    expect(display.primaryValue).toBe('31');
+    expect(display.unitLabel).toBe('день до призыва');
+  });
+
+  it('до призыва на плашке показывает дней до призыва', () => {
+    const result = getServiceTimeBreakdowns(
+      ENLISTMENT,
+      DEMOBILIZATION,
+      at('2024-12-01'),
+    );
+    const card = getStatCardDisplay(result.remaining, 'days', {
+      phase: 'before',
+      kind: 'service',
+    });
+
+    expect(card.unitLabel).toBe('дней до призыва');
   });
 
   it('плашка в днях показывает часы-минуты-секунды', () => {

@@ -1,10 +1,9 @@
-import { formatCount, inflect } from '@/utils/inflection';
+import { formatCount, inflect, type InflectableNoun } from '@/utils/inflection';
 
 import { addDays, differenceInCalendarDays, format, startOfDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 import type { ProgressBarMode, StatCardMode, TimerCenterDisplay, TimerPhase } from '@/types/timer';
-import { PROGRESS_BAR_SEGMENT_COUNT } from '@/types/timer';
 
 export interface TimeBreakdown {
   days: number;
@@ -23,6 +22,8 @@ export interface ServiceProgress {
   progressRatio: number;
   progressPercent: number;
   filledSegments: Record<ProgressBarMode, number>;
+  /** Сколько сегментов рисовать в каждом режиме для этого срока */
+  segmentCounts: Record<ProgressBarMode, number>;
   weeksLeft: number;
   monthsLeft: number;
   weeksPassed: number;
@@ -99,6 +100,23 @@ export function getServiceTimeBreakdowns(
   };
 }
 
+const PROGRESS_BAR_MODES: ProgressBarMode[] = ['percent', 'days', 'weeks', 'months'];
+
+/** Сегменты прогресс-бара: проценты и «дни» — 100 долей, недели и месяцы — только целые единицы срока. */
+export function getProgressBarSegmentCount(mode: ProgressBarMode, totalDays: number): number {
+  const days = Math.max(0, totalDays);
+
+  switch (mode) {
+    case 'percent':
+    case 'days':
+      return 100;
+    case 'weeks':
+      return Math.max(1, Math.floor(days / 7));
+    case 'months':
+      return Math.max(1, Math.floor(days / 30));
+  }
+}
+
 /** Считает прогресс службы и количество закрашенных сегментов для каждого режима */
 export function calculateServiceProgress(
   enlistmentDate: Date,
@@ -120,19 +138,20 @@ export function calculateServiceProgress(
     phase === 'before' ? 0 : phase === 'after' ? 1 : totalDays > 0 ? clampRatio(daysPassed / totalDays) : 0;
   const progressPercent = progressRatio * 100;
 
-  const filledSegments = (Object.keys(PROGRESS_BAR_SEGMENT_COUNT) as ProgressBarMode[]).reduce(
-    (acc, mode) => {
-      if (phase === 'before') {
-        acc[mode] = 0;
-      } else if (phase === 'after') {
-        acc[mode] = PROGRESS_BAR_SEGMENT_COUNT[mode];
-      } else {
-        acc[mode] = getCompletedUnits(mode, daysPassed, progressPercent);
-      }
-      return acc;
-    },
-    {} as Record<ProgressBarMode, number>,
-  );
+  const segmentCounts = {} as Record<ProgressBarMode, number>;
+  const filledSegments = {} as Record<ProgressBarMode, number>;
+
+  for (const mode of PROGRESS_BAR_MODES) {
+    const count = getProgressBarSegmentCount(mode, totalDays);
+    segmentCounts[mode] = count;
+    if (phase === 'before') {
+      filledSegments[mode] = 0;
+    } else if (phase === 'after') {
+      filledSegments[mode] = count;
+    } else {
+      filledSegments[mode] = getCompletedUnits(mode, daysPassed, progressPercent, count);
+    }
+  }
 
   return {
     phase,
@@ -144,6 +163,7 @@ export function calculateServiceProgress(
     progressRatio,
     progressPercent,
     filledSegments,
+    segmentCounts,
     weeksLeft: daysLeft > 0 ? Math.ceil(daysLeft / 7) : 0,
     monthsLeft: daysLeft > 0 ? Math.ceil(daysLeft / 30) : 0,
     weeksPassed: Math.floor(daysPassed / 7),
@@ -156,14 +176,12 @@ function getCompletedUnits(
   mode: ProgressBarMode,
   daysPassed: number,
   progressPercent: number,
+  max: number,
 ): number {
-  const max = PROGRESS_BAR_SEGMENT_COUNT[mode];
-
   switch (mode) {
     case 'percent':
-      return Math.min(max, Math.floor(progressPercent));
     case 'days':
-      return Math.min(max, daysPassed);
+      return Math.min(max, Math.floor(progressPercent));
     case 'weeks':
       return Math.min(max, Math.floor(daysPassed / 7));
     case 'months':
@@ -183,11 +201,13 @@ export interface CenterDisplayValues {
 }
 
 export interface CenterDisplayLabels {
+  kind: 'service' | 'custom';
   before: string;
   after: string;
 }
 
 const DEFAULT_CENTER_LABELS: CenterDisplayLabels = {
+  kind: 'custom',
   before: 'до старта',
   after: 'после',
 };
@@ -207,20 +227,34 @@ export function getFrameDisplayValues(
 
 export function getCenterDisplayLabels(kind: 'service' | 'custom'): CenterDisplayLabels {
   if (kind === 'service') {
-    return { before: 'до призыва', after: 'после дембеля' };
+    return { kind, before: 'до призыва', after: 'после дембеля' };
   }
-  return { before: 'до начала', after: 'после' };
+  return { kind, before: 'до начала', after: 'после' };
+}
+
+/** Подпись единицы времени до призыва / после дембеля (или для своего таймера). */
+export function getPhaseUnitLabel(
+  count: number,
+  unit: InflectableNoun,
+  phase: 'before' | 'after',
+  kind: 'service' | 'custom',
+): string {
+  const word = inflect(count, unit);
+  if (phase === 'before') {
+    return kind === 'service' ? `${word} до призыва` : `${word} до начала`;
+  }
+  return kind === 'service' ? `${word} после дембеля` : `${word} после`;
 }
 
 export function getPhaseCardTitle(
   phase: TimerPhase,
-  kind: 'service' | 'custom',
-): 'прошло' | 'осталось' | 'ДО ПРИЗЫВА' | 'ПОСЛЕ ДЕМБЕЛЯ' | 'ДО НАЧАЛА' | 'ПОСЛЕ' {
+  _kind: 'service' | 'custom',
+): 'прошло' | 'осталось' {
   if (phase === 'before') {
-    return kind === 'service' ? 'ДО ПРИЗЫВА' : 'ДО НАЧАЛА';
+    return 'осталось';
   }
   if (phase === 'after') {
-    return kind === 'service' ? 'ПОСЛЕ ДЕМБЕЛЯ' : 'ПОСЛЕ';
+    return 'прошло';
   }
   return 'осталось';
 }
@@ -237,18 +271,34 @@ export function getCenterDisplayValues(
     const days = progress.daysUntilStart;
     const weeks = days > 0 ? Math.ceil(days / 7) : 0;
     const months = days > 0 ? Math.ceil(days / 30) : 0;
+    const { kind } = labels;
 
     if (mode === 'weeks') {
-      return { primaryValue: String(weeks), secondaryValue: null, unitLabel: inflect(weeks, 'week') };
+      return {
+        primaryValue: String(weeks),
+        secondaryValue: null,
+        unitLabel: getPhaseUnitLabel(weeks, 'week', 'before', kind),
+      };
     }
     if (mode === 'months') {
-      return { primaryValue: String(months), secondaryValue: null, unitLabel: inflect(months, 'month') };
+      return {
+        primaryValue: String(months),
+        secondaryValue: null,
+        unitLabel: getPhaseUnitLabel(months, 'month', 'before', kind),
+      };
+    }
+    if (mode === 'percent') {
+      return {
+        primaryValue: formatProgressPercent(0, decimalPlaces),
+        secondaryValue: null,
+        unitLabel: labels.before,
+      };
     }
 
     return {
       primaryValue: String(days),
       secondaryValue: formatProgressPercent(0, decimalPlaces),
-      unitLabel: labels.before,
+      unitLabel: getPhaseUnitLabel(days, 'day', 'before', kind),
     };
   }
 
@@ -256,18 +306,34 @@ export function getCenterDisplayValues(
     const days = progress.daysAfterEnd;
     const weeks = Math.floor(days / 7);
     const months = Math.floor(days / 30);
+    const { kind } = labels;
 
     if (mode === 'weeks') {
-      return { primaryValue: String(weeks), secondaryValue: null, unitLabel: inflect(weeks, 'week') };
+      return {
+        primaryValue: String(weeks),
+        secondaryValue: null,
+        unitLabel: getPhaseUnitLabel(weeks, 'week', 'after', kind),
+      };
     }
     if (mode === 'months') {
-      return { primaryValue: String(months), secondaryValue: null, unitLabel: inflect(months, 'month') };
+      return {
+        primaryValue: String(months),
+        secondaryValue: null,
+        unitLabel: getPhaseUnitLabel(months, 'month', 'after', kind),
+      };
+    }
+    if (mode === 'percent') {
+      return {
+        primaryValue: formatProgressPercent(100, decimalPlaces),
+        secondaryValue: null,
+        unitLabel: labels.after,
+      };
     }
 
     return {
       primaryValue: String(days),
       secondaryValue: formatProgressPercent(100, decimalPlaces),
-      unitLabel: labels.after,
+      unitLabel: getPhaseUnitLabel(days, 'day', 'after', kind),
     };
   }
 
@@ -282,14 +348,14 @@ export function getCenterDisplayValues(
   switch (mode) {
     case 'percent':
       return {
-        primaryValue: String(days),
-        secondaryValue: formatProgressPercent(percentValue, decimalPlaces),
-        unitLabel: useRemaining ? 'ддд' : 'дпп',
+        primaryValue: formatProgressPercent(percentValue, decimalPlaces),
+        secondaryValue: null,
+        unitLabel: '',
       };
     case 'days':
       return {
         primaryValue: String(days),
-        secondaryValue: null,
+        secondaryValue: formatProgressPercent(percentValue, decimalPlaces),
         unitLabel: useRemaining ? 'ддд' : 'дпп',
       };
     case 'weeks':
@@ -322,43 +388,70 @@ export interface StatCardDisplay {
 }
 
 /** Формирует содержимое плашки в зависимости от выбранного режима */
+export interface StatCardDisplayOptions {
+  phase?: TimerPhase;
+  kind?: 'service' | 'custom';
+}
+
 export function getStatCardDisplay(
   breakdown: TimeBreakdown,
   mode: StatCardMode | undefined,
+  options?: StatCardDisplayOptions,
 ): StatCardDisplay {
   const safeMode = mode ?? 'days';
+  const phase = options?.phase;
+  const kind = options?.kind ?? 'service';
+  const usePhaseLabel = phase === 'before' || phase === 'after';
 
   switch (safeMode) {
-    case 'days':
-      return {
+    case 'days': {
+      const display = {
         primaryValue: breakdown.days,
         unitLabel: inflect(breakdown.days, 'day'),
         detailLines: formatTimeBreakdownLines(breakdown),
       };
+      if (usePhaseLabel) {
+        display.unitLabel = getPhaseUnitLabel(breakdown.days, 'day', phase, kind);
+      }
+      return display;
+    }
     case 'weeks': {
       const weeks = Math.floor(breakdown.days / 7);
       const remainderDays = breakdown.days % 7;
-      return {
+      const display = {
         primaryValue: weeks,
         unitLabel: inflect(weeks, 'week'),
         detailLines: [formatCount(remainderDays, 'day')],
       };
+      if (usePhaseLabel) {
+        display.unitLabel = getPhaseUnitLabel(weeks, 'week', phase, kind);
+      }
+      return display;
     }
     case 'months': {
       const months = Math.floor(breakdown.days / 30);
       const remainderDays = breakdown.days % 30;
-      return {
+      const display = {
         primaryValue: months,
         unitLabel: inflect(months, 'month'),
         detailLines: [formatCount(remainderDays, 'day')],
       };
+      if (usePhaseLabel) {
+        display.unitLabel = getPhaseUnitLabel(months, 'month', phase, kind);
+      }
+      return display;
     }
-    default:
-      return {
+    default: {
+      const display = {
         primaryValue: breakdown.days,
         unitLabel: inflect(breakdown.days, 'day'),
         detailLines: formatTimeBreakdownLines(breakdown),
       };
+      if (usePhaseLabel) {
+        display.unitLabel = getPhaseUnitLabel(breakdown.days, 'day', phase, kind);
+      }
+      return display;
+    }
   }
 }
 
@@ -379,16 +472,10 @@ export interface DotGridMetrics {
 }
 
 const DOT_GRID_COLUMNS = 20;
-/** База для «года службы» при пересчёте недель и месяцев сетки */
-const DOT_GRID_YEAR_DAYS = 365;
 
-/** Всего ячеек недель/месяцев на сетке (365 дн. → 52 нед. / 12 мес.) */
+/** Всего ячеек недель/месяцев на сетке — те же целые единицы, что у сегментов прогресс-бара */
 export function getDotGridUnitTotal(mode: 'weeks' | 'months', totalDays: number): number {
-  const days = Math.max(1, totalDays);
-  if (mode === 'weeks') {
-    return Math.max(1, Math.round((days * 52) / DOT_GRID_YEAR_DAYS));
-  }
-  return Math.max(1, Math.round((days * 12) / DOT_GRID_YEAR_DAYS));
+  return getProgressBarSegmentCount(mode, totalDays);
 }
 
 /** Сколько единиц сетки уже «прошло» (последняя ячейка — дембель). */

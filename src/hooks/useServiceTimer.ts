@@ -101,7 +101,7 @@ function parseTimerSettings(
   const validModes: ProgressBarMode[] = ['percent', 'days', 'weeks', 'months'];
   const validStatCardModes: StatCardMode[] = ['days', 'weeks', 'months'];
   const validTypes: TimerType[] = ['circular', 'linear', 'frame', 'dotGrid', 'milestones'];
-  const validDotGridShapes = ['circle', 'square', 'heart'] as const;
+  const validDotGridShapes = ['circle', 'heart'] as const;
   const validMilestonesLayouts = ['spine', 'chips', 'checklist'] as const;
   const validCenterDisplays: TimerCenterDisplay[] = ['remaining', 'elapsed'];
   const validUpcomingModes: TimerUpcomingPreviewMode[] = ['off', 'nearest', 'pinned'];
