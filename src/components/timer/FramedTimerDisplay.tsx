@@ -1,8 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { EventGlyphBadge } from '@/components/events/EventGlyphBadge';
+import { timerEventGlyphColorOverride } from '@/components/timer/timerEventGlyphColor';
 import { CenterDisplayToggle } from '@/components/timer/CenterDisplayToggle';
 import type { TimerCenterDisplay } from '@/types/timer';
+import { timerPhotoTextStyles } from '@/components/timer/timerPhotoStyles';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 import type { EventGlyph } from '@/utils/eventGlyphs';
@@ -20,6 +22,7 @@ interface FramedTimerDisplayProps {
   photoBackground?: boolean;
   centerDisplay?: TimerCenterDisplay;
   onCenterDisplayChange?: (display: TimerCenterDisplay) => void;
+  omitDemobilizationCountdown?: boolean;
 }
 
 export function FramedTimerDisplay({
@@ -30,13 +33,16 @@ export function FramedTimerDisplay({
   photoBackground = false,
   centerDisplay = 'remaining',
   onCenterDisplayChange,
+  omitDemobilizationCountdown = false,
 }: FramedTimerDisplayProps) {
   const theme = useAppTheme();
   const textPrimary = photoBackground ? '#F2F0EC' : theme.text.primary;
   const textSecondary = photoBackground ? '#F2F0EC' : theme.text.secondary;
   const borderColor = photoBackground ? 'rgba(242, 240, 236, 0.92)' : theme.text.primary;
 
-  const showUpcomingSubtitle = upcoming ? formatTimerUpcomingCountdown(upcoming) : null;
+  const showUpcomingSubtitle = upcoming
+    ? formatTimerUpcomingCountdown(upcoming, new Date(), omitDemobilizationCountdown)
+    : null;
 
   return (
     <View style={styles.root}>
@@ -53,7 +59,11 @@ export function FramedTimerDisplay({
       <View style={[styles.frame, { borderColor }]}>
         <View style={styles.topSection}>
           <Text
-            style={[styles.primaryValue, { color: textPrimary }, photoBackground && styles.photoText]}
+            style={[
+              styles.primaryValue,
+              { color: textPrimary },
+              photoBackground && timerPhotoTextStyles.heroNumber,
+            ]}
             adjustsFontSizeToFit
             numberOfLines={1}
           >
@@ -70,8 +80,12 @@ export function FramedTimerDisplay({
           <>
             <View style={styles.dividerRow}>
               <View style={[styles.dividerLine, { backgroundColor: borderColor }]} />
-              <View style={[styles.iconWrap, photoBackground && styles.iconWrapPhoto]}>
-                <EventGlyphBadge glyph={glyph} compact />
+              <View style={styles.iconWrap}>
+                <EventGlyphBadge
+                  glyph={glyph}
+                  compact
+                  color={timerEventGlyphColorOverride(glyph, photoBackground)}
+                />
               </View>
               <View style={[styles.dividerLine, { backgroundColor: borderColor }]} />
             </View>
@@ -159,10 +173,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 6,
-  },
-  iconWrapPhoto: {
-    backgroundColor: 'rgba(0, 0, 0, 0.12)',
-    borderRadius: 4,
   },
   bottomSection: {
     alignItems: 'center',

@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { DotGridCellShape } from '@/types/timer';
 
@@ -37,20 +37,6 @@ export function DotGridLegendMark({
     );
   }
 
-  if (shape === 'square') {
-    return (
-      <View
-        style={{
-          width: size,
-          height: size,
-          backgroundColor: fillColor,
-          borderWidth: 1,
-          borderColor: stroke,
-        }}
-      />
-    );
-  }
-
   return (
     <View
       style={{
@@ -71,10 +57,6 @@ interface DotGridCellProps {
   isFinal: boolean;
   accent: string;
   emptyBorder: string;
-  /** Индекс в сетке — для линий у квадратов */
-  index: number;
-  columns: number;
-  total: number;
   cellSize: number;
 }
 
@@ -84,9 +66,6 @@ export function DotGridCell({
   isFinal,
   accent,
   emptyBorder,
-  index,
-  columns,
-  total,
   cellSize,
 }: DotGridCellProps) {
   const outline = isFinal && !filled ? accent : emptyBorder;
@@ -103,24 +82,6 @@ export function DotGridCell({
         />
       </View>
     );
-  }
-
-  if (shape === 'square') {
-    const col = index % columns;
-    const row = Math.floor(index / columns);
-    const lineColor = isFinal && !filled ? accent : emptyBorder;
-    const squareStyle: ViewStyle = {
-      width: cellSize,
-      height: cellSize,
-      backgroundColor: fillColor,
-      borderColor: lineColor,
-      borderTopWidth: row === 0 ? 1 : 0,
-      borderLeftWidth: col === 0 ? 1 : 0,
-      borderRightWidth: 1,
-      borderBottomWidth: 1,
-    };
-
-    return <View style={squareStyle} />;
   }
 
   return (

@@ -7,8 +7,10 @@ import type { ServiceProgress } from '@/utils/timerCalculations';
 import {
   formatProgressPercent,
   getDotGridUnitsLeft,
+  getPhaseUnitLabel,
 } from '@/utils/timerCalculations';
 import { inflect } from '@/utils/inflection';
+import { timerPhotoTextStyles } from '@/components/timer/timerPhotoStyles';
 import { layout, useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
@@ -16,6 +18,7 @@ interface TimerVizSummaryCardProps {
   progress: ServiceProgress;
   endDate: Date;
   decimalPlaces: number;
+  timerKind?: 'service' | 'custom';
   photoBackground?: boolean;
   dotGridUnitMode?: ProgressBarMode;
   upcomingHeadline?: string | null;
@@ -55,9 +58,25 @@ function HeroStatInline({
 }) {
   return (
     <View style={styles.heroInline}>
-      <Text style={[styles.heroNumber, strong, photoBackground && styles.photoText]}>{value}</Text>
+      <Text
+        style={[
+          styles.heroNumber,
+          strong,
+          photoBackground && timerPhotoTextStyles.heroNumber,
+        ]}
+      >
+        {value}
+      </Text>
       {valueIncludesPercent ? (
-        <Text style={[styles.heroNumber, strong, photoBackground && styles.photoText]}>%</Text>
+        <Text
+          style={[
+            styles.heroNumber,
+            strong,
+            photoBackground && timerPhotoTextStyles.heroNumber,
+          ]}
+        >
+          %
+        </Text>
       ) : null}
       <Text style={[styles.heroUnit, muted]}>{suffix}</Text>
     </View>
@@ -68,6 +87,7 @@ export function TimerVizSummaryCard({
   progress,
   endDate,
   decimalPlaces,
+  timerKind = 'service',
   photoBackground = false,
   dotGridUnitMode,
   upcomingHeadline = null,
@@ -126,23 +146,23 @@ export function TimerVizSummaryCard({
 
   const weeksSuffix =
     progress.phase === 'before'
-      ? ` ${inflect(weeksHero, 'week')} до старта`
+      ? ` ${getPhaseUnitLabel(weeksHero, 'week', 'before', timerKind)}`
       : progress.phase === 'after'
-        ? ` ${inflect(weeksHero, 'week')} после`
+        ? ` ${getPhaseUnitLabel(weeksHero, 'week', 'after', timerKind)}`
         : ` ${inflect(weeksHero, 'week')} осталось`;
 
   const monthsSuffix =
     progress.phase === 'before'
-      ? ` ${inflect(monthsHero, 'month')} до старта`
+      ? ` ${getPhaseUnitLabel(monthsHero, 'month', 'before', timerKind)}`
       : progress.phase === 'after'
-        ? ` ${inflect(monthsHero, 'month')} после`
+        ? ` ${getPhaseUnitLabel(monthsHero, 'month', 'after', timerKind)}`
         : ` ${inflect(monthsHero, 'month')} осталось`;
 
   const daysSuffix =
     progress.phase === 'before'
-      ? ' до старта'
+      ? ` ${getPhaseUnitLabel(daysHero, 'day', 'before', timerKind)}`
       : progress.phase === 'after'
-        ? ' после'
+        ? ` ${getPhaseUnitLabel(daysHero, 'day', 'after', timerKind)}`
         : ' ддд';
 
   const renderLeftCol = () => {

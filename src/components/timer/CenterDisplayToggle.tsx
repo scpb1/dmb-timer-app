@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { TimerCenterDisplay } from '@/types/timer';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 const ZONE_LABEL_ACTIVE_OPACITY = 0.55;
@@ -18,6 +18,9 @@ export function CenterDisplayToggle({
   onChange,
   photoBackground = false,
 }: CenterDisplayToggleProps) {
+  const theme = useAppTheme();
+  const labelColor = photoBackground ? '#F2F0EC' : theme.text.secondary;
+
   return (
     <View style={styles.row}>
       <View style={styles.spacer} />
@@ -34,6 +37,7 @@ export function CenterDisplayToggle({
             styles.label,
             photoBackground && styles.photoText,
             {
+              color: labelColor,
               opacity:
                 value === 'elapsed'
                   ? ZONE_LABEL_ACTIVE_OPACITY
@@ -60,6 +64,7 @@ export function CenterDisplayToggle({
             styles.label,
             photoBackground && styles.photoText,
             {
+              color: labelColor,
               opacity:
                 value === 'remaining'
                   ? ZONE_LABEL_ACTIVE_OPACITY
@@ -90,11 +95,9 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 12,
-    color: colors.light.text.secondary,
     textAlign: 'center',
   },
   photoText: {
-    color: '#F2F0EC',
     textShadowColor: 'rgba(0, 0, 0, 0.42)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,

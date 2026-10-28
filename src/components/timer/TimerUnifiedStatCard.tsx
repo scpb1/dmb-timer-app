@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { StatCardDisplay } from '@/utils/timerCalculations';
+import { timerPhotoTextStyles } from '@/components/timer/timerPhotoStyles';
 import {
   elapsedRemainingLabel,
   statCardUnitText,
@@ -43,7 +44,7 @@ function StatColumn({
           style={[
             styles.primaryValue,
             { color: theme.text.primary },
-            photoBackground && styles.photoText,
+            photoBackground && timerPhotoTextStyles.heroNumber,
           ]}
         >
           {display.primaryValue}

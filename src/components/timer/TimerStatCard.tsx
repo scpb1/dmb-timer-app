@@ -6,11 +6,12 @@ import {
   statCardUnitText,
 } from '@/components/timer/timerStatCardStyles';
 import type { StatCardDisplay } from '@/utils/timerCalculations';
+import { timerPhotoTextStyles } from '@/components/timer/timerPhotoStyles';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 interface TimerStatCardProps {
-  title: 'прошло' | 'осталось' | 'ДО ПРИЗЫВА' | 'ПОСЛЕ ДЕМБЕЛЯ' | 'ДО НАЧАЛА' | 'ПОСЛЕ';
+  title: 'прошло' | 'осталось';
   display: StatCardDisplay | undefined;
   photoBackground?: boolean;
   showBorder?: boolean;
@@ -56,7 +57,7 @@ export function TimerStatCard({
           style={[
             styles.primaryValue,
             { color: theme.text.primary },
-            photoBackground && styles.photoText,
+            photoBackground && timerPhotoTextStyles.heroNumber,
           ]}
         >
           {display.primaryValue}

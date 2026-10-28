@@ -1,18 +1,21 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { CenterDisplayToggle } from '@/components/timer/CenterDisplayToggle';
 import type { ProgressBarMode, TimerCenterDisplay } from '@/types/timer';
-import { PROGRESS_BAR_SEGMENT_COUNT } from '@/types/timer';
+import { timerPhotoTextStyles } from '@/components/timer/timerPhotoStyles';
 import { colors, useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 interface SegmentedCircularProgressProps {
-  mode: ProgressBarMode;
+  segmentCount: number;
   filledCount: number;
   primaryValue: string;
   secondaryValue?: string | null;
   unitLabel: string;
+  progressBarMode?: ProgressBarMode;
+  percentDecimalPlaces?: number;
   size?: number;
   photoBackground?: boolean;
   centerDisplay?: TimerCenterDisplay;
@@ -23,6 +26,19 @@ const DEFAULT_SIZE = 280;
 const RING_THICKNESS = 32;
 const GAP_ANGLE_DEG = 1.4;
 const CENTER_LINE_GAP = 6;
+
+function getPercentCenterTypography(decimalPlaces: number): {
+  fontSize: number;
+  lineHeight: number;
+} {
+  if (decimalPlaces === 0) {
+    return { fontSize: 42, lineHeight: 46 };
+  }
+  if (decimalPlaces === 1) {
+    return { fontSize: 36, lineHeight: 40 };
+  }
+  return { fontSize: 32, lineHeight: 36 };
+}
 
 function describeSegmentPath(
   cx: number,
@@ -57,42 +73,51 @@ function describeSegmentPath(
 }
 
 export function SegmentedCircularProgress({
-  mode,
+  segmentCount,
   filledCount,
   primaryValue,
   secondaryValue,
   unitLabel,
+  progressBarMode = 'days',
+  percentDecimalPlaces = 2,
   size = DEFAULT_SIZE,
   photoBackground = false,
   centerDisplay = 'remaining',
   onCenterDisplayChange,
 }: SegmentedCircularProgressProps) {
-  const segmentCount = PROGRESS_BAR_SEGMENT_COUNT[mode];
-  const center = size / 2;
-  const outerRadius = size / 2 - 8;
-  const innerRadius = outerRadius - RING_THICKNESS;
+  const count = Math.max(1, segmentCount);
+  const filled = Math.min(count, Math.max(0, filledCount));
   const theme = useAppTheme();
-  const angleStep = 360 / segmentCount;
-  const segmentSpan = Math.max(angleStep - GAP_ANGLE_DEG, angleStep * 0.6);
+  const accent = theme.text.accent;
+  const percentCenterType = getPercentCenterTypography(percentDecimalPlaces);
 
-  const segments = Array.from({ length: segmentCount }, (_, index) => {
-    const segmentCenter = index * angleStep + angleStep / 2;
-    const startAngle = segmentCenter - segmentSpan / 2;
-    const endAngle = segmentCenter + segmentSpan / 2;
-    const isFilled = index < filledCount;
+  const segments = useMemo(() => {
+    const center = size / 2;
+    const outerRadius = size / 2 - 8;
+    const innerRadius = outerRadius - RING_THICKNESS;
+    const angleStep = 360 / count;
+    const gapAngle = Math.min(GAP_ANGLE_DEG, angleStep * 0.22);
+    const segmentSpan = angleStep - gapAngle;
 
-    return {
-      key: index,
-      d: describeSegmentPath(center, center, innerRadius, outerRadius, startAngle, endAngle),
-      fill: photoBackground
-        ? isFilled
-          ? '#F2F0EC'
-          : 'rgba(242, 240, 236, 0.30)'
-        : isFilled
-          ? theme.text.accent
-          : 'rgba(167, 154, 138, 0.35)',
-    };
-  });
+    return Array.from({ length: count }, (_, index) => {
+      const segmentCenter = index * angleStep + angleStep / 2;
+      const startAngle = segmentCenter - segmentSpan / 2;
+      const endAngle = segmentCenter + segmentSpan / 2;
+      const isFilled = index < filled;
+
+      return {
+        key: index,
+        d: describeSegmentPath(center, center, innerRadius, outerRadius, startAngle, endAngle),
+        fill: photoBackground
+          ? isFilled
+            ? '#F2F0EC'
+            : 'rgba(242, 240, 236, 0.30)'
+          : isFilled
+            ? accent
+            : 'rgba(167, 154, 138, 0.35)',
+      };
+    });
+  }, [accent, count, filled, photoBackground, size]);
 
   return (
     <View style={[styles.block, { width: size }]}>
@@ -114,37 +139,69 @@ export function SegmentedCircularProgress({
         </Svg>
 
         <View style={styles.centerContent} pointerEvents="none">
-          {secondaryValue != null ? (
-            <Text
-              style={[
-                styles.secondaryValue,
-                { color: theme.text.secondary },
-                photoBackground && styles.photoText,
-              ]}
-            >
-              {secondaryValue}%
-            </Text>
-          ) : null}
-          <Text
-            style={[
-              styles.primaryValue,
-              { color: theme.text.primary },
-              photoBackground && styles.photoText,
-            ]}
-            adjustsFontSizeToFit
-            numberOfLines={1}
-          >
-            {primaryValue}
-          </Text>
-          <Text
-            style={[
-              styles.unitLabel,
-              { color: theme.text.secondary },
-              photoBackground && styles.photoText,
-            ]}
-          >
-            {unitLabel}
-          </Text>
+          {progressBarMode === 'percent' ? (
+            <>
+              <Text
+                style={[
+                  styles.primaryValue,
+                  styles.percentCenterValue,
+                  percentCenterType,
+                  { color: theme.text.primary },
+                  photoBackground && timerPhotoTextStyles.heroNumber,
+                ]}
+                adjustsFontSizeToFit
+                numberOfLines={1}
+              >
+                {primaryValue}%
+              </Text>
+              {unitLabel ? (
+                <Text
+                  style={[
+                    styles.unitLabel,
+                    styles.percentPhaseLabel,
+                    { color: theme.text.secondary },
+                    photoBackground && styles.photoText,
+                  ]}
+                >
+                  {unitLabel}
+                </Text>
+              ) : null}
+            </>
+          ) : (
+            <>
+              {secondaryValue != null ? (
+                <Text
+                  style={[
+                    styles.secondaryValue,
+                    { color: theme.text.secondary },
+                    photoBackground && styles.photoText,
+                  ]}
+                >
+                  {secondaryValue}%
+                </Text>
+              ) : null}
+              <Text
+                style={[
+                  styles.primaryValue,
+                  { color: theme.text.primary },
+                  photoBackground && timerPhotoTextStyles.heroNumber,
+                ]}
+                adjustsFontSizeToFit
+                numberOfLines={1}
+              >
+                {primaryValue}
+              </Text>
+              <Text
+                style={[
+                  styles.unitLabel,
+                  { color: theme.text.secondary },
+                  photoBackground && styles.photoText,
+                ]}
+              >
+                {unitLabel}
+              </Text>
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -186,6 +243,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.light.text.secondary,
     marginTop: -10,
+  },
+  percentCenterValue: {
+    marginTop: 0,
+  },
+  percentPhaseLabel: {
+    marginTop: 0,
   },
   photoText: {
     color: '#F2F0EC',

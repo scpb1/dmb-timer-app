@@ -103,7 +103,7 @@ export function TimerSwitcher({
                 ]}
                 numberOfLines={1}
               >
-                {serviceTimerName}
+                {serviceTimerName} (основной)
               </Text>
             </Pressable>
 
@@ -139,6 +139,22 @@ export function TimerSwitcher({
                 </Text>
               </Pressable>
             ))}
+
+            <View
+              style={[
+                styles.menuFooter,
+                {
+                  borderTopColor: theme.overlay.border,
+                  backgroundColor: theme.overlay.fill,
+                },
+              ]}
+            >
+              <Text style={[styles.menuFooterText, { color: theme.text.secondary }]}>
+                Сейчас приложение рассчитано на отслеживание одного человека. События, праздники и
+                остальные функции привязаны к основному таймеру. Полноценная работа с несколькими
+                таймерами появится в следующих версиях.
+              </Text>
+            </View>
           </View>
         </View>
       </Modal>
@@ -190,5 +206,15 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: typography.fontFamily.sans,
     fontSize: 16,
+  },
+  menuFooter: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  menuFooterText: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

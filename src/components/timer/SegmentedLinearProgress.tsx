@@ -1,14 +1,16 @@
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { CenterDisplayToggle } from '@/components/timer/CenterDisplayToggle';
 import type { ProgressBarMode, TimerCenterDisplay } from '@/types/timer';
-import { PROGRESS_BAR_SEGMENT_COUNT } from '@/types/timer';
 import type { LinearDisplayValues } from '@/utils/timerCalculations';
+import { timerPhotoTextStyles } from '@/components/timer/timerPhotoStyles';
 import { colors, useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 interface SegmentedLinearProgressProps {
   mode: ProgressBarMode;
+  segmentCount: number;
   filledCount: number;
   display: LinearDisplayValues;
   centerDisplay?: TimerCenterDisplay;
@@ -18,17 +20,37 @@ interface SegmentedLinearProgressProps {
 
 const BAR_HEIGHT = 24;
 const SEGMENT_GAP = 2;
-const BAR_INSET = 5;
+const MIN_SEGMENT_WIDTH = 1.5;
+
+function resolveSegmentGap(segmentCount: number, trackWidth: number): number {
+  if (segmentCount <= 1) {
+    return 0;
+  }
+  if (trackWidth <= 0) {
+    return segmentCount > 120 ? 0 : SEGMENT_GAP;
+  }
+
+  const available = trackWidth - segmentCount * MIN_SEGMENT_WIDTH;
+  if (available <= 0) {
+    return 0;
+  }
+
+  return Math.min(SEGMENT_GAP, available / (segmentCount - 1));
+}
 
 export function SegmentedLinearProgress({
   mode,
+  segmentCount,
   filledCount,
   display,
   centerDisplay = 'remaining',
   onCenterDisplayChange,
   photoBackground = false,
 }: SegmentedLinearProgressProps) {
-  const segmentCount = PROGRESS_BAR_SEGMENT_COUNT[mode];
+  const count = Math.max(1, segmentCount);
+  const filled = Math.min(count, Math.max(0, filledCount));
+  const [trackWidth, setTrackWidth] = useState(0);
+  const gap = resolveSegmentGap(count, trackWidth);
   const theme = useAppTheme();
 
   return (
@@ -44,9 +66,15 @@ export function SegmentedLinearProgress({
           </View>
         ) : null}
 
-        <View style={styles.bar}>
-          {Array.from({ length: segmentCount }, (_, index) => {
-            const isFilled = index < filledCount;
+        <View
+          style={[styles.bar, { gap }]}
+          onLayout={(event) => {
+            const width = event.nativeEvent.layout.width;
+            setTrackWidth((prev) => (prev === width ? prev : width));
+          }}
+        >
+          {Array.from({ length: count }, (_, index) => {
+            const isFilled = index < filled;
             return (
               <View
                 key={`${index}-${isFilled ? 'on' : 'off'}`}
@@ -74,7 +102,7 @@ export function SegmentedLinearProgress({
             style={[
               styles.percentText,
               { color: theme.text.primary },
-              photoBackground && styles.photoText,
+              photoBackground && timerPhotoTextStyles.heroNumber,
             ]}
           >
             {display.percentText}
@@ -85,7 +113,7 @@ export function SegmentedLinearProgress({
               style={[
                 styles.valueText,
                 { color: theme.text.primary },
-                photoBackground && styles.photoText,
+                photoBackground && timerPhotoTextStyles.heroNumber,
               ]}
             >
               {display.primaryValue}
@@ -113,7 +141,6 @@ const styles = StyleSheet.create({
   },
   track: {
     width: '100%',
-    paddingHorizontal: BAR_INSET,
   },
   zoneLabelsRow: {
     width: '100%',
@@ -123,7 +150,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
     height: BAR_HEIGHT,
-    gap: SEGMENT_GAP,
   },
   segment: {
     flex: 1,
