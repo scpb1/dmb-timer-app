@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Обложка к приветственному посту</title>
+  <style>
+    @font-face {
+      font-family: "DDD Sans";
+      src: url("../../assets/fonts/dmb-timer-sans.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "DDD Sans";
+      src: url("../../assets/fonts/dmb-timer-sans-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Black Ops One";
+      src: url("../../assets/fonts/BlackOpsOne-Regular.otf") format("opentype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --cream: #fcf7df;
+      --brown: #3e3630;
+      --red: #e53935;
+      --ink-soft: #7c7064;
+      --page: #e6dfd0;
+      --blush-a: #fbf0ee;
+      --blush-b: #f3d9d6;
+      --blush-c: #e8c4c0;
+      --blush-ink: #4a2f32;
+      --blush-soft: #8d5c62;
+      --blush-red: #c43b4a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "DDD Sans", "Segoe UI", system-ui, sans-serif;
+      background: var(--page);
+      color: var(--brown);
+    }
+
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2.2rem 1.25rem 4rem;
+    }
+
+    h1 {
+      margin: 0 0 0.4rem;
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .lead {
+      margin: 0 0 1.75rem;
+      max-width: 42rem;
+      color: var(--ink-soft);
+      font-size: 0.98rem;
+      line-height: 1.5;
+    }
+
+    h2 {
+      margin: 2.4rem 0 0.85rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+
+    .grid.banners {
+      grid-template-columns: 1fr;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.6rem 1.25rem;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .card a.shot {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .frame {
+      width: 100%;
+      aspect-ratio: 1;
+      container-type: size;
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 10px 28px rgba(62, 54, 48, 0.08);
+    }
+
+    .fill {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .cream { background: var(--cream); color: var(--brown); }
+    .blush {
+      background: linear-gradient(165deg, var(--blush-a) 0%, var(--blush-b) 58%, var(--blush-c) 100%);
+      color: var(--blush-ink);
+    }
+
+    .center {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .pad {
+      padding: 11cqw 10cqw 10cqw;
+      justify-content: center;
+    }
+
+    .mark {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      font-weight: 800;
+      font-size: 26cqw;
+      letter-spacing: -0.045em;
+      line-height: 0.85;
+    }
+
+    .bar {
+      width: 34cqw;
+      height: 1.65cqw;
+      border-radius: 999px;
+      background: var(--red);
+      margin-top: 4.2cqw;
+      flex: none;
+    }
+
+    .bar.short { width: 16cqw; }
+    .bar.mid { width: 22cqw; }
+    .bar.blush-bar { background: var(--blush-red); }
+
+    .eye {
+      font-size: 3.1cqw;
+      font-weight: 700;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 3.4cqw;
+    }
+
+    .hero {
+      font-weight: 700;
+      font-size: 17.5cqw;
+      letter-spacing: -0.045em;
+      line-height: 0.88;
+    }
+
+    .sub {
+      margin-top: 4.6cqw;
+      font-size: 4.15cqw;
+      letter-spacing: 0.01em;
+      color: var(--ink-soft);
+    }
+
+    .stack {
+      padding: 13cqw 11cqw;
+      justify-content: center;
+    }
+
+    .names {
+      display: flex;
+      flex-direction: column;
+      gap: 1.1cqw;
+      font-weight: 700;
+      font-size: 8.15cqw;
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+    }
+
+    .corner {
+      position: absolute;
+      right: 11cqw;
+      bottom: 9.5cqw;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      font-weight: 800;
+      font-size: 5.2cqw;
+      letter-spacing: -0.04em;
+    }
+
+    .logo-row {
+      position: absolute;
+      top: 10cqw;
+      left: 10cqw;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .mini {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      font-weight: 800;
+      font-size: 7.2cqw;
+      letter-spacing: -0.045em;
+      line-height: 0.85;
+    }
+
+    .logo-row .bar {
+      width: 9.2cqw;
+      height: 0.7cqw;
+      margin-top: 1.5cqw;
+    }
+
+    .hello {
+      font-size: 7.4cqw;
+      font-weight: 400;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: var(--ink-soft);
+    }
+
+    .name {
+      margin-top: 1.2cqw;
+      font-size: 14.5cqw;
+      font-weight: 700;
+      letter-spacing: -0.045em;
+      line-height: 0.92;
+    }
+
+    .sign {
+      margin-top: 5.5cqw;
+      font-size: 3.7cqw;
+      color: var(--ink-soft);
+    }
+
+    .kicker {
+      font-size: 3.3cqw;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 4.2cqw;
+    }
+
+    .phrase {
+      font-weight: 700;
+      font-size: 9.2cqw;
+      letter-spacing: -0.04em;
+      line-height: 0.92;
+    }
+
+    .phrase em {
+      font-style: normal;
+      display: block;
+      font-size: 1.55em;
+      letter-spacing: -0.05em;
+    }
+
+    .chips {
+      margin-top: 5cqw;
+      font-size: 3.55cqw;
+      letter-spacing: 0.01em;
+      color: var(--ink-soft);
+    }
+
+    .blush .kicker,
+    .blush .chips,
+    .blush .hello,
+    .blush .sign,
+    .blush .flank { color: var(--blush-soft); }
+
+    .frame.r16 { aspect-ratio: 16 / 9; border-radius: 18px; }
+    .frame.r21 { aspect-ratio: 21 / 9; border-radius: 16px; }
+
+    .r16 .mark,
+    .r21 .mark { font-size: 38cqh; }
+
+    .r16 .bar,
+    .r21 .bar {
+      width: 64cqh;
+      height: 2.3cqh;
+      margin-top: 4.6cqh;
+    }
+
+    .r16 .bar.for-mark,
+    .r21 .bar.for-mark { width: 48cqh; }
+
+    .r16 .bar.short,
+    .r21 .bar.short { width: 28cqh; }
+
+    .r16 .bar.mid,
+    .r21 .bar.mid { width: 40cqh; }
+
+    .r16 .eye,
+    .r21 .eye {
+      font-size: 6.4cqh;
+      letter-spacing: 0.28em;
+      margin-bottom: 2.8cqh;
+    }
+
+    .r16 .hero { font-size: 28cqh; }
+    .r21 .hero { font-size: 32cqh; }
+
+    .r16 .sub,
+    .r21 .sub {
+      margin-top: 4cqh;
+      font-size: 8.2cqh;
+    }
+
+    .r16 .kicker,
+    .r21 .kicker {
+      font-size: 5.4cqh;
+      margin-bottom: 2.4cqh;
+      letter-spacing: 0.2em;
+    }
+
+    .r16 .phrase.inline,
+    .r21 .phrase.inline { font-size: 14cqh; }
+
+    .phrase.inline em {
+      display: inline;
+      font-size: 1.4em;
+    }
+
+    .r16 .chips { font-size: 7.2cqh; margin-top: 3.6cqh; }
+    .r21 .chips { font-size: 8cqh; margin-top: 0; }
+
+    .names.row {
+      flex-direction: row;
+      align-items: baseline;
+      white-space: nowrap;
+      gap: 0.55em;
+    }
+
+    .r16 .names.row { font-size: 8.4cqh; }
+    .r21 .names.row { font-size: 11cqh; gap: 0.65em; }
+
+    .names.row .sig {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      font-weight: 800;
+      font-size: 0.58em;
+      margin-left: 0.85em;
+      letter-spacing: -0.04em;
+    }
+
+    .split {
+      flex-direction: row;
+      align-items: center;
+      padding: 0 7cqh;
+      gap: 5cqh;
+    }
+
+    .split .logo-row { position: static; }
+
+    .r16 .split .mini,
+    .r21 .split .mini { font-size: 15cqh; }
+
+    .r16 .split .logo-row .bar,
+    .r21 .split .logo-row .bar {
+      width: 18cqh;
+      height: 1.5cqh;
+      margin-top: 1.8cqh;
+    }
+
+    .who {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .r16 .split .hello { font-size: 7.6cqh; }
+    .r21 .split .hello { font-size: 8.4cqh; }
+
+    .r16 .split .name {
+      font-size: 16cqh;
+      margin-top: 0.4cqh;
+    }
+
+    .r21 .split .name {
+      font-size: 18cqh;
+      margin-top: 0;
+    }
+
+    .who.one {
+      flex-direction: row;
+      align-items: baseline;
+      gap: 0.28em;
+    }
+
+    .r16 .split .sign,
+    .r21 .split .sign {
+      margin-top: 0;
+      margin-left: auto;
+      font-size: 7.4cqh;
+    }
+
+    .band {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 0 5cqh;
+      column-gap: 4cqh;
+    }
+
+    .band > :first-child { justify-self: end; text-align: right; }
+    .band > :last-child { justify-self: start; text-align: left; }
+
+    .r21 .band .hero { font-size: 26cqh; }
+    .r21 .flank { font-size: 7cqh; }
+
+    .band-mid {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: none;
+    }
+
+    .band .bar { margin-top: 2.6cqh; }
+
+    .flank {
+      font-size: 7.6cqh;
+      color: var(--ink-soft);
+      white-space: nowrap;
+    }
+
+    .tick {
+      width: 2.1cqh;
+      height: 16cqh;
+      border-radius: 999px;
+      background: var(--red);
+      flex: none;
+    }
+
+    .tick.blush-tick { background: var(--blush-red); }
+
+    .r21 .band .phrase.inline { font-size: 15cqh; }
+
+    .upload {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem 1.1rem;
+      margin: 0 0 1.15rem;
+    }
+    .upload label {
+      display: inline-flex;
+      align-items: center;
+      background: var(--cream);
+      border-radius: 999px;
+      padding: 0.48rem 0.95rem;
+      font-weight: 700;
+      font-size: 0.92rem;
+      cursor: pointer;
+    }
+    .upload input { display: none; }
+    .upload p {
+      margin: 0;
+      max-width: 38rem;
+      color: var(--ink-soft);
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    .timer-frame {
+      width: 64cqw;
+      border: 0.38cqw solid currentColor;
+      padding: 6.5cqw 3.5cqw 5.5cqw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+    .num {
+      font-family: "Black Ops One", "DDD Sans", sans-serif;
+      font-size: 18cqw;
+      line-height: 0.82;
+      letter-spacing: 0.01em;
+    }
+    .unit { margin-top: 1.8cqw; font-size: 4.2cqw; }
+    .unit.soft {
+      margin-top: 2.6cqw;
+      font-size: 3.4cqw;
+      color: var(--ink-soft);
+    }
+    .hair {
+      width: 70%;
+      height: 0.28cqw;
+      margin-top: 3.6cqw;
+      background: currentColor;
+      opacity: 0.8;
+    }
+    .timer-frame.light { color: #f2f0ec; width: 58cqw; }
+    .timer-frame.light .unit.soft { color: rgba(242, 240, 236, 0.78); }
+
+    .photo-slot {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(165deg, #f6e3dc 0%, #e4cfc3 52%, #d3c3b0 100%) center / cover no-repeat;
+    }
+    .photo-slot .hint {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 3cqw;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(62, 54, 48, 0.42);
+    }
+    .photo-slot .crop {
+      position: absolute;
+      inset: 9%;
+      border: 1px solid rgba(62, 54, 48, 0.22);
+      pointer-events: none;
+    }
+    .photo-slot.has-photo .hint,
+    .photo-slot.has-photo .crop { display: none; }
+
+    .photo-split { flex-direction: row; }
+    .photo-split .photo-slot { width: 46%; height: 100%; flex: none; }
+    .photo-copy {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 8cqw 6.5cqw;
+      min-width: 0;
+    }
+    .photo-copy .mini { font-size: 5.6cqw; }
+    .photo-copy .bar { width: 7.4cqw; height: 0.65cqw; margin-top: 1.3cqw; }
+    .photo-copy .hello {
+      margin-top: 7cqw;
+      font-size: 4.6cqw;
+      color: var(--ink-soft);
+    }
+    .photo-copy .name { font-size: 7.4cqw; margin-top: 0.5cqw; }
+
+    .photo-cover .photo-slot {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(165deg, #b7a89c, #7d6a60 58%, #3e3630) center / cover no-repeat;
+    }
+    .photo-cover .hint { display: none; }
+    .scrim {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: linear-gradient(180deg, rgba(28, 25, 22, 0.12), rgba(28, 25, 22, 0.05) 42%, rgba(28, 25, 22, 0.55));
+    }
+
+    .arc { width: 70cqw; height: 70cqw; position: relative; }
+    .arc svg { width: 100%; height: 100%; display: block; }
+    .arc-label {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+    }
+    .arc-title {
+      font-weight: 700;
+      font-size: 8.2cqw;
+      letter-spacing: -0.04em;
+      line-height: 0.92;
+      text-align: center;
+    }
+
+    .index-title {
+      font-weight: 700;
+      font-size: 12.5cqw;
+      letter-spacing: -0.045em;
+      line-height: 0.9;
+    }
+    .index {
+      list-style: none;
+      margin: 5.5cqw 0 0;
+      padding: 0;
+      width: 100%;
+    }
+    .index li {
+      display: flex;
+      align-items: baseline;
+      gap: 3cqw;
+      padding-top: 2.3cqw;
+      margin-top: 2.1cqw;
+      border-top: 0.22cqw solid rgba(62, 54, 48, 0.2);
+      font-size: 5.2cqw;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .index b {
+      font-weight: 400;
+      color: var(--ink-soft);
+      letter-spacing: 0.08em;
+      font-size: 0.78em;
+      width: 2.4em;
+      flex: none;
+    }
+
+    .r16 .photo-split .photo-slot { width: 40%; }
+    .r16 .photo-copy {
+      justify-content: center;
+      align-items: flex-start;
+      padding: 0 7cqh;
+    }
+    .r16 .photo-copy .eye { font-size: 4.6cqh; margin-bottom: 1.6cqh; }
+    .r16 .photo-copy .hero { font-size: 16cqh; }
+    .r16 .photo-copy .bar { width: 28cqh; height: 1.7cqh; margin-top: 2.4cqh; }
+    .r16 .photo-copy .sub { font-size: 5.6cqh; margin-top: 2.6cqh; }
+    .r16 .photo-slot .hint { font-size: 3.4cqh; }
+
+    .cap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      padding: 0 0.15rem;
+    }
+
+    .cap strong {
+      font-size: 0.98rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .cap span {
+      color: var(--ink-soft);
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    .poster:target {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      background: #1c1916;
+      display: grid;
+      place-items: center;
+      visibility: visible;
+    }
+
+    .poster:target .frame {
+      width: min(92vmin, 1080px);
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .poster:target .frame.r16 {
+      width: min(94vw, calc(90vh * 16 / 9));
+    }
+
+    .poster:target .frame.r21 {
+      width: min(96vw, calc(86vh * 21 / 9));
+    }
+
+    .poster:target .cap { display: none; }
+
+    .close {
+      display: none;
+    }
+
+    .poster:target .close {
+      display: block;
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 6;
+      color: var(--cream);
+      text-decoration: none;
+      font-size: 0.92rem;
+      opacity: 0.8;
+    }
+
+    body:has(.poster:target) .page { visibility: hidden; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>Обложка к приветственному посту</h1>
+    <p class="lead">
+      Крем <code>#FCF7DF</code>, коричневый <code>#3E3630</code>, красная плашка.
+      На картинке только крючок — пост остаётся текстом. Клик открывает кадр крупно, чтобы снять его для Telegram.
+    </p>
+
+    <h2>1:1</h2>
+    <div class="grid">
+      <article class="card poster" id="mark">
+        <a class="shot" href="#mark">
+          <div class="frame">
+            <div class="fill cream center">
+              <div class="mark">ддд</div>
+              <div class="bar"></div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>А · как иконка</strong>
+          <span>Чистый знак. Текст поста говорит сам, картинка только узнаётся.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="zhuli">
+        <a class="shot" href="#zhuli">
+          <div class="frame">
+            <div class="fill cream center">
+              <div class="eye">они же</div>
+              <div class="hero">Ждули.</div>
+              <div class="bar"></div>
+              <div class="sub">девушки солдата</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Б · заголовок поста</strong>
+          <span>Первая строка текста. Прямой крючок для тех, кто узнает себя.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="names">
+        <a class="shot" href="#names">
+          <div class="frame">
+            <div class="fill cream stack">
+              <div class="names">
+                <span>Ждули.</span>
+                <span>КПП-шницы.</span>
+                <span>Любимки.</span>
+              </div>
+              <div class="bar short"></div>
+              <div class="corner">ддд</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>В · три имени</strong>
+          <span>Словарь поста списком. Знак «ддд» в углу, как подпись.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="sonya">
+        <a class="shot" href="#sonya">
+          <div class="frame">
+            <div class="fill cream pad">
+              <div class="logo-row">
+                <div class="mini">ддд</div>
+                <div class="bar"></div>
+              </div>
+              <div class="hello">привет,</div>
+              <div class="name">я соня</div>
+              <div class="sign">рада знакомству</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Г · знакомство</strong>
+          <span>Если картинка должна представить тебя, а не тему. Знак маленький, сверху.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="numbers">
+        <a class="shot" href="#numbers">
+          <div class="frame">
+            <div class="fill cream pad center">
+              <div class="kicker">счётчик</div>
+              <div class="phrase">не ради<em>цифр</em></div>
+              <div class="bar mid" style="align-self: center"></div>
+              <div class="chips">звонки · встречи · мысли</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Д · обещание</strong>
+          <span>Зачем заходить в таймер. Строка из поста, без пересказа всего абзаца.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="year">
+        <a class="shot" href="#year">
+          <div class="frame">
+            <div class="fill blush center">
+              <div class="eye" style="color: var(--blush-soft)">запечатлеть</div>
+              <div class="hero">этот год</div>
+              <div class="bar blush-bar"></div>
+              <div class="sub" style="color: var(--blush-soft)">звонки, встречи, мысли</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Е · румяна</strong>
+          <span>Та же типографика, палитра темы «Румяна». Мягче, ближе к дневнику.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+    </div>
+
+    <h2>16:9</h2>
+    <div class="grid banners">
+      <article class="card poster" id="mark-16">
+        <a class="shot" href="#mark-16">
+          <div class="frame r16">
+            <div class="fill cream center">
+              <div class="mark">ддд</div>
+              <div class="bar for-mark"></div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>А · как иконка</strong>
+          <span>Знак по центру широкого поля, как титр.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="zhuli-16">
+        <a class="shot" href="#zhuli-16">
+          <div class="frame r16">
+            <div class="fill cream center">
+              <div class="eye">они же</div>
+              <div class="hero">Ждули.</div>
+              <div class="bar"></div>
+              <div class="sub">девушки солдата</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Б · заголовок поста</strong>
+          <span>Та же стопка, что в квадрате, только с воздухом по бокам.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="names-16">
+        <a class="shot" href="#names-16">
+          <div class="frame r16">
+            <div class="fill cream center">
+              <div class="names row">
+                <span>Ждули.</span>
+                <span>КПП-шницы.</span>
+                <span>Любимки.</span>
+                <span class="sig">ддд</span>
+              </div>
+              <div class="bar short"></div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>В · три имени</strong>
+          <span>Имена в одну строку. Знак «ддд» в конце строки.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="sonya-16">
+        <a class="shot" href="#sonya-16">
+          <div class="frame r16">
+            <div class="fill cream split">
+              <div class="logo-row">
+                <div class="mini">ддд</div>
+                <div class="bar"></div>
+              </div>
+              <div class="who">
+                <div class="hello">привет,</div>
+                <div class="name">я соня</div>
+              </div>
+              <div class="sign">рада знакомству</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Г · знакомство</strong>
+          <span>Знак слева, имя рядом, подпись у правого края.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="numbers-16">
+        <a class="shot" href="#numbers-16">
+          <div class="frame r16">
+            <div class="fill cream center">
+              <div class="kicker">счётчик</div>
+              <div class="phrase inline">не ради <em>цифр</em></div>
+              <div class="bar mid"></div>
+              <div class="chips">звонки · встречи · мысли</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Д · обещание</strong>
+          <span>«цифр» в той же строке, что и «не ради».</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="year-16">
+        <a class="shot" href="#year-16">
+          <div class="frame r16">
+            <div class="fill blush center">
+              <div class="eye" style="color: var(--blush-soft)">запечатлеть</div>
+              <div class="hero">этот год</div>
+              <div class="bar blush-bar"></div>
+              <div class="sub" style="color: var(--blush-soft)">звонки, встречи, мысли</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Е · румяна</strong>
+          <span>Широкий кадр в теме «Румяна».</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+    </div>
+
+    <h2>21:9</h2>
+    <div class="grid banners">
+      <article class="card poster" id="mark-21">
+        <a class="shot" href="#mark-21">
+          <div class="frame r21">
+            <div class="fill cream center">
+              <div class="mark">ддд</div>
+              <div class="bar for-mark"></div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>А · как иконка</strong>
+          <span>Киношный титр: знак и много крема.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="zhuli-21">
+        <a class="shot" href="#zhuli-21">
+          <div class="frame r21">
+            <div class="fill cream band">
+              <div class="flank">они же</div>
+              <div class="band-mid">
+                <div class="hero">Ждули.</div>
+                <div class="bar"></div>
+              </div>
+              <div class="flank">девушки солдата</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Б · заголовок поста</strong>
+          <span>Слово по центру, пояснения по бокам от него.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="names-21">
+        <a class="shot" href="#names-21">
+          <div class="frame r21">
+            <div class="fill cream center">
+              <div class="names row">
+                <span>Ждули.</span>
+                <span>КПП-шницы.</span>
+                <span>Любимки.</span>
+                <span class="sig">ддд</span>
+              </div>
+              <div class="bar short"></div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>В · три имени</strong>
+          <span>Строка растянута под ультраширокий кадр.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="sonya-21">
+        <a class="shot" href="#sonya-21">
+          <div class="frame r21">
+            <div class="fill cream split">
+              <div class="logo-row">
+                <div class="mini">ддд</div>
+                <div class="bar"></div>
+              </div>
+              <div class="who one">
+                <div class="hello">привет,</div>
+                <div class="name">я соня</div>
+              </div>
+              <div class="sign">рада знакомству</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Г · знакомство</strong>
+          <span>Имя в одну строку между знаком и подписью.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="numbers-21">
+        <a class="shot" href="#numbers-21">
+          <div class="frame r21">
+            <div class="fill cream band">
+              <div class="phrase inline">не ради <em>цифр</em></div>
+              <div class="tick"></div>
+              <div class="chips">звонки · встречи · мысли</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Д · обещание</strong>
+          <span>Фраза и расшифровка рядом, между ними красная черта.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="year-21">
+        <a class="shot" href="#year-21">
+          <div class="frame r21">
+            <div class="fill blush center">
+              <div class="eye" style="color: var(--blush-soft)">запечатлеть</div>
+              <div class="hero">этот год</div>
+              <div class="bar blush-bar"></div>
+              <div class="sub" style="color: var(--blush-soft)">звонки, встречи, мысли</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Е · румяна</strong>
+          <span>Титр по центру: по бокам фраза не помещалась бы.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+    </div>
+
+    <h2>С объектом</h2>
+    <div class="upload">
+      <label>
+        подставить своё фото
+        <input id="photo-file" type="file" accept="image/*" />
+      </label>
+      <p>Файл остаётся в этом браузере и встаёт в кадры с портретом. Цифра 365 на макете — не твой отсчёт.</p>
+    </div>
+    <div class="grid">
+      <article class="card poster" id="timer">
+        <a class="shot" href="#timer">
+          <div class="frame">
+            <div class="fill cream center">
+              <div class="timer-frame">
+                <div class="num">365</div>
+                <div class="unit">дней</div>
+                <div class="hair"></div>
+                <div class="unit soft">осталось</div>
+              </div>
+              <div class="corner">ддд</div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Ж · рамка таймера</strong>
+          <span>Как на экране: тонкая рамка, цифра шрифтом счётчика. Знак в углу.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="portrait">
+        <a class="shot" href="#portrait">
+          <div class="frame">
+            <div class="fill cream photo-split">
+              <div class="photo-slot" data-photo>
+                <span class="crop"></span>
+                <span class="hint">твоё фото</span>
+              </div>
+              <div class="photo-copy">
+                <div class="mini">ддд</div>
+                <div class="bar"></div>
+                <div class="hello">привет,</div>
+                <div class="name">я соня</div>
+              </div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>З · портрет</strong>
+          <span>Пост про знакомство. Лицо слева, имя справа. Сюда лучше всего твоя фотография.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="on-photo">
+        <a class="shot" href="#on-photo">
+          <div class="frame">
+            <div class="fill cream center photo-cover">
+              <div class="photo-slot" data-photo>
+                <span class="hint">твоё фото</span>
+              </div>
+              <div class="scrim"></div>
+              <div class="timer-frame light">
+                <div class="num">365</div>
+                <div class="unit">дней</div>
+                <div class="hair"></div>
+                <div class="unit soft">осталось</div>
+              </div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>И · таймер на фото</strong>
+          <span>Так приложение выглядит с твоим снимком на фоне: светлая рамка поверх кадра.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="arc">
+        <a class="shot" href="#arc">
+          <div class="frame">
+            <div class="fill cream center">
+              <div class="arc">
+                <svg viewBox="0 0 100 100" aria-hidden="true">
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="#3E3630" stroke-width="0.7" />
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="#E53935" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="72 205" transform="rotate(-90 50 50)" />
+                </svg>
+                <div class="arc-label">
+                  <div class="arc-title">этот<br />год</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>К · дуга года</strong>
+          <span>Один графический знак вместо картинки. Красная дуга — кусок пути, не настоящий прогресс.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+
+      <article class="card poster" id="index">
+        <a class="shot" href="#index">
+          <div class="frame">
+            <div class="fill cream stack">
+              <div class="index-title">Ждули.</div>
+              <div class="bar short"></div>
+              <ol class="index">
+                <li><b>01</b>звонки</li>
+                <li><b>02</b>встречи</li>
+                <li><b>03</b>мысли</li>
+              </ol>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>Л · содержание</strong>
+          <span>Как страница журнала: заголовок и три строки, ради которых таймер вообще нужен.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+    </div>
+
+    <div class="grid banners" style="margin-top: 1.4rem">
+      <article class="card poster" id="portrait-16">
+        <a class="shot" href="#portrait-16">
+          <div class="frame r16">
+            <div class="fill cream photo-split">
+              <div class="photo-slot" data-photo>
+                <span class="crop"></span>
+                <span class="hint">твоё фото</span>
+              </div>
+              <div class="photo-copy">
+                <div class="eye">они же</div>
+                <div class="hero">Ждули.</div>
+                <div class="bar"></div>
+                <div class="sub">девушки солдата</div>
+              </div>
+            </div>
+          </div>
+        </a>
+        <div class="cap">
+          <strong>З · портрет, 16:9</strong>
+          <span>То же фото на широком кадре, справа заголовок поста.</span>
+        </div>
+        <a class="close" href="#">закрыть</a>
+      </article>
+    </div>
+  </main>
+  <script>
+    document.getElementById("photo-file").addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      document.querySelectorAll("[data-photo]").forEach((slot) => {
+        slot.style.backgroundImage = "url(" + JSON.stringify(url) + ")";
+        slot.classList.add("has-photo");
+      });
+    });
+  </script>
+</body>
+</html>
