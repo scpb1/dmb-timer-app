@@ -3,7 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { DotGridLegendMark } from '@/components/timer/DotGridCell';
-import { layout, useAppTheme } from '@/theme';
+import { progressEmptyColor } from '@/components/timer/progressSegmentColors';
+import { layout, useAppTheme, useColorTheme } from '@/theme';
+import { withAlpha } from '@/utils/color';
 import { typography } from '@/theme/typography';
 import type { ColorTokens } from '@/theme/tokens';
 
@@ -37,8 +39,10 @@ function PreviewGradient({
 /** Уменьшенный фрагмент главного экрана для предпросмотра темы */
 export function ColorThemePreview() {
   const theme = useAppTheme();
+  const { theme: appTheme } = useColorTheme();
   const accent = theme.text.accent;
-  const emptyBorder = theme.overlay.border;
+  const unpassedArgs = [theme.overlay.muted, theme.text.secondary, appTheme.scheme, false] as const;
+  const emptyBorder = withAlpha(theme.text.secondary, 0.45);
   const [skySize, setSkySize] = useState({ width: 0, height: 72 });
 
   return (
@@ -77,7 +81,7 @@ export function ColorThemePreview() {
             <Text style={[styles.metaMuted, { color: theme.text.secondary }]}>1 янв 2027</Text>
           </View>
         </View>
-        <View style={[styles.barTrack, { backgroundColor: theme.overlay.muted }]}>
+        <View style={[styles.barTrack, { backgroundColor: progressEmptyColor(...unpassedArgs) }]}>
           <View style={[styles.barFill, { width: '62%', backgroundColor: accent }]} />
         </View>
       </View>

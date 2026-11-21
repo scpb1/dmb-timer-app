@@ -74,6 +74,23 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
   };
 }
 
+/** Полупрозрачная версия hex/rgba-цвета. Если формат неизвестен — возвращает исходную строку. */
+export function withAlpha(color: string, alpha: number): string {
+  const a = Math.min(1, Math.max(0, alpha));
+  const hex = hexToRgb(color);
+  if (hex) {
+    return `rgba(${hex.r}, ${hex.g}, ${hex.b}, ${a})`;
+  }
+
+  const rgba =
+    /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*[\d.]+)?\s*\)$/.exec(color);
+  if (rgba) {
+    return `rgba(${Number(rgba[1])}, ${Number(rgba[2])}, ${Number(rgba[3])}, ${a})`;
+  }
+
+  return color;
+}
+
 export function rgbToHsv(r: number, g: number, b: number): HsvColor {
   const rn = r / 255;
   const gn = g / 255;

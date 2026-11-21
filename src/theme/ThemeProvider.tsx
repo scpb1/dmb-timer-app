@@ -1,10 +1,10 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
 
 import { CONFIG_KEYS } from '@/types/config';
-import { getConfig, setConfig } from '@/services/database';
+import { setConfig } from '@/services/database';
 import { logger } from '@/utils/logger';
-import { DEFAULT_LIGHT_THEME_ID, getColorTheme, isColorThemeId } from './themes';
+import { DEFAULT_LIGHT_THEME_ID, getColorTheme } from './themes';
 import type { AppColorTheme, ColorThemeId, ColorTokens } from './tokens';
 
 interface ColorThemeContextValue {
@@ -18,25 +18,22 @@ const ColorThemeContext = createContext<ColorThemeContextValue | null>(null);
 
 const fallbackTheme = getColorTheme(DEFAULT_LIGHT_THEME_ID);
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [themeId, setThemeId] = useState<ColorThemeId>(DEFAULT_LIGHT_THEME_ID);
-
-  useEffect(() => {
-    void getConfig(CONFIG_KEYS.COLOR_THEME_ID)
-      .then((raw) => {
-        if (raw && isColorThemeId(raw)) {
-          setThemeId(raw);
-        }
-      })
-      .catch((error) => {
-        logger.error('Не удалось загрузить цветовую тему', error);
-      });
-  }, []);
+export function ThemeProvider({
+  children,
+  initialThemeId = DEFAULT_LIGHT_THEME_ID,
+}: {
+  children: ReactNode;
+  /** Уже прочитанный из базы id. Первый кадр рисуется с ним, без вспышки темы по умолчанию. */
+  initialThemeId?: ColorThemeId;
+}) {
+  const [themeId, setThemeId] = useState<ColorThemeId>(initialThemeId);
 
   const setColorTheme = useCallback(async (id: ColorThemeId) => {
     setThemeId(id);
     try {
       await setConfig(CONFIG_KEYS.COLOR_THEME_ID, id);
+      const { refreshHomeWidgets } = require('@/utils/timerWidget') as typeof import('@/utils/timerWidget');
+      void refreshHomeWidgets();
     } catch (error) {
       logger.error('Не удалось сохранить цветовую тему', error);
     }

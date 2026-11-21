@@ -1,26 +1,24 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
 
+import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { ColorThemePicker } from '@/components/common/ColorThemePicker';
 import { ColorThemePreview } from '@/components/common/ColorThemePreview';
-import { ScreenBackground } from '@/components/common/ScreenBackground';
 import type { HomeStackParamList } from '@/types/navigation';
-import { useAppTheme, useColorTheme } from '@/theme';
+import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 type Props = StackScreenProps<HomeStackParamList, 'ColorThemes'>;
 
 export function ColorThemeScreen({ navigation }: Props) {
   const theme = useAppTheme();
-  const { theme: activeTheme } = useColorTheme();
 
   return (
     <View style={styles.root}>
       <ScreenBackground />
-
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
@@ -35,22 +33,10 @@ export function ColorThemeScreen({ navigation }: Props) {
           <View style={styles.headerSpacer} />
         </View>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={[styles.previewLabel, { color: theme.text.secondary }]}>
-            Сейчас: {activeTheme.name}
-          </Text>
+        <View style={styles.content}>
           <ColorThemePreview />
-
-          <Text style={[styles.sectionHint, { color: theme.text.secondary }]}>
-            Нажмите на палитру — фон и плашки обновятся сразу, в том числе в примере выше.
-          </Text>
-
           <ColorThemePicker />
-        </ScrollView>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -62,7 +48,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingBottom: 96,
   },
   header: {
     flexDirection: 'row',
@@ -85,24 +70,10 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 44,
   },
-  scroll: {
+  content: {
     flex: 1,
-  },
-  scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 8,
     paddingBottom: 24,
-  },
-  previewLabel: {
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  sectionHint: {
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 14,
-    marginBottom: 4,
   },
 });

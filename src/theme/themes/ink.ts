@@ -1,41 +1,42 @@
 import { defineTheme } from '@/theme/tokens';
 
+/** Насыщенный синий, как чернила: темнее и синее, чем «Ночь». */
 export const inkTheme = defineTheme({
   id: 'ink',
   name: 'Чернила',
   scheme: 'dark',
   colors: {
     background: {
-      start: '#0E141C',
-      mid: '#161E2A',
-      end: '#1E2A3A',
+      start: '#07101C',
+      mid: '#0E1C34',
+      end: '#16304C',
       sheen: {
-        start: '#2A3E58',
-        startOpacity: 0.45,
-        mid: '#0E141C',
+        start: '#245080',
+        startOpacity: 0.48,
+        mid: '#07101C',
         midOpacity: 0,
-        end: '#24364C',
-        endOpacity: 0.35,
+        end: '#1A4068',
+        endOpacity: 0.38,
       },
     },
     text: {
-      primary: '#ECF2FA',
-      secondary: 'rgba(236, 242, 250, 0.68)',
-      accent: '#4A8AD4',
-      inverse: '#0E141C',
+      primary: '#E7F1FC',
+      secondary: 'rgba(231, 241, 252, 0.68)',
+      accent: '#3B82F0',
+      inverse: '#07101C',
     },
     input: {
-      border: 'rgba(230, 238, 246, 0.5)',
-      placeholder: 'rgba(230, 238, 246, 0.35)',
+      border: 'rgba(220, 234, 250, 0.5)',
+      placeholder: 'rgba(220, 234, 250, 0.35)',
     },
     overlay: {
-      border: 'rgba(236, 242, 250, 0.2)',
-      fill: '#243246',
-      muted: '#2E3C52',
+      border: 'rgba(231, 241, 252, 0.2)',
+      fill: '#16304C',
+      muted: '#1E3C60',
     },
     holiday: {
-      cardBackground: 'rgba(64, 120, 188, 0.3)',
-      cardBorder: 'rgba(74, 138, 212, 0.45)',
+      cardBackground: 'rgba(40, 100, 200, 0.32)',
+      cardBorder: 'rgba(59, 130, 240, 0.48)',
     },
   },
 });

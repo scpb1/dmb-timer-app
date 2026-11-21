@@ -4,8 +4,6 @@ export const typography = {
     sansLight: 'dmb-timer-sans-Light',
     sansBold: 'dmb-timer-sans-Bold',
     display: 'BlackOpsOne-Regular',
-    /** @deprecated используй sans */
-    primary: 'dmb-timer-sans',
   },
   animation: {
     textAppearMs: 600,
