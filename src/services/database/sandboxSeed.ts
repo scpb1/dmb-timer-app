@@ -4,6 +4,7 @@ import * as Crypto from 'expo-crypto';
 import { addDays, format, formatISO, startOfDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
+import { SANDBOX_MEDIA_DIRECTORY } from '@/constants/mediaDirectories';
 import { CONFIG_KEYS } from '@/types/config';
 import {
   DEFAULT_DIARY_TEXT_STYLE,
@@ -46,7 +47,7 @@ function style(partial: Partial<DiaryTextStyle> = {}): DiaryTextStyle {
   return { ...DEFAULT_DIARY_TEXT_STYLE, ...partial };
 }
 
-function paragraph(spans: Array<{ text: string; style?: Partial<DiaryTextStyle> }>): DiaryBlock {
+function paragraph(spans: { text: string; style?: Partial<DiaryTextStyle> }[]): DiaryBlock {
   return {
     id: createDiaryId(),
     type: 'paragraph',
@@ -71,7 +72,12 @@ async function writeConfig(db: SQLiteDatabase, key: string, value: string): Prom
 }
 
 async function ensureSwatchFile(): Promise<string> {
-  const dir = `${FileSystem.documentDirectory}sandbox-media/`;
+  const base = FileSystem.documentDirectory;
+  if (!base) {
+    throw new Error('Нет доступа к файловой системе');
+  }
+
+  const dir = `${base}${SANDBOX_MEDIA_DIRECTORY}`;
   const info = await FileSystem.getInfoAsync(dir);
   if (!info.exists) {
     await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
@@ -157,6 +163,7 @@ export async function ensureSandboxSeeded(db: SQLiteDatabase): Promise<void> {
 }
 
 export async function reseedSandbox(db: SQLiteDatabase): Promise<void> {
+  await ensureSwatchFile();
   await db.runAsync('DELETE FROM diary_entries');
   await db.runAsync('DELETE FROM config WHERE key != ?', ['letter_themes_seed_version']);
   await seedSandbox(db);
@@ -181,16 +188,16 @@ async function seedSandbox(db: SQLiteDatabase): Promise<void> {
 
       await db.runAsync(
         `INSERT OR REPLACE INTO diary_entries
-          (id, kind, entry_date, theme_id, content_json, updated_at)
-         VALUES (?, 'letter', ?, ?, ?, ?)`,
+          (id, kind, entry_date, theme_id, content_json, has_content, updated_at)
+         VALUES (?, 'letter', ?, ?, ?, 1, ?)`,
         [Crypto.randomUUID(), dateKey, theme.id, serializeDiaryDocument(letterDoc), nowIso],
       );
 
       if (index % 2 === 0) {
         await db.runAsync(
           `INSERT OR REPLACE INTO diary_entries
-            (id, kind, entry_date, theme_id, content_json, updated_at)
-           VALUES (?, 'personal', ?, NULL, ?, ?)`,
+            (id, kind, entry_date, theme_id, content_json, has_content, updated_at)
+           VALUES (?, 'personal', ?, NULL, ?, 1, ?)`,
           [Crypto.randomUUID(), dateKey, serializeDiaryDocument(buildPersonalDocument(index)), nowIso],
         );
       }
@@ -220,14 +227,14 @@ async function seedSandbox(db: SQLiteDatabase): Promise<void> {
       }
     }
 
-    const config: Array<[string, string]> = [
+    const config: [string, string][] = [
       [CONFIG_KEYS.ONBOARDING_COMPLETED, 'true'],
       [CONFIG_KEYS.USER_NAME, 'Маша'],
       [CONFIG_KEYS.PARTNER_NAME, 'Дима'],
       [CONFIG_KEYS.ENLISTMENT_DATE, enlistment.toISOString()],
       [CONFIG_KEYS.DEMOBILIZATION_DATE, demobilization.toISOString()],
-      [CONFIG_KEYS.TRACKERS_CALLS_DATA, JSON.stringify({ entries: calls })],
-      [CONFIG_KEYS.TRACKERS_MEETINGS_DATA, JSON.stringify({ entries: meetings })],
+      [CONFIG_KEYS.TRACKERS_CALLS_DATA, JSON.stringify({ version: 1, entries: calls })],
+      [CONFIG_KEYS.TRACKERS_MEETINGS_DATA, JSON.stringify({ version: 1, entries: meetings })],
       [CONFIG_KEYS.SANDBOX_SEED_VERSION, SANDBOX_SEED_VERSION],
     ];
 

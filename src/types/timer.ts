@@ -24,9 +24,14 @@ export interface CustomTimerRecord {
 
 export interface CustomTimersStorage {
   timers: CustomTimerRecord[];
+  /** Id таймеров, по которым не присылать праздники и события */
+  notificationDisabledIds?: string[];
 }
 
-export const DEFAULT_CUSTOM_TIMERS_STORAGE: CustomTimersStorage = { timers: [] };
+export const DEFAULT_CUSTOM_TIMERS_STORAGE: CustomTimersStorage = {
+  timers: [],
+  notificationDisabledIds: [],
+};
 
 export interface ActiveTimer {
   id: string;
@@ -55,6 +60,12 @@ export interface TimerSettings {
   statCardMode: StatCardMode;
   /** Локальный URI фотографии на фоне таймера */
   backgroundImageUri: string | null;
+  /**
+   * Какая точка фото остаётся в кадре, 0–1.
+   * 0.5 — середина, как у обычного cover.
+   */
+  backgroundFocusX: number;
+  backgroundFocusY: number;
   /** Затемнение фото на фоне, 0–100 */
   backgroundDim: number;
   /** Показ ближайшего или закреплённого события / праздника под таймером */
@@ -71,6 +82,8 @@ export interface TimerSettings {
   milestonesLayout: MilestonesLayout;
 }
 
+export const DEFAULT_BACKGROUND_FOCUS = 0.5;
+
 export const DEFAULT_TIMER_SETTINGS: TimerSettings = {
   timerType: 'circular',
   progressBarMode: 'days',
@@ -78,12 +91,14 @@ export const DEFAULT_TIMER_SETTINGS: TimerSettings = {
   centerDisplay: 'remaining',
   statCardMode: 'days',
   backgroundImageUri: null,
+  backgroundFocusX: DEFAULT_BACKGROUND_FOCUS,
+  backgroundFocusY: DEFAULT_BACKGROUND_FOCUS,
   backgroundDim: 32,
   timerUpcomingPreview: 'nearest',
   timerUpcomingPinnedRef: null,
   photoUpcomingCardBorder: true,
   photoStatCardBorder: false,
-  dotGridCellShape: 'circle',
+  dotGridCellShape: 'heart',
   milestonesLayout: 'spine',
 };
 
@@ -150,9 +165,6 @@ export const LINEAR_PROGRESS_BAR_MODE_LABELS: Record<
   months: 'Месяцы',
 };
 
-/** @deprecated используй CIRCULAR_PROGRESS_BAR_MODE_LABELS или LINEAR_PROGRESS_BAR_MODE_LABELS */
-export const PROGRESS_BAR_MODE_LABELS = CIRCULAR_PROGRESS_BAR_MODE_LABELS;
-
 export const STAT_CARD_MODE_LABELS: Record<StatCardMode, string> = {
   days: 'Дни',
   weeks: 'Недели',
@@ -216,4 +228,18 @@ export function normalizeProgressBarMode(
 
 export function timerTypeUsesProgressBarModes(timerType: TimerType): boolean {
   return timerType !== 'frame' && timerType !== 'milestones';
+}
+
+/** Показывать настройку «знаков после запятой», если на таймере есть проценты */
+export function timerSettingsShowPercentDecimals(
+  timerType: TimerType,
+  progressBarMode: ProgressBarMode,
+): boolean {
+  if (timerType === 'milestones' || timerType === 'dotGrid') {
+    return true;
+  }
+  if (timerType === 'frame') {
+    return false;
+  }
+  return progressBarMode === 'percent' || progressBarMode === 'days';
 }

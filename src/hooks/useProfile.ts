@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { isBefore, parseISO, startOfDay } from 'date-fns';
+import { isBefore, startOfDay } from 'date-fns';
 
 import { CONFIG_KEYS } from '@/types/config';
 import { getConfig, setConfig } from '@/services/database';
+import { registerMemoryCacheReset } from '@/services/memoryCaches';
 import { logger } from '@/utils/logger';
-import { rescheduleHolidayNotifications } from '@/services/holidayNotifications';
+import { parseStoredDate } from '@/utils/storedDate';
+import { rescheduleAppNotifications } from '@/services/holidayNotifications';
 
 interface ProfileState {
   isLoading: boolean;
@@ -20,40 +22,62 @@ interface UseProfileResult extends ProfileState {
   saveDates: (enlistmentDate: Date, demobilizationDate: Date) => Promise<string | null>;
 }
 
-function parseStoredDate(raw: string | null): Date | null {
-  if (!raw) {
-    return null;
-  }
-  const parsed = parseISO(raw);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+const EMPTY_PROFILE: ProfileState = {
+  isLoading: true,
+  userName: '',
+  partnerName: '',
+  enlistmentDate: null,
+  demobilizationDate: null,
+};
+
+/** Последние прочитанные имена/даты — чтобы настройки не вспыхивали пустыми полями. */
+let profileSnapshot: ProfileState = EMPTY_PROFILE;
+
+function rememberProfile(next: ProfileState) {
+  profileSnapshot = next;
 }
+
+async function readProfile(): Promise<ProfileState> {
+  const [userName, partnerName, enlistmentRaw, demobilizationRaw] = await Promise.all([
+    getConfig(CONFIG_KEYS.USER_NAME),
+    getConfig(CONFIG_KEYS.PARTNER_NAME),
+    getConfig(CONFIG_KEYS.ENLISTMENT_DATE),
+    getConfig(CONFIG_KEYS.DEMOBILIZATION_DATE),
+  ]);
+
+  return {
+    isLoading: false,
+    userName: userName ?? '',
+    partnerName: partnerName ?? '',
+    enlistmentDate: parseStoredDate(enlistmentRaw),
+    demobilizationDate: parseStoredDate(demobilizationRaw),
+  };
+}
+
+/** Прогреть снимок с главной, чтобы настройки открылись с уже заполненными полями. */
+export async function warmProfileSnapshot(): Promise<void> {
+  try {
+    rememberProfile(await readProfile());
+  } catch (error) {
+    logger.error('Ошибка прогрева профиля', error);
+  }
+}
+
+export function clearProfileSnapshot(): void {
+  profileSnapshot = EMPTY_PROFILE;
+}
+
+registerMemoryCacheReset(clearProfileSnapshot);
 
 /** Имена и даты службы — правка после онбординга */
 export function useProfile(): UseProfileResult {
-  const [state, setState] = useState<ProfileState>({
-    isLoading: true,
-    userName: '',
-    partnerName: '',
-    enlistmentDate: null,
-    demobilizationDate: null,
-  });
+  const [state, setState] = useState<ProfileState>(profileSnapshot);
 
   const reload = useCallback(async () => {
     try {
-      const [userName, partnerName, enlistmentRaw, demobilizationRaw] = await Promise.all([
-        getConfig(CONFIG_KEYS.USER_NAME),
-        getConfig(CONFIG_KEYS.PARTNER_NAME),
-        getConfig(CONFIG_KEYS.ENLISTMENT_DATE),
-        getConfig(CONFIG_KEYS.DEMOBILIZATION_DATE),
-      ]);
-
-      setState({
-        isLoading: false,
-        userName: userName ?? '',
-        partnerName: partnerName ?? '',
-        enlistmentDate: parseStoredDate(enlistmentRaw),
-        demobilizationDate: parseStoredDate(demobilizationRaw),
-      });
+      const next = await readProfile();
+      rememberProfile(next);
+      setState(next);
     } catch (error) {
       logger.error('Ошибка загрузки профиля', error);
       setState((prev) => ({ ...prev, isLoading: false }));
@@ -74,7 +98,11 @@ export function useProfile(): UseProfileResult {
     try {
       await setConfig(CONFIG_KEYS.USER_NAME, nextUser);
       await setConfig(CONFIG_KEYS.PARTNER_NAME, nextPartner);
-      setState((prev) => ({ ...prev, userName: nextUser, partnerName: nextPartner }));
+      setState((prev) => {
+        const next = { ...prev, userName: nextUser, partnerName: nextPartner };
+        rememberProfile(next);
+        return next;
+      });
       return true;
     } catch (error) {
       logger.error('Ошибка сохранения имён', error);
@@ -95,12 +123,16 @@ export function useProfile(): UseProfileResult {
         setConfig(CONFIG_KEYS.ENLISTMENT_DATE, enlistment.toISOString()),
         setConfig(CONFIG_KEYS.DEMOBILIZATION_DATE, demobilization.toISOString()),
       ]);
-      setState((prev) => ({
-        ...prev,
-        enlistmentDate: enlistment,
-        demobilizationDate: demobilization,
-      }));
-      void rescheduleHolidayNotifications().catch((error) => {
+      setState((prev) => {
+        const next = {
+          ...prev,
+          enlistmentDate: enlistment,
+          demobilizationDate: demobilization,
+        };
+        rememberProfile(next);
+        return next;
+      });
+      void rescheduleAppNotifications().catch((error) => {
         logger.error('Не удалось обновить уведомления после сохранения дат', error);
       });
       return null;

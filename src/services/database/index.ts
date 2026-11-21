@@ -1,15 +1,18 @@
 import * as SQLite from 'expo-sqlite';
 
 import { logger } from '@/utils/logger';
-import { removeTimerBackground } from '@/utils/timerBackground';
-import { CONFIG_KEYS } from '@/types/config';
-import { initDiarySchema, resetDiaryEntries } from './diary';
+import { eraseDiaryLock } from '@/services/diaryLock';
+import { clearMemoryCaches } from '@/services/memoryCaches';
+import { noteTimerConfigWrite } from '@/services/timerSnapshot';
+import { deleteUserMediaDirectories } from '@/services/userFiles';
+import { deleteAllDiaryEntries, initDiarySchema } from './diary';
 import {
   DATABASE_FILES,
   getActiveDatabaseProfile,
   setActiveDatabaseProfile,
   type DatabaseProfileId,
 } from './profile';
+import { enqueueDatabaseOp, withSqliteBusyRetry } from './queue';
 import { ensureSandboxSeeded, reseedSandbox } from './sandboxSeed';
 
 export {
@@ -39,26 +42,67 @@ const CREATE_CONFIG_TABLE = `
   );
 `;
 
+async function configureConnection(db: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    await db.execAsync('PRAGMA journal_mode = WAL;');
+    await db.execAsync('PRAGMA busy_timeout = 4000;');
+  } catch (error) {
+    logger.error('Не удалось настроить SQLite WAL', error);
+  }
+}
+
 async function openProfileDatabase(profile: DatabaseProfileId): Promise<void> {
-  const fileName = DATABASE_FILES[profile];
-  if (database && openedFileName === fileName) {
+  await enqueueDatabaseOp(async () => {
+    const fileName = DATABASE_FILES[profile];
+    if (database && openedFileName === fileName) {
+      return;
+    }
+
+    if (database) {
+      await database.closeAsync();
+      database = null;
+      openedFileName = null;
+    }
+
+    database = await SQLite.openDatabaseAsync(fileName);
+    openedFileName = fileName;
+    await configureConnection(database);
+    await database.execAsync(CREATE_CONFIG_TABLE);
+    await initDiarySchema(database);
+
+    if (profile === 'sandbox') {
+      await ensureSandboxSeeded(database);
+    }
+  });
+}
+
+/**
+ * Соединение виджета без сида и миграций. Уже открытого писателя не подменяет.
+ */
+export async function openReadOnlyDatabase(): Promise<void> {
+  if (database) {
     return;
   }
 
+  const profile = await getActiveDatabaseProfile();
+  const fileName = DATABASE_FILES[profile];
+  const db = await SQLite.openDatabaseAsync(fileName, { useNewConnection: true });
+  try {
+    await db.execAsync('PRAGMA busy_timeout = 4000;');
+    await db.execAsync('PRAGMA query_only = ON;');
+  } catch (error) {
+    logger.error('Не удалось открыть базу виджета только для чтения', error);
+    await db.closeAsync().catch(() => undefined);
+    throw error;
+  }
+
   if (database) {
-    await database.closeAsync();
-    database = null;
-    openedFileName = null;
+    await db.closeAsync().catch(() => undefined);
+    return;
   }
 
-  database = await SQLite.openDatabaseAsync(fileName);
+  database = db;
   openedFileName = fileName;
-  await database.execAsync(CREATE_CONFIG_TABLE);
-  await initDiarySchema(database);
-
-  if (profile === 'sandbox') {
-    await ensureSandboxSeeded(database);
-  }
 }
 
 /** Открывает активный профиль БД: основную или тестовую */
@@ -84,6 +128,7 @@ export async function switchDatabaseProfile(next: DatabaseProfileId): Promise<vo
 
   await setActiveDatabaseProfile(next);
   await openProfileDatabase(next);
+  clearMemoryCaches();
   logger.info(`Переключились на базу ${next}`);
 }
 
@@ -96,6 +141,7 @@ export async function reseedSandboxDatabase(): Promise<void> {
     throw new Error('Тестовая база не открыта');
   }
   await reseedSandbox(database);
+  clearMemoryCaches();
 }
 
 function getDatabase(): SQLite.SQLiteDatabase {
@@ -106,18 +152,60 @@ function getDatabase(): SQLite.SQLiteDatabase {
   return database;
 }
 
+async function readConfigValue(key: string): Promise<string | null> {
+  const db = getDatabase();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM config WHERE key = ?',
+    [key],
+  );
+  return row?.value ?? null;
+}
+
+async function writeConfigValue(key: string, value: string): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', [key, value]);
+}
+
 /** Читает значение конфигурации по ключу */
 export async function getConfig(key: string): Promise<string | null> {
   try {
-    const db = getDatabase();
-    const row = await db.getFirstAsync<{ value: string }>(
-      'SELECT value FROM config WHERE key = ?',
-      [key],
-    );
-
-    return row?.value ?? null;
+    return await enqueueDatabaseOp(() => withSqliteBusyRetry(() => readConfigValue(key)));
   } catch (error) {
     logger.error(`Ошибка чтения config: ${key}`, error);
+    throw error;
+  }
+}
+
+/** Несколько ключей одним SELECT внутри одной операции очереди. */
+export async function getConfigs(keys: readonly string[]): Promise<Record<string, string | null>> {
+  const unique = [...new Set(keys)];
+  const result: Record<string, string | null> = {};
+  for (const key of unique) {
+    result[key] = null;
+  }
+  if (unique.length === 0) {
+    return result;
+  }
+
+  try {
+    return await enqueueDatabaseOp(() =>
+      withSqliteBusyRetry(async () => {
+        const db = getDatabase();
+        const placeholders = unique.map(() => '?').join(', ');
+        const rows = await db.getAllAsync<{ key: string; value: string }>(
+          `SELECT key, value FROM config WHERE key IN (${placeholders})`,
+          unique,
+        );
+        for (const row of rows) {
+          if (Object.prototype.hasOwnProperty.call(result, row.key)) {
+            result[row.key] = row.value;
+          }
+        }
+        return result;
+      }),
+    );
+  } catch (error) {
+    logger.error('Ошибка пакетного чтения config', error);
     throw error;
   }
 }
@@ -125,34 +213,38 @@ export async function getConfig(key: string): Promise<string | null> {
 /** Записывает или обновляет значение конфигурации */
 export async function setConfig(key: string, value: string): Promise<void> {
   try {
-    const db = getDatabase();
-    await db.runAsync(
-      'INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)',
-      [key, value],
-    );
+    await enqueueDatabaseOp(() => withSqliteBusyRetry(() => writeConfigValue(key, value)));
+    noteTimerConfigWrite(key);
   } catch (error) {
     logger.error(`Ошибка записи config: ${key}`, error);
     throw error;
   }
 }
 
-/** Удаляет все сохранённые данные (для тестирования) */
+/** Удаляет таблицы, файлы дневника и трекеров, замок и снимки в памяти. */
 export async function resetAllData(): Promise<void> {
-  try {
-    const db = getDatabase();
-    const backgroundImageUri = await getConfig(CONFIG_KEYS.TIMER_BACKGROUND_IMAGE);
-    await db.runAsync('DELETE FROM config');
-    await resetDiaryEntries();
+  const steps = [
+    async () => {
+      await enqueueDatabaseOp(async () => {
+        const db = getDatabase();
+        await db.runAsync('DELETE FROM config');
+        await deleteAllDiaryEntries();
+      });
+    },
+    () => deleteUserMediaDirectories(),
+    () => eraseDiaryLock(),
+    () => {
+      clearMemoryCaches();
+      return Promise.resolve();
+    },
+  ];
 
-    try {
-      await removeTimerBackground(backgroundImageUri);
-    } catch (error) {
-      logger.error('Не удалось удалить файл фона таймера при сбросе', error);
-    }
-
-    logger.info('Все данные сброшены');
-  } catch (error) {
-    logger.error('Ошибка сброса данных', error);
-    throw error;
+  const results = await Promise.allSettled(steps.map((step) => step()));
+  const failed = results.find((result) => result.status === 'rejected');
+  if (failed && failed.status === 'rejected') {
+    logger.error('Ошибка сброса данных', failed.reason);
+    throw failed.reason;
   }
+
+  logger.info('Все данные сброшены');
 }

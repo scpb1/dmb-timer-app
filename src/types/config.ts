@@ -13,6 +13,8 @@ export const CONFIG_KEYS = {
   TIMER_CENTER_DISPLAY: 'timer_center_display',
   STAT_CARD_MODE: 'stat_card_mode',
   TIMER_BACKGROUND_IMAGE: 'timer_background_image',
+  TIMER_BACKGROUND_FOCUS_X: 'timer_background_focus_x',
+  TIMER_BACKGROUND_FOCUS_Y: 'timer_background_focus_y',
   TIMER_BACKGROUND_DIM: 'timer_background_dim',
   TIMER_UPCOMING_PREVIEW: 'timer_upcoming_preview',
   TIMER_UPCOMING_PINNED_REF: 'timer_upcoming_pinned_ref',
@@ -24,7 +26,13 @@ export const CONFIG_KEYS = {
   HOLIDAYS_DATA: 'holidays_data',
   TRACKERS_CALLS_DATA: 'trackers_calls_data',
   TRACKERS_MEETINGS_DATA: 'trackers_meetings_data',
+  /** Посылки и передачки: список и напоминание «давно не отправляла» */
+  PARCELS_DATA: 'parcels_data',
+  /** Якорь молчания, по которому утренний пуш уже поставлен: `yyyy-MM-dd:interval` */
+  PARCEL_REMINDER_ANCHOR: 'parcel_reminder_anchor',
   CUSTOM_TIMERS_DATA: 'custom_timers_data',
+  /** Настройки виджетов рабочего стола */
+  WIDGET_STUDIO_DATA: 'widget_studio_data',
   ACTIVE_TIMER_ID: 'active_timer_id',
   SERVICE_SUMMARY_AUTO_SHOWN_DATE: 'service_summary_auto_shown_date',
   /** +1 при каждом фокусе главного экрана с таймером */
