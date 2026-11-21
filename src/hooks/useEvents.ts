@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { formatISO, parseISO } from 'date-fns';
+import { formatISO } from 'date-fns';
 import * as Crypto from 'expo-crypto';
 
 import { CONFIG_KEYS } from '@/types/config';
 import {
+  type CardHighlightMode,
   type CustomEventRecord,
   type DisplayEvent,
   type EventDateFormat,
@@ -13,19 +14,22 @@ import {
   DEFAULT_EVENTS_STORAGE,
   EVENT_NAME_MAX_LENGTH,
 } from '@/types/events';
-import { getConfig, setConfig } from '@/services/database';
+import { createConfigJsonStore } from '@/services/configJsonStore';
 import {
   buildDisplayEvents,
+  eventPercentValidationError,
   migrateEventsStorage,
+  parseEventPercentInput,
   parseEventsStorage,
 } from '@/utils/eventCalculations';
-import { DEFAULT_EVENT_ICON, isCatalogIcon } from '@/utils/eventGlyphs';
+import { DEFAULT_EVENT_ICON, normalizeStoredIconName } from '@/utils/eventGlyphs';
+import { eventHighlightMode } from '@/utils/cardHighlight';
 import { isServiceBoundaryEvent } from '@/utils/serviceBoundaryEvents';
 import { normalizeHex } from '@/utils/color';
 import { logger } from '@/utils/logger';
 import { rescheduleAppNotifications } from '@/services/holidayNotifications';
-
-const UNDO_TIMEOUT_MS = 5000;
+import { loadTimerRecords } from '@/utils/timerRecords';
+import { useUndoableDelete } from '@/hooks/useUndoableDelete';
 
 interface PendingDeletion {
   event: DisplayEvent;
@@ -37,9 +41,11 @@ interface EventFormData {
   dateFormat: EventDateFormat;
   dddValue: string;
   dppValue: string;
+  percentValue: string;
   dateValue: Date | null;
   icon?: string;
   iconColor?: string;
+  highlightMode?: CardHighlightMode;
   boundaryDisplay?: ServiceBoundaryDisplayMode;
   boundaryIconThemeDefault?: boolean;
 }
@@ -83,6 +89,8 @@ function validateForm(form: EventFormData): string | null {
     if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
       return 'Введите целое число дпп (дней после призыва) от 0';
     }
+  } else if (form.dateFormat === 'percent') {
+    return eventPercentValidationError(form.percentValue);
   } else if (!form.dateValue) {
     return 'Выберите дату';
   }
@@ -99,12 +107,15 @@ function formToCustomRecord(form: EventFormData, id: string): CustomEventRecord 
       form.dateFormat === 'ddd' ? Number(form.dddValue.trim()) : undefined,
     dppValue:
       form.dateFormat === 'dpp' ? Number(form.dppValue.trim()) : undefined,
+    percentValue:
+      form.dateFormat === 'percent' ? parseEventPercentInput(form.percentValue) ?? undefined : undefined,
     dateValue:
       form.dateFormat === 'date' && form.dateValue
         ? formatISO(form.dateValue, { representation: 'date' })
         : undefined,
-    icon: isCatalogIcon(form.icon) ? form.icon : DEFAULT_EVENT_ICON,
+    icon: normalizeStoredIconName(form.icon) ?? DEFAULT_EVENT_ICON,
     iconColor: storedIconColor(form.iconColor),
+    highlightMode: eventHighlightMode({ highlightMode: form.highlightMode }),
   };
 }
 
@@ -112,9 +123,9 @@ function formToOverride(form: EventFormData, eventId?: string): EventOverride {
   if (eventId && isServiceBoundaryEvent(eventId)) {
     return {
       name: form.name.trim(),
-      icon: isCatalogIcon(form.icon) ? form.icon : undefined,
+      icon: normalizeStoredIconName(form.icon),
       iconColor: storedIconColor(form.iconColor),
-      boundaryDisplay: form.boundaryDisplay === 'icon' ? 'icon' : 'row',
+      boundaryDisplay: form.highlightMode === 'icon' ? 'icon' : 'row',
       boundaryIconThemeDefault: form.boundaryIconThemeDefault ? true : undefined,
     };
   }
@@ -126,65 +137,70 @@ function formToOverride(form: EventFormData, eventId?: string): EventOverride {
       form.dateFormat === 'ddd' ? Number(form.dddValue.trim()) : undefined,
     dppValue:
       form.dateFormat === 'dpp' ? Number(form.dppValue.trim()) : undefined,
+    percentValue:
+      form.dateFormat === 'percent' ? parseEventPercentInput(form.percentValue) ?? undefined : undefined,
     dateValue:
       form.dateFormat === 'date' && form.dateValue
         ? formatISO(form.dateValue, { representation: 'date' })
         : undefined,
-    icon: isCatalogIcon(form.icon) ? form.icon : undefined,
+    icon: normalizeStoredIconName(form.icon),
     iconColor: storedIconColor(form.iconColor),
+    highlightMode: eventHighlightMode({ highlightMode: form.highlightMode }),
   };
 }
 
-async function persistStorage(storage: EventsStorage): Promise<void> {
-  await setConfig(CONFIG_KEYS.EVENTS_DATA, JSON.stringify(storage));
-  void rescheduleAppNotifications();
-}
+const eventsStore = createConfigJsonStore<EventsStorage, DisplayEvent[]>({
+  key: CONFIG_KEYS.EVENTS_DATA,
+  parse: parseEventsStorage,
+  validate: async (stored) => {
+    const timerRecords = await loadTimerRecords();
+    if (!timerRecords.enlistmentDate || !timerRecords.demobilizationDate) {
+      return { value: stored, changed: false };
+    }
+    const migration = migrateEventsStorage(
+      stored,
+      timerRecords.enlistmentDate,
+      timerRecords.demobilizationDate,
+    );
+    return { value: migration.storage, changed: migration.changed };
+  },
+  toDisplay: async (stored) => {
+    const { activeTimer } = await loadTimerRecords();
+    if (!activeTimer) {
+      return [];
+    }
+    return buildDisplayEvents(activeTimer.startDate, activeTimer.endDate, stored);
+  },
+  afterPersist: () => {
+    void rescheduleAppNotifications();
+  },
+});
 
 /** Загружает и управляет списком событий службы */
 export function useEvents(): UseEventsResult {
   const [isLoading, setIsLoading] = useState(true);
   const [events, setEvents] = useState<DisplayEvent[]>([]);
   const [storage, setStorage] = useState<EventsStorage>(DEFAULT_EVENTS_STORAGE);
-  const [pendingDeletion, setPendingDeletion] = useState<PendingDeletion | null>(null);
-
   const storageRef = useRef(storage);
   storageRef.current = storage;
+  const refreshEventsRef = useRef<(nextStorage: EventsStorage) => Promise<void>>(async () => {});
 
-  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearUndoTimer = useCallback(() => {
-    if (undoTimerRef.current) {
-      clearTimeout(undoTimerRef.current);
-      undoTimerRef.current = null;
-    }
-  }, []);
+  const {
+    pending: pendingDeletion,
+    schedule: scheduleUndo,
+    undo: undoDelete,
+  } = useUndoableDelete<PendingDeletion>({
+    onRestore: async (pending) => {
+      await refreshEventsRef.current(pending.storageSnapshot);
+    },
+  });
 
   const reload = useCallback(async () => {
     try {
-      const [enlistmentRaw, demobilizationRaw, eventsRaw] = await Promise.all([
-        getConfig(CONFIG_KEYS.ENLISTMENT_DATE),
-        getConfig(CONFIG_KEYS.DEMOBILIZATION_DATE),
-        getConfig(CONFIG_KEYS.EVENTS_DATA),
-      ]);
-
-      let parsedStorage = parseEventsStorage(eventsRaw);
-
-      if (!enlistmentRaw || !demobilizationRaw) {
-        setStorage(parsedStorage);
-        setEvents([]);
-        setIsLoading(false);
-        return;
-      }
-
-      const enlistmentDate = parseISO(enlistmentRaw);
-      const demobilizationDate = parseISO(demobilizationRaw);
-      const migration = migrateEventsStorage(parsedStorage, enlistmentDate, demobilizationDate);
-      parsedStorage = migration.storage;
-      if (migration.changed) {
-        await persistStorage(parsedStorage);
-      }
-      setStorage(parsedStorage);
-      setEvents(buildDisplayEvents(enlistmentDate, demobilizationDate, parsedStorage));
+      const { stored, display } = await eventsStore.load();
+      storageRef.current = stored;
+      setStorage(stored);
+      setEvents(display);
     } catch (error) {
       logger.error('Ошибка загрузки событий', error);
       setEvents([]);
@@ -198,22 +214,13 @@ export function useEvents(): UseEventsResult {
   }, [reload]);
 
   const refreshEvents = useCallback(async (nextStorage: EventsStorage) => {
-    const [enlistmentRaw, demobilizationRaw] = await Promise.all([
-      getConfig(CONFIG_KEYS.ENLISTMENT_DATE),
-      getConfig(CONFIG_KEYS.DEMOBILIZATION_DATE),
-    ]);
-
-    if (!enlistmentRaw || !demobilizationRaw) {
-      setStorage(nextStorage);
-      setEvents([]);
-      return;
-    }
-
-    const enlistmentDate = parseISO(enlistmentRaw);
-    const demobilizationDate = parseISO(demobilizationRaw);
+    const display = await eventsStore.save(nextStorage);
+    storageRef.current = nextStorage;
     setStorage(nextStorage);
-    setEvents(buildDisplayEvents(enlistmentDate, demobilizationDate, nextStorage));
+    setEvents(display);
   }, []);
+
+  refreshEventsRef.current = refreshEvents;
 
   const addEvent = useCallback(
     async (form: EventFormData): Promise<boolean> => {
@@ -229,7 +236,6 @@ export function useEvents(): UseEventsResult {
         customEvents: [...storageRef.current.customEvents, record],
       };
 
-      await persistStorage(nextStorage);
       await refreshEvents(nextStorage);
       return true;
     },
@@ -262,7 +268,6 @@ export function useEvents(): UseEventsResult {
         };
       }
 
-      await persistStorage(nextStorage);
       await refreshEvents(nextStorage);
       return true;
     },
@@ -274,8 +279,6 @@ export function useEvents(): UseEventsResult {
       if (isServiceBoundaryEvent(event.id)) {
         return;
       }
-
-      clearUndoTimer();
 
       const snapshot = storageRef.current;
       let nextStorage: EventsStorage;
@@ -294,31 +297,11 @@ export function useEvents(): UseEventsResult {
         };
       }
 
-      await persistStorage(nextStorage);
       await refreshEvents(nextStorage);
-
-      setPendingDeletion({ event, storageSnapshot: snapshot });
-
-      undoTimerRef.current = setTimeout(() => {
-        setPendingDeletion(null);
-        undoTimerRef.current = null;
-      }, UNDO_TIMEOUT_MS);
+      await scheduleUndo({ event, storageSnapshot: snapshot });
     },
-    [clearUndoTimer, refreshEvents],
+    [refreshEvents, scheduleUndo],
   );
-
-  const undoDelete = useCallback(async () => {
-    if (!pendingDeletion) {
-      return;
-    }
-
-    clearUndoTimer();
-    await persistStorage(pendingDeletion.storageSnapshot);
-    await refreshEvents(pendingDeletion.storageSnapshot);
-    setPendingDeletion(null);
-  }, [clearUndoTimer, pendingDeletion, refreshEvents]);
-
-  useEffect(() => () => clearUndoTimer(), [clearUndoTimer]);
 
   return {
     isLoading,

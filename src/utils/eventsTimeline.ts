@@ -186,15 +186,6 @@ export function getEventsTimelineVisualFillRatio(items: EventsTimelineItem[]): n
   return (lastPast + firstFuture) / 2 / lastIndex;
 }
 
-/** @deprecated для ленты используй getEventsTimelineVisualFillRatio */
-export function getEventsTimelineFillRatio(
-  items: EventsTimelineItem[],
-  now: Date = new Date(),
-): number {
-  void now;
-  return getEventsTimelineVisualFillRatio(items);
-}
-
 /** Позиция вехи на отрезке первой → последней (0–1) по календарю */
 export function getEventsTimelineEventPosition(
   items: EventsTimelineItem[],

@@ -12,14 +12,15 @@ import {
 } from 'react-native';
 
 import { DatePicker } from '@/components/common/DatePicker';
+import { CardHighlightModePicker } from '@/components/events/CardHighlightModePicker';
 import { FORM_FIELD_HEIGHT } from '@/components/events/formFieldStyles';
 import { IconColorPicker } from '@/components/events/IconColorPicker';
 import { IconPicker } from '@/components/events/IconPicker';
 import type { DisplayEvent } from '@/types/events';
 import {
   EVENT_NAME_MAX_LENGTH,
+  type CardHighlightMode,
   type EventDateFormat,
-  type ServiceBoundaryDisplayMode,
 } from '@/types/events';
 import type { EventFormData } from '@/hooks/useEvents';
 import {
@@ -28,7 +29,13 @@ import {
   getAutomaticEventGlyph,
   getEventFormIconDefaults,
 } from '@/utils/eventGlyphs';
-import { formatEventDate } from '@/utils/eventCalculations';
+import {
+  formatEventDate,
+  formatEventPercentInput,
+  parseEventPercentInput,
+  sanitizeEventPercentInput,
+} from '@/utils/eventCalculations';
+import { eventHighlightMode } from '@/utils/cardHighlight';
 import { isServiceBoundaryEvent } from '@/utils/serviceBoundaryEvents';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
@@ -41,15 +48,10 @@ interface EventFormModalProps {
   onSave: (form: EventFormData) => Promise<boolean>;
 }
 
-const DATE_FORMAT_OPTIONS: Array<{ value: EventDateFormat; label: string }> = [
+const RELATIVE_DATE_FORMAT_OPTIONS: { value: EventDateFormat; label: string }[] = [
   { value: 'ddd', label: 'ддд' },
   { value: 'dpp', label: 'дпп' },
-  { value: 'date', label: 'Дата' },
-];
-
-const BOUNDARY_DISPLAY_OPTIONS: Array<{ value: ServiceBoundaryDisplayMode; label: string }> = [
-  { value: 'row', label: 'Выделение строки' },
-  { value: 'icon', label: 'По умолчанию' },
+  { value: 'percent', label: '%' },
 ];
 
 function buildInitialForm(event: DisplayEvent | null): EventFormData {
@@ -59,9 +61,11 @@ function buildInitialForm(event: DisplayEvent | null): EventFormData {
       dateFormat: 'ddd',
       dddValue: '',
       dppValue: '',
+      percentValue: '',
       dateValue: null,
       icon: DEFAULT_EVENT_ICON,
       iconColor: undefined,
+      highlightMode: 'icon',
     };
   }
 
@@ -72,10 +76,16 @@ function buildInitialForm(event: DisplayEvent | null): EventFormData {
     dateFormat: event.dateFormat,
     dddValue: event.dddValue !== undefined ? String(event.dddValue) : '',
     dppValue: event.dppValue !== undefined ? String(event.dppValue) : '',
+    percentValue:
+      event.percentValue !== undefined ? formatEventPercentInput(event.percentValue) : '',
     dateValue: event.dateValue ? new Date(event.dateValue) : event.date,
     icon,
     iconColor,
-    boundaryDisplay: event.boundaryDisplay === 'icon' ? 'icon' : 'row',
+    highlightMode: isServiceBoundaryEvent(event.id)
+      ? event.boundaryDisplay === 'icon'
+        ? 'icon'
+        : 'row'
+      : eventHighlightMode(event),
     boundaryIconThemeDefault: event.boundaryIconThemeDefault ?? false,
   };
 }
@@ -85,10 +95,11 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
   const [dateFormat, setDateFormat] = useState<EventDateFormat>('ddd');
   const [dddValue, setDddValue] = useState('');
   const [dppValue, setDppValue] = useState('');
+  const [percentValue, setPercentValue] = useState('');
   const [dateValue, setDateValue] = useState<Date | null>(null);
   const [icon, setIcon] = useState<string | undefined>(DEFAULT_EVENT_ICON);
   const [iconColor, setIconColor] = useState<string | undefined>(undefined);
-  const [boundaryDisplay, setBoundaryDisplay] = useState<ServiceBoundaryDisplayMode>('row');
+  const [highlightMode, setHighlightMode] = useState<CardHighlightMode>('icon');
   const [boundaryIconThemeDefault, setBoundaryIconThemeDefault] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -101,10 +112,11 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
       setDateFormat(initial.dateFormat);
       setDddValue(initial.dddValue);
       setDppValue(initial.dppValue);
+      setPercentValue(initial.percentValue);
       setDateValue(initial.dateValue);
       setIcon(initial.icon);
       setIconColor(initial.iconColor);
-      setBoundaryDisplay(initial.boundaryDisplay ?? 'row');
+      setHighlightMode(initial.highlightMode ?? 'icon');
       setBoundaryIconThemeDefault(initial.boundaryIconThemeDefault ?? false);
       setError(null);
       setIsSaving(false);
@@ -112,11 +124,13 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
   }, [visible, event]);
 
   const isBoundary = event != null && isServiceBoundaryEvent(event.id);
-  const boundaryRowMode = isBoundary && boundaryDisplay === 'row';
-  const previewOnFill = boundaryRowMode && !boundaryIconThemeDefault && iconColor != null;
-  const fillPreviewColor = previewOnFill ? iconColor : undefined;
-  const iconPickerPreviewColor =
-    isBoundary && !boundaryIconThemeDefault ? iconColor : iconColor;
+  const rowMode = highlightMode === 'row';
+  const customFillColor =
+    isBoundary && (boundaryIconThemeDefault || !iconColor) ? undefined : iconColor;
+  const rowFillColor = rowMode ? (customFillColor ?? theme.text.primary) : undefined;
+  const previewOnFill = rowFillColor != null;
+  const fillPreviewColor = rowFillColor;
+  const iconPickerPreviewColor = customFillColor ?? iconColor;
 
   const handleSave = async () => {
     const form: EventFormData = isBoundary
@@ -125,13 +139,15 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
           dateFormat: event!.dateFormat,
           dddValue: event!.dddValue !== undefined ? String(event.dddValue) : '',
           dppValue: event!.dppValue !== undefined ? String(event!.dppValue) : '',
+          percentValue:
+            event!.percentValue !== undefined ? formatEventPercentInput(event!.percentValue) : '',
           dateValue: event!.dateValue ? new Date(event!.dateValue) : event!.date,
           icon,
           iconColor,
-          boundaryDisplay,
+          highlightMode,
           boundaryIconThemeDefault,
         }
-      : { name, dateFormat, dddValue, dppValue, dateValue, icon, iconColor };
+      : { name, dateFormat, dddValue, dppValue, percentValue, dateValue, icon, iconColor, highlightMode };
 
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -153,6 +169,11 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
         const parsed = Number(dppValue.trim());
         if (!Number.isFinite(parsed) || parsed < 0 || !Number.isInteger(parsed)) {
           setError('Введите целое число дпп (дней после призыва) от 0');
+          return;
+        }
+      } else if (dateFormat === 'percent') {
+        if (parseEventPercentInput(percentValue) === null) {
+          setError('Введите процент от 0 до 100, до двух знаков после запятой');
           return;
         }
       } else if (!dateValue) {
@@ -223,46 +244,13 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
               {name.length}/{EVENT_NAME_MAX_LENGTH}
             </Text>
 
-            {isBoundary ? (
-              <>
-                <Text style={[styles.fieldLabel, { color: theme.text.primary }]}>Оформление</Text>
-                <View style={styles.formatRow}>
-                  {BOUNDARY_DISPLAY_OPTIONS.map((option) => {
-                    const isActive = boundaryDisplay === option.value;
-                    return (
-                      <Pressable
-                        key={option.value}
-                        style={[
-                          styles.formatButton,
-                          {
-                            borderColor: theme.overlay.border,
-                            backgroundColor: theme.overlay.fill,
-                          },
-                          isActive && {
-                            borderColor: theme.text.primary,
-                            backgroundColor: theme.overlay.muted,
-                          },
-                        ]}
-                        onPress={() => {
-                          setBoundaryDisplay(option.value);
-                          setError(null);
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.formatButtonText,
-                            { color: theme.text.secondary },
-                            isActive && { color: theme.text.primary, fontWeight: '600' },
-                          ]}
-                        >
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </>
-            ) : null}
+            <CardHighlightModePicker
+              value={highlightMode}
+              onChange={(next) => {
+                setHighlightMode(next);
+                setError(null);
+              }}
+            />
 
             <IconPicker
               value={icon}
@@ -287,15 +275,9 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
                   setBoundaryIconThemeDefault(true);
                 }
               }}
-              label={
-                isBoundary
-                  ? boundaryDisplay === 'row'
-                    ? 'Цвет заливки'
-                    : 'Цвет иконки'
-                  : undefined
-              }
-              swatchFallbackColor={boundaryIconThemeDefault ? theme.text.primary : undefined}
-              showReset={isBoundary && !boundaryIconThemeDefault && iconColor != null}
+              label={rowMode ? 'Цвет заливки' : 'Цвет иконки'}
+              swatchFallbackColor={rowMode || boundaryIconThemeDefault ? theme.text.primary : undefined}
+              showReset={iconColor != null && (!isBoundary || !boundaryIconThemeDefault)}
             />
 
             {isBoundary && event ? (
@@ -311,7 +293,7 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
             <>
             <Text style={[styles.fieldLabel, { color: theme.text.primary }]}>Формат даты</Text>
             <View style={styles.formatRow}>
-              {DATE_FORMAT_OPTIONS.map((option) => {
+              {RELATIVE_DATE_FORMAT_OPTIONS.map((option) => {
                 const isActive = dateFormat === option.value;
                 return (
                   <Pressable
@@ -345,6 +327,35 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
                 );
               })}
             </View>
+            <View style={[styles.formatRow, styles.dateFormatRow]}>
+              <Pressable
+                style={[
+                  styles.formatButton,
+                  {
+                    borderColor: theme.overlay.border,
+                    backgroundColor: theme.overlay.fill,
+                  },
+                  dateFormat === 'date' && {
+                    borderColor: theme.text.primary,
+                    backgroundColor: theme.overlay.muted,
+                  },
+                ]}
+                onPress={() => {
+                  setDateFormat('date');
+                  setError(null);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.formatButtonText,
+                    { color: theme.text.secondary },
+                    dateFormat === 'date' && { color: theme.text.primary, fontWeight: '600' },
+                  ]}
+                >
+                  Дата
+                </Text>
+              </Pressable>
+            </View>
 
             {dateFormat === 'ddd' ? (
               <>
@@ -355,7 +366,7 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
                     setDddValue(text.replace(/[^0-9]/g, ''));
                     setError(null);
                   }}
-                  placeholder="Например, 303"
+                  placeholder="Например, 100"
                   placeholderTextColor={theme.input.placeholder}
                   style={[
                     styles.textInput,
@@ -390,6 +401,28 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
                   keyboardType="number-pad"
                 />
               </>
+            ) : dateFormat === 'percent' ? (
+              <>
+                <Text style={[styles.fieldLabel, { color: theme.text.primary }]}>Процент службы</Text>
+                <TextInput
+                  value={percentValue}
+                  onChangeText={(text) => {
+                    setPercentValue(sanitizeEventPercentInput(text));
+                    setError(null);
+                  }}
+                  placeholder="Например, 50 или 33,33"
+                  placeholderTextColor={theme.input.placeholder}
+                  style={[
+                    styles.textInput,
+                    {
+                      color: theme.text.primary,
+                      borderColor: theme.overlay.border,
+                      backgroundColor: theme.overlay.fill,
+                    },
+                  ]}
+                  keyboardType="decimal-pad"
+                />
+              </>
             ) : (
               <DatePicker
                 label="Дата события"
@@ -399,7 +432,13 @@ export function EventFormModal({ visible, mode, event, onClose, onSave }: EventF
                   setError(null);
                 }}
                 labelStyle={styles.datePickerLabel}
-                buttonStyle={styles.datePickerButton}
+                buttonStyle={[
+                  styles.datePickerButton,
+                  {
+                    backgroundColor: theme.overlay.fill,
+                    borderColor: theme.overlay.border,
+                  },
+                ]}
                 buttonTextStyle={styles.datePickerButtonText}
               />
             )}
@@ -486,6 +525,9 @@ const styles = StyleSheet.create({
   formatRow: {
     flexDirection: 'row',
     gap: 10,
+    marginBottom: 10,
+  },
+  dateFormatRow: {
     marginBottom: 20,
   },
   formatButton: {

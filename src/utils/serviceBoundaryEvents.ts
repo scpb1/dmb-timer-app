@@ -3,6 +3,11 @@ import {
   type DisplayEvent,
   type ServiceBoundaryDisplayMode,
 } from '@/types/events';
+import {
+  resolveAccentCardStyle,
+  resolveCustomEventCardStyle,
+  type AccentCardStyle,
+} from '@/utils/cardHighlight';
 
 export const ENLISTMENT_ACCENT = '#BB322E';
 export const DEMOBILIZATION_ACCENT = '#3D7A44';
@@ -53,51 +58,34 @@ export function resolveServiceBoundaryFormColor(
   return resolveServiceBoundaryColor(event);
 }
 
-export interface ServiceBoundaryCardStyle {
-  rowAccent: string | null;
-  badgeFill: string | undefined;
-  glyphOnFill: boolean;
-  glyphColor?: string;
-}
+export type ServiceBoundaryCardStyle = AccentCardStyle;
 
-/** Стиль карточки: строка — заливка; «по умолчанию» — цвет иконки. */
+/** Стиль карточки: строка — заливка; «только иконка» — цвет глифа. */
 export function resolveServiceBoundaryCardStyle(
   event: Pick<DisplayEvent, 'id' | 'iconColor' | 'boundaryDisplay' | 'boundaryIconThemeDefault'>,
+  defaultIconColor?: string,
 ): ServiceBoundaryCardStyle | null {
   if (!isServiceBoundaryEvent(event.id)) {
     return null;
   }
 
-  const mode = serviceBoundaryDisplayMode(event);
-  const color = resolveServiceBoundaryColor(event);
+  return resolveAccentCardStyle(
+    serviceBoundaryDisplayMode(event),
+    resolveServiceBoundaryColor(event),
+    defaultIconColor,
+  );
+}
 
-  if (mode === 'row') {
-    if (!color) {
-      return {
-        rowAccent: null,
-        badgeFill: undefined,
-        glyphOnFill: false,
-      };
-    }
-    return {
-      rowAccent: color,
-      badgeFill: color,
-      glyphOnFill: true,
-    };
+/** Стиль карточки любого события: призыв/дембель или пользовательское/пресет. */
+export function resolveEventCardStyle(
+  event: Pick<
+    DisplayEvent,
+    'id' | 'iconColor' | 'highlightMode' | 'boundaryDisplay' | 'boundaryIconThemeDefault'
+  >,
+  defaultIconColor?: string,
+): ServiceBoundaryCardStyle | null {
+  if (isServiceBoundaryEvent(event.id)) {
+    return resolveServiceBoundaryCardStyle(event, defaultIconColor);
   }
-
-  if (!color) {
-    return {
-      rowAccent: null,
-      badgeFill: undefined,
-      glyphOnFill: false,
-    };
-  }
-
-  return {
-    rowAccent: null,
-    badgeFill: undefined,
-    glyphOnFill: false,
-    glyphColor: color,
-  };
+  return resolveCustomEventCardStyle(event, defaultIconColor);
 }

@@ -1,18 +1,23 @@
 export const EVENT_NAME_MAX_LENGTH = 50;
 
-export type EventDateFormat = 'ddd' | 'dpp' | 'date';
+export type EventDateFormat = 'ddd' | 'dpp' | 'percent' | 'date';
 
-/** Призыв / дембель: заливка всей строки или только плашки иконки. */
-export type ServiceBoundaryDisplayMode = 'row' | 'icon';
+/** Заливка всей строки карточки или цвет только у иконки. */
+export type CardHighlightMode = 'row' | 'icon';
+
+/** Призыв / дембель: заливка всей строки или только иконка. */
+export type ServiceBoundaryDisplayMode = CardHighlightMode;
 
 export interface EventOverride {
   name?: string;
   dateFormat?: EventDateFormat;
   dddValue?: number;
   dppValue?: number;
+  percentValue?: number;
   dateValue?: string;
   icon?: string;
   iconColor?: string;
+  highlightMode?: CardHighlightMode;
   boundaryDisplay?: ServiceBoundaryDisplayMode;
   /** Сброс заливки на цвет иконки из темы (крестик в форме). */
   boundaryIconThemeDefault?: boolean;
@@ -24,9 +29,11 @@ export interface CustomEventRecord {
   dateFormat: EventDateFormat;
   dddValue?: number;
   dppValue?: number;
+  percentValue?: number;
   dateValue?: string;
   icon?: string;
   iconColor?: string;
+  highlightMode?: CardHighlightMode;
 }
 
 export interface EventsStorage {
@@ -44,9 +51,11 @@ export interface DisplayEvent {
   dateFormat: EventDateFormat;
   dddValue?: number;
   dppValue?: number;
+  percentValue?: number;
   dateValue?: string;
   icon?: string;
   iconColor?: string;
+  highlightMode?: CardHighlightMode;
   boundaryDisplay?: ServiceBoundaryDisplayMode;
   boundaryIconThemeDefault?: boolean;
   isCustom: boolean;

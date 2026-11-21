@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { parseISO } from 'date-fns';
 import * as Crypto from 'expo-crypto';
 
 import { CONFIG_KEYS } from '@/types/config';
+import type { CardHighlightMode } from '@/types/events';
 import {
   DEFAULT_HOLIDAYS_STORAGE,
   HOLIDAY_NAME_MAX_LENGTH,
@@ -11,19 +11,21 @@ import {
   type HolidayOverride,
   type HolidaysStorage,
 } from '@/types/holidays';
-import { getConfig, setConfig } from '@/services/database';
+import { holidayHighlightMode } from '@/utils/cardHighlight';
+import { createConfigJsonStore } from '@/services/configJsonStore';
 import {
   buildDisplayHolidays,
   isValidMonthDay,
+  migrateHolidaysStorageIcons,
   parseHolidaysStorage,
   type HolidayServiceRange,
 } from '@/utils/holidayCalculations';
-import { DEFAULT_HOLIDAY_ICON, isCatalogIcon } from '@/utils/eventGlyphs';
+import { DEFAULT_HOLIDAY_ICON, normalizeStoredIconName } from '@/utils/eventGlyphs';
 import { normalizeHex } from '@/utils/color';
-import { rescheduleHolidayNotifications } from '@/services/holidayNotifications';
+import { rescheduleAppNotifications } from '@/services/holidayNotifications';
+import { loadTimerRecords } from '@/utils/timerRecords';
 import { logger } from '@/utils/logger';
-
-const UNDO_TIMEOUT_MS = 5000;
+import { useUndoableDelete } from '@/hooks/useUndoableDelete';
 
 interface PendingDeletion {
   holiday: DisplayHoliday;
@@ -35,6 +37,7 @@ export interface HolidayFormData {
   dateValue: Date | null;
   icon?: string;
   iconColor?: string;
+  highlightMode?: CardHighlightMode;
 }
 
 function storedIconColor(value: string | undefined): string | undefined {
@@ -89,8 +92,9 @@ function formToCustomRecord(form: HolidayFormData, id: string): CustomHolidayRec
     name: form.name.trim(),
     month,
     day,
-    icon: isCatalogIcon(form.icon) ? form.icon : DEFAULT_HOLIDAY_ICON,
+    icon: normalizeStoredIconName(form.icon) ?? DEFAULT_HOLIDAY_ICON,
     iconColor: storedIconColor(form.iconColor),
+    highlightMode: holidayHighlightMode({ highlightMode: form.highlightMode }),
   };
 }
 
@@ -100,61 +104,69 @@ function formToOverride(form: HolidayFormData): HolidayOverride {
     name: form.name.trim(),
     month,
     day,
-    icon: isCatalogIcon(form.icon) ? form.icon : undefined,
+    icon: normalizeStoredIconName(form.icon),
     iconColor: storedIconColor(form.iconColor),
+    highlightMode: holidayHighlightMode({ highlightMode: form.highlightMode }),
   };
 }
 
-async function persistStorage(storage: HolidaysStorage): Promise<void> {
-  await setConfig(CONFIG_KEYS.HOLIDAYS_DATA, JSON.stringify(storage));
-}
-
-async function loadServiceRange(): Promise<HolidayServiceRange | null> {
-  const [enlistmentRaw, demobilizationRaw] = await Promise.all([
-    getConfig(CONFIG_KEYS.ENLISTMENT_DATE),
-    getConfig(CONFIG_KEYS.DEMOBILIZATION_DATE),
-  ]);
-
-  if (!enlistmentRaw || !demobilizationRaw) {
+async function loadActiveTimerRange(): Promise<HolidayServiceRange | null> {
+  const { activeTimer } = await loadTimerRecords();
+  if (!activeTimer) {
     return null;
   }
 
   return {
-    start: parseISO(enlistmentRaw),
-    end: parseISO(demobilizationRaw),
+    start: activeTimer.startDate,
+    end: activeTimer.endDate,
   };
 }
+
+const holidaysStore = createConfigJsonStore<HolidaysStorage, DisplayHoliday[]>({
+  key: CONFIG_KEYS.HOLIDAYS_DATA,
+  parse: parseHolidaysStorage,
+  validate: async (stored) => {
+    const migration = migrateHolidaysStorageIcons(stored);
+    return { value: migration.storage, changed: migration.changed };
+  },
+  toDisplay: async (stored) => {
+    const serviceRange = await loadActiveTimerRange();
+    return buildDisplayHolidays(stored, new Date(), serviceRange);
+  },
+  afterPersist: () => {
+    void rescheduleAppNotifications();
+  },
+});
 
 /** Загружает и управляет списком праздников */
 export function useHolidays(): UseHolidaysResult {
   const [isLoading, setIsLoading] = useState(true);
   const [holidays, setHolidays] = useState<DisplayHoliday[]>([]);
   const [storage, setStorage] = useState<HolidaysStorage>(DEFAULT_HOLIDAYS_STORAGE);
-  const [pendingDeletion, setPendingDeletion] = useState<PendingDeletion | null>(null);
-
   const storageRef = useRef(storage);
   storageRef.current = storage;
+  const refreshHolidaysRef = useRef<(nextStorage: HolidaysStorage) => Promise<void>>(async () => {});
 
-  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearUndoTimer = useCallback(() => {
-    if (undoTimerRef.current) {
-      clearTimeout(undoTimerRef.current);
-      undoTimerRef.current = null;
-    }
-  }, []);
+  const {
+    pending: pendingDeletion,
+    schedule: scheduleUndo,
+    undo: undoDelete,
+  } = useUndoableDelete<PendingDeletion>({
+    onRestore: async (pending) => {
+      await refreshHolidaysRef.current(pending.storageSnapshot);
+    },
+  });
 
   const reload = useCallback(async () => {
     try {
-      const [holidaysRaw, serviceRange] = await Promise.all([
-        getConfig(CONFIG_KEYS.HOLIDAYS_DATA),
-        loadServiceRange(),
-      ]);
-      const parsedStorage = parseHolidaysStorage(holidaysRaw);
-      setStorage(parsedStorage);
-      const nextHolidays = buildDisplayHolidays(parsedStorage, new Date(), serviceRange);
-      setHolidays(nextHolidays);
-      void rescheduleHolidayNotifications();
+      const previousRaw = holidaysStore.currentRaw();
+      const { stored, display, raw } = await holidaysStore.load();
+      storageRef.current = stored;
+      setStorage(stored);
+      setHolidays(display);
+      if (raw !== previousRaw) {
+        void rescheduleAppNotifications();
+      }
     } catch (error) {
       logger.error('Ошибка загрузки праздников', error);
       setHolidays([]);
@@ -168,11 +180,13 @@ export function useHolidays(): UseHolidaysResult {
   }, [reload]);
 
   const refreshHolidays = useCallback(async (nextStorage: HolidaysStorage) => {
-    const serviceRange = await loadServiceRange();
+    const display = await holidaysStore.save(nextStorage);
+    storageRef.current = nextStorage;
     setStorage(nextStorage);
-    setHolidays(buildDisplayHolidays(nextStorage, new Date(), serviceRange));
-    void rescheduleHolidayNotifications();
+    setHolidays(display);
   }, []);
+
+  refreshHolidaysRef.current = refreshHolidays;
 
   const addHoliday = useCallback(
     async (form: HolidayFormData): Promise<boolean> => {
@@ -188,7 +202,6 @@ export function useHolidays(): UseHolidaysResult {
         customHolidays: [...storageRef.current.customHolidays, record],
       };
 
-      await persistStorage(nextStorage);
       await refreshHolidays(nextStorage);
       return true;
     },
@@ -217,7 +230,6 @@ export function useHolidays(): UseHolidaysResult {
             },
           };
 
-      await persistStorage(nextStorage);
       await refreshHolidays(nextStorage);
       return true;
     },
@@ -226,8 +238,6 @@ export function useHolidays(): UseHolidaysResult {
 
   const deleteHoliday = useCallback(
     async (holiday: DisplayHoliday) => {
-      clearUndoTimer();
-
       const snapshot = storageRef.current;
       const nextStorage: HolidaysStorage = holiday.isCustom
         ? {
@@ -241,31 +251,11 @@ export function useHolidays(): UseHolidaysResult {
               : [...snapshot.deletedIds, holiday.id],
           };
 
-      await persistStorage(nextStorage);
       await refreshHolidays(nextStorage);
-
-      setPendingDeletion({ holiday, storageSnapshot: snapshot });
-
-      undoTimerRef.current = setTimeout(() => {
-        setPendingDeletion(null);
-        undoTimerRef.current = null;
-      }, UNDO_TIMEOUT_MS);
+      await scheduleUndo({ holiday, storageSnapshot: snapshot });
     },
-    [clearUndoTimer, refreshHolidays],
+    [refreshHolidays, scheduleUndo],
   );
-
-  const undoDelete = useCallback(async () => {
-    if (!pendingDeletion) {
-      return;
-    }
-
-    clearUndoTimer();
-    await persistStorage(pendingDeletion.storageSnapshot);
-    await refreshHolidays(pendingDeletion.storageSnapshot);
-    setPendingDeletion(null);
-  }, [clearUndoTimer, pendingDeletion, refreshHolidays]);
-
-  useEffect(() => () => clearUndoTimer(), [clearUndoTimer]);
 
   return {
     isLoading,

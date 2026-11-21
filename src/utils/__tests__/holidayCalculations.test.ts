@@ -86,6 +86,7 @@ describe('holidayCalculations', () => {
             month: 6,
             day: 10,
             icon: 'cake-variant',
+            highlightMode: 'row',
           },
         ],
       },
@@ -96,5 +97,6 @@ describe('holidayCalculations', () => {
     const birthday = holidays.filter((item) => item.id === 'custom-birthday');
     expect(birthday.map((item) => item.date.getFullYear())).toEqual([2025, 2026]);
     expect(birthday[0]?.icon).toBe('cake-variant');
+    expect(birthday[0]?.highlightMode).toBe('row');
   });
 });

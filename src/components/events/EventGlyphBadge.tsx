@@ -1,8 +1,25 @@
-import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import {
+  Entypo,
+  Feather,
+  FontAwesome,
+  FontAwesome6,
+  MaterialCommunityIcons,
+  MaterialIcons,
+} from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { SplitStarIcon, starIconVariantForName } from '@/components/events/SplitStarIcon';
-import { SPLIT_STAR_ICON_ID, type EventGlyph } from '@/utils/eventGlyphs';
+import {
+  SPLIT_STAR_ICON_ID,
+  type CatalogIconSet,
+  type EntypoIconName,
+  type EventGlyph,
+  type FeatherIconName,
+  type FontAwesome6IconName,
+  type FontAwesomeIconName,
+  type MaterialIconName,
+  type MaterialIconsName,
+} from '@/utils/eventGlyphs';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
@@ -17,6 +34,33 @@ interface EventGlyphBadgeProps {
   opacity?: number;
 }
 
+function VectorGlyph({
+  set,
+  name,
+  size,
+  color,
+}: {
+  set?: Exclude<CatalogIconSet, 'custom'>;
+  name: string;
+  size: number;
+  color: string;
+}) {
+  switch (set) {
+    case 'feather':
+      return <Feather name={name as FeatherIconName} size={size} color={color} />;
+    case 'fontawesome':
+      return <FontAwesome name={name as FontAwesomeIconName} size={size} color={color} />;
+    case 'fontawesome6':
+      return <FontAwesome6 name={name as FontAwesome6IconName} size={size} color={color} />;
+    case 'materialIcons':
+      return <MaterialIcons name={name as MaterialIconsName} size={size} color={color} />;
+    case 'entypo':
+      return <Entypo name={name as EntypoIconName} size={size} color={color} />;
+    default:
+      return <MaterialCommunityIcons name={name as MaterialIconName} size={size} color={color} />;
+  }
+}
+
 export function EventGlyphBadge({
   glyph,
   compact = false,
@@ -27,15 +71,17 @@ export function EventGlyphBadge({
 }: EventGlyphBadgeProps) {
   const theme = useAppTheme();
   const color = colorOverride ?? glyph.color ?? theme.text.primary;
-  const iconSize =
+  const baseSize =
     iconSizeOverride ??
     (compact ? 22 : glyph.type === 'icon' && glyph.size ? glyph.size : 30);
+  const iconSize =
+    glyph.type === 'icon' && glyph.scale ? Math.round(baseSize * glyph.scale) : baseSize;
 
   const wrapStyle = opacity !== undefined ? { opacity } : undefined;
   const starVariant =
     glyph.type === 'custom' && glyph.id === SPLIT_STAR_ICON_ID
       ? 'split'
-      : glyph.type === 'icon' && glyph.set !== 'feather'
+      : glyph.type === 'icon' && (!glyph.set || glyph.set === 'material')
         ? starIconVariantForName(glyph.name)
         : undefined;
 
@@ -56,12 +102,8 @@ export function EventGlyphBadge({
       {starVariant ? (
         <SplitStarIcon size={iconSize} color={color} variant={starVariant} />
       ) : glyph.type === 'icon' ? (
-        glyph.set === 'feather' ? (
-          <Feather name={glyph.name} size={iconSize} color={color} />
-        ) : (
-          <MaterialCommunityIcons name={glyph.name} size={iconSize} color={color} />
-        )
-        ) : glyph.type === 'label' ? (
+        <VectorGlyph set={glyph.set} name={glyph.name} size={iconSize} color={color} />
+      ) : glyph.type === 'label' ? (
         <Text
           style={[styles.label, compact && styles.labelCompact, { color }]}
           numberOfLines={1}

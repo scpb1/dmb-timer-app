@@ -14,6 +14,7 @@ import {
   type HolidaysStorage,
   type PredefinedHolidayTemplate,
 } from '@/types/holidays';
+import { migrateStoredIconName } from '@/utils/eventGlyphs';
 
 function isLeapYear(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
@@ -52,6 +53,7 @@ interface HolidaySeed {
   day: number;
   icon?: string;
   iconColor?: string;
+  highlightMode?: DisplayHoliday['highlightMode'];
   isCustom: boolean;
 }
 
@@ -97,6 +99,7 @@ function applyOverride(
     day: override?.day ?? template.day,
     icon: override?.icon,
     iconColor: override?.iconColor,
+    highlightMode: override?.highlightMode,
     isCustom: false,
   };
 }
@@ -113,6 +116,7 @@ function customToSeed(record: CustomHolidayRecord): HolidaySeed | null {
     day: record.day,
     icon: record.icon,
     iconColor: record.iconColor,
+    highlightMode: record.highlightMode,
     isCustom: true,
   };
 }
@@ -195,6 +199,45 @@ export function formatHolidayTodayBody(name: string, holidayId: string): string 
 
 export function formatHolidayDate(holiday: DisplayHoliday): string {
   return format(holiday.date, 'd MMMM yyyy', { locale: ru });
+}
+
+export function migrateHolidaysStorageIcons(
+  storage: HolidaysStorage,
+): { storage: HolidaysStorage; changed: boolean } {
+  let changed = false;
+
+  const customHolidays = storage.customHolidays.map((record) => {
+    const icon = migrateStoredIconName(record.icon);
+    if (icon === record.icon) {
+      return record;
+    }
+    changed = true;
+    return { ...record, icon };
+  });
+
+  const overrides: Record<string, HolidayOverride> = {};
+  for (const [id, override] of Object.entries(storage.overrides)) {
+    const icon = migrateStoredIconName(override.icon);
+    if (icon === override.icon) {
+      overrides[id] = override;
+    } else {
+      changed = true;
+      overrides[id] = { ...override, icon };
+    }
+  }
+
+  if (!changed) {
+    return { storage, changed: false };
+  }
+
+  return {
+    storage: {
+      ...storage,
+      customHolidays,
+      overrides,
+    },
+    changed: true,
+  };
 }
 
 export function parseHolidaysStorage(raw: string | null): HolidaysStorage {

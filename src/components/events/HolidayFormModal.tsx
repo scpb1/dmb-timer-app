@@ -12,13 +12,16 @@ import {
 } from 'react-native';
 
 import { DatePicker } from '@/components/common/DatePicker';
+import { CardHighlightModePicker } from '@/components/events/CardHighlightModePicker';
 import { FORM_FIELD_HEIGHT } from '@/components/events/formFieldStyles';
 import { IconColorPicker } from '@/components/events/IconColorPicker';
 import { IconPicker } from '@/components/events/IconPicker';
 import type { HolidayFormData } from '@/hooks/useHolidays';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
+import type { CardHighlightMode } from '@/types/events';
 import { HOLIDAY_NAME_MAX_LENGTH, type DisplayHoliday } from '@/types/holidays';
+import { holidayHighlightMode } from '@/utils/cardHighlight';
 import { DEFAULT_HOLIDAY_ICON, getHolidayFormIconDefaults } from '@/utils/eventGlyphs';
 
 interface HolidayFormModalProps {
@@ -36,6 +39,7 @@ function buildInitialForm(holiday: DisplayHoliday | null): HolidayFormData {
       dateValue: null,
       icon: DEFAULT_HOLIDAY_ICON,
       iconColor: undefined,
+      highlightMode: 'icon',
     };
   }
 
@@ -46,6 +50,7 @@ function buildInitialForm(holiday: DisplayHoliday | null): HolidayFormData {
     dateValue: holiday.date,
     icon,
     iconColor,
+    highlightMode: holidayHighlightMode(holiday),
   };
 }
 
@@ -60,6 +65,7 @@ export function HolidayFormModal({
   const [dateValue, setDateValue] = useState<Date | null>(null);
   const [icon, setIcon] = useState<string | undefined>(DEFAULT_HOLIDAY_ICON);
   const [iconColor, setIconColor] = useState<string | undefined>(undefined);
+  const [highlightMode, setHighlightMode] = useState<CardHighlightMode>('icon');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const theme = useAppTheme();
@@ -71,13 +77,14 @@ export function HolidayFormModal({
       setDateValue(initial.dateValue);
       setIcon(initial.icon);
       setIconColor(initial.iconColor);
+      setHighlightMode(initial.highlightMode ?? 'icon');
       setError(null);
       setIsSaving(false);
     }
   }, [visible, holiday]);
 
   const handleSave = async () => {
-    const form: HolidayFormData = { name, dateValue, icon, iconColor };
+    const form: HolidayFormData = { name, dateValue, icon, iconColor, highlightMode };
     const trimmedName = name.trim();
 
     if (!trimmedName) {
@@ -105,6 +112,9 @@ export function HolidayFormModal({
   };
 
   const title = mode === 'add' ? 'Новый праздник' : 'Изменение праздника';
+  const rowMode = highlightMode === 'row';
+  const rowFillColor = rowMode ? (iconColor ?? theme.text.primary) : undefined;
+  const previewOnFill = rowFillColor != null;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -155,8 +165,22 @@ export function HolidayFormModal({
               {name.length}/{HOLIDAY_NAME_MAX_LENGTH}
             </Text>
 
-            <IconPicker value={icon} onChange={setIcon} previewColor={iconColor} />
-            <IconColorPicker value={iconColor} onChange={setIconColor} />
+            <CardHighlightModePicker value={highlightMode} onChange={setHighlightMode} />
+
+            <IconPicker
+              value={icon}
+              onChange={setIcon}
+              previewColor={iconColor}
+              previewOnFill={previewOnFill}
+              previewFillColor={rowFillColor}
+            />
+            <IconColorPicker
+              value={iconColor}
+              onChange={setIconColor}
+              label={rowMode ? 'Цвет заливки' : 'Цвет иконки'}
+              swatchFallbackColor={rowMode ? theme.text.primary : undefined}
+              showReset={iconColor != null}
+            />
 
             <DatePicker
               label="Дата праздника"
@@ -166,7 +190,13 @@ export function HolidayFormModal({
                 setError(null);
               }}
               labelStyle={styles.datePickerLabel}
-              buttonStyle={styles.datePickerButton}
+              buttonStyle={[
+                styles.datePickerButton,
+                {
+                  backgroundColor: theme.overlay.fill,
+                  borderColor: theme.overlay.border,
+                },
+              ]}
               buttonTextStyle={styles.datePickerButtonText}
             />
 

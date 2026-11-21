@@ -79,7 +79,7 @@ describe('eventGlyphs', () => {
   it('пользовательская иконка и цвет перекрывают автоматический глиф', () => {
     expect(
       getEventGlyph(event({ id: PREDEFINED_EVENT_IDS.EQUATOR, icon: 'heart', iconColor: '#AABBCC' })),
-    ).toEqual({ type: 'icon', name: 'heart', color: '#AABBCC' });
+    ).toEqual({ type: 'icon', name: 'heart', set: 'fontawesome', scale: 0.78, color: '#AABBCC' });
     expect(getAutomaticEventGlyph(event({ id: PREDEFINED_EVENT_IDS.EQUATOR, icon: 'heart' }))).toEqual({
       type: 'custom',
       id: 'split-star',
@@ -91,6 +91,60 @@ describe('eventGlyphs', () => {
       type: 'custom',
       id: 'split-star',
     });
+  });
+
+  it('удалённые иконки каталога падают на звезду-штамп, заменённые — на новые глифы', () => {
+    const stamp = { type: 'custom' as const, id: 'split-star' as const };
+    expect(getEventGlyph(event({ id: 'custom', isCustom: true, icon: 'star-four-points' }))).toEqual(
+      stamp,
+    );
+    expect(getEventGlyph(event({ id: 'custom', isCustom: true, icon: 'heart-multiple' }))).toEqual(
+      stamp,
+    );
+    expect(getEventGlyph(event({ id: 'custom', isCustom: true, icon: 'weather-night' }))).toEqual(
+      stamp,
+    );
+    expect(getEventGlyph(event({ id: 'custom', isCustom: true, icon: 'weather-sunny' }))).toEqual({
+      type: 'icon',
+      name: 'sun',
+      set: 'feather',
+    });
+    expect(getEventGlyph(event({ id: 'custom', isCustom: true, icon: 'heart-outline' }))).toEqual({
+      type: 'icon',
+      name: 'heart-o',
+      set: 'fontawesome',
+      scale: 0.78,
+    });
+    expect(getEventGlyph(event({ id: 'custom', isCustom: true, icon: 'medal' }))).toEqual({
+      type: 'icon',
+      name: 'military-tech',
+      set: 'materialIcons',
+    });
+    expect(getEventGlyph(event({ id: 'custom', isCustom: true, icon: 'moon-waning-crescent' }))).toEqual({
+      type: 'icon',
+      name: 'moon',
+      set: 'entypo',
+    });
+    expect(getEventGlyph(event({ id: 'custom', isCustom: true, icon: 'home-heart' }))).toEqual({
+      type: 'icon',
+      name: 'gun',
+      set: 'fontawesome6',
+      scale: 0.7,
+    });
+  });
+
+  it('в режиме выделения строки не красит глиф события', () => {
+    expect(
+      getEventGlyph(
+        event({
+          id: 'custom',
+          isCustom: true,
+          icon: 'balloon',
+          iconColor: '#BB322E',
+          highlightMode: 'row',
+        }),
+      ),
+    ).toEqual({ type: 'icon', name: 'balloon' });
   });
 
   it('у праздников берёт пресет или выбранную иконку', () => {
@@ -116,8 +170,14 @@ describe('eventGlyphs', () => {
     });
     expect(getHolidayGlyph(holiday({ id: PREDEFINED_HOLIDAY_IDS.SUMMER }))).toEqual({
       type: 'icon',
-      name: 'weather-sunny',
+      name: 'sun',
+      set: 'feather',
       size: 34,
+    });
+    expect(getHolidayGlyph(holiday({ id: PREDEFINED_HOLIDAY_IDS.VICTORY_DAY }))).toEqual({
+      type: 'icon',
+      name: 'military-tech',
+      set: 'materialIcons',
     });
     expect(
       getHolidayGlyph(holiday({ id: PREDEFINED_HOLIDAY_IDS.NEW_YEAR, icon: 'balloon' })),
@@ -126,5 +186,27 @@ describe('eventGlyphs', () => {
       type: 'icon',
       name: 'star-outline',
     });
+  });
+
+  it('в режиме выделения строки не красит глиф — цвет идёт заливке карточки', () => {
+    expect(
+      getHolidayGlyph(
+        holiday({
+          id: PREDEFINED_HOLIDAY_IDS.NEW_YEAR,
+          icon: 'balloon',
+          iconColor: '#C45C58',
+          highlightMode: 'row',
+        }),
+      ),
+    ).toEqual({ type: 'icon', name: 'balloon' });
+    expect(
+      getHolidayGlyph(
+        holiday({
+          id: PREDEFINED_HOLIDAY_IDS.NEW_YEAR,
+          icon: 'balloon',
+          iconColor: '#C45C58',
+        }),
+      ),
+    ).toEqual({ type: 'icon', name: 'balloon', color: '#C45C58' });
   });
 });

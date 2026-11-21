@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
@@ -24,7 +25,7 @@ interface EventCardProps {
   onDelete: () => void;
 }
 
-export function EventCard({
+export const EventCard = memo(function EventCard({
   name,
   dateText,
   subtitle,
@@ -114,7 +115,7 @@ export function EventCard({
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

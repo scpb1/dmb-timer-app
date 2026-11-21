@@ -1,5 +1,12 @@
 import type { ComponentProps } from 'react';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import {
+  Entypo,
+  Feather,
+  FontAwesome,
+  FontAwesome6,
+  MaterialCommunityIcons,
+  MaterialIcons,
+} from '@expo/vector-icons';
 
 import {
   parseDddMilestoneValue,
@@ -15,27 +22,59 @@ import {
   serviceBoundaryDisplayMode,
 } from '@/utils/serviceBoundaryEvents';
 import { PREDEFINED_HOLIDAYS, type DisplayHoliday } from '@/types/holidays';
+import { eventHighlightMode, holidayHighlightMode } from '@/utils/cardHighlight';
 
 export type MaterialIconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 export type FeatherIconName = ComponentProps<typeof Feather>['name'];
+export type FontAwesomeIconName = ComponentProps<typeof FontAwesome>['name'];
+export type FontAwesome6IconName = ComponentProps<typeof FontAwesome6>['name'];
+export type MaterialIconsName = ComponentProps<typeof MaterialIcons>['name'];
+export type EntypoIconName = ComponentProps<typeof Entypo>['name'];
 
 export const SPLIT_STAR_ICON_ID = 'split-star';
 
-export type CatalogIconName = MaterialIconName | typeof SPLIT_STAR_ICON_ID;
+export type CatalogIconSet =
+  | 'material'
+  | 'feather'
+  | 'fontawesome'
+  | 'fontawesome6'
+  | 'materialIcons'
+  | 'entypo'
+  | 'custom';
+
+export type CatalogIconName =
+  | MaterialIconName
+  | typeof SPLIT_STAR_ICON_ID
+  | 'heart-o'
+  | 'person-military-rifle'
+  | 'gun'
+  | 'military-tech'
+  | 'mail'
+  | 'sun'
+  | 'moon';
 
 export type EventGlyph =
-  | { type: 'icon'; name: MaterialIconName; color?: string; set?: 'material'; size?: number }
-  | { type: 'icon'; name: FeatherIconName; color?: string; set: 'feather'; size?: number }
+  | {
+      type: 'icon';
+      name: string;
+      color?: string;
+      set?: Exclude<CatalogIconSet, 'custom'>;
+      size?: number;
+      scale?: number;
+    }
   | { type: 'custom'; id: typeof SPLIT_STAR_ICON_ID; color?: string; size?: number }
   | { type: 'label'; text: string; color?: string };
 
 export interface EventIconOption {
   name: CatalogIconName;
   label: string;
+  set?: CatalogIconSet;
+  glyph?: string;
+  scale?: number;
 }
 
 export const DEFAULT_EVENT_ICON: CatalogIconName = SPLIT_STAR_ICON_ID;
-export const DEFAULT_HOLIDAY_ICON: MaterialIconName = 'star-outline';
+export const DEFAULT_HOLIDAY_ICON: CatalogIconName = 'star-outline';
 export const MILESTONE_ICON: CatalogIconName = SPLIT_STAR_ICON_ID;
 
 /**
@@ -46,63 +85,72 @@ export const EVENT_ICON_CATALOG: EventIconOption[] = [
   { name: 'star', label: 'Звезда' },
   { name: 'star-outline', label: 'Звезда контур' },
   { name: SPLIT_STAR_ICON_ID, label: 'Звезда штамп' },
-  { name: 'star-four-points', label: 'Искра' },
-  { name: 'heart', label: 'Сердце' },
-  { name: 'heart-outline', label: 'Сердце контур' },
-  { name: 'heart-multiple', label: 'Два сердца' },
+  { name: 'gun', label: 'Оружие', set: 'fontawesome6', scale: 0.7 },
+  { name: 'person-military-rifle', label: 'Солдат', set: 'fontawesome6' },
+  { name: 'tank', label: 'Танк' },
+  { name: 'shield-outline', label: 'Щит' },
+  { name: 'shield-star', label: 'Щит со звездой' },
+  { name: 'military-tech', label: 'Медаль', set: 'materialIcons' },
+  { name: 'trophy', label: 'Кубок' },
+  { name: 'flag-variant', label: 'Флаг' },
+  { name: 'home-outline', label: 'Дом' },
+  { name: 'calendar-outline', label: 'Календарь' },
+  { name: 'heart', label: 'Сердце', set: 'fontawesome', scale: 0.78 },
+  { name: 'heart-o', label: 'Сердце контур', set: 'fontawesome', scale: 0.78 },
   { name: 'hand-heart', label: 'Рука и сердце' },
   { name: 'account-heart', label: 'Человек и сердце' },
   { name: 'ring', label: 'Кольцо' },
   { name: 'emoticon-kiss-outline', label: 'Поцелуй' },
-  { name: 'home-heart', label: 'Дом с сердцем' },
-  { name: 'home-outline', label: 'Дом' },
-  { name: 'flag-variant', label: 'Флаг' },
-  { name: 'calendar-outline', label: 'Календарь' },
   { name: 'calendar-heart', label: 'Календарь с сердцем' },
+  { name: 'cake-variant', label: 'Торт' },
+  { name: 'gift-outline', label: 'Подарок' },
+  { name: 'balloon', label: 'Шарик' },
+  { name: 'crown', label: 'Корона' },
+  { name: 'candle', label: 'Свеча' },
   { name: 'pine-tree', label: 'Ёлка' },
+  { name: 'airplane', label: 'Самолёт' },
+  { name: 'train', label: 'Поезд' },
+  { name: 'car', label: 'Машина' },
+  { name: 'phone-outline', label: 'Телефон' },
+  { name: 'email-outline', label: 'Письмо' },
+  { name: 'mail', label: 'Конверт', set: 'entypo' },
+  { name: 'map-marker-outline', label: 'Метка' },
+  { name: 'camera-outline', label: 'Камера' },
+  { name: 'music-note', label: 'Музыка' },
+  { name: 'book-open-outline', label: 'Книга' },
+  { name: 'school', label: 'Школа' },
+  { name: 'briefcase-outline', label: 'Портфель' },
+  { name: 'coffee', label: 'Кофе' },
+  { name: 'infinity', label: 'Бесконечность' },
+  { name: 'circle', label: 'Круг' },
+  { name: 'circle-half-full', label: 'Половина' },
+  { name: 'fire', label: 'Огонь' },
+  { name: 'sun', label: 'Солнце', set: 'feather' },
+  { name: 'moon', label: 'Луна', set: 'entypo' },
   { name: 'snowflake', label: 'Снежинка' },
-  { name: 'weather-sunny', label: 'Солнце' },
-  { name: 'weather-night', label: 'Ночь' },
-  { name: 'moon-waning-crescent', label: 'Луна' },
   { name: 'flower-tulip', label: 'Тюльпан' },
   { name: 'flower', label: 'Цветок' },
   { name: 'sprout', label: 'Росток' },
   { name: 'leaf', label: 'Лист' },
   { name: 'butterfly', label: 'Бабочка' },
   { name: 'waves', label: 'Волны' },
-  { name: 'cake-variant', label: 'Торт' },
-  { name: 'gift-outline', label: 'Подарок' },
-  { name: 'balloon', label: 'Шарик' },
-  { name: 'crown', label: 'Корона' },
-  { name: 'candle', label: 'Свеча' },
-  { name: 'shield-outline', label: 'Щит' },
-  { name: 'shield-star', label: 'Щит со звездой' },
-  { name: 'medal', label: 'Медаль' },
-  { name: 'trophy', label: 'Кубок' },
-  { name: 'school', label: 'Школа' },
-  { name: 'briefcase-outline', label: 'Портфель' },
-  { name: 'airplane', label: 'Самолёт' },
-  { name: 'train', label: 'Поезд' },
-  { name: 'car', label: 'Машина' },
-  { name: 'map-marker-outline', label: 'Метка' },
-  { name: 'phone-outline', label: 'Телефон' },
-  { name: 'email-outline', label: 'Письмо' },
-  { name: 'camera-outline', label: 'Камера' },
-  { name: 'music-note', label: 'Музыка' },
-  { name: 'book-open-outline', label: 'Книга' },
-  { name: 'coffee', label: 'Кофе' },
   { name: 'paw', label: 'Лапка' },
   { name: 'baby-face-outline', label: 'Малыш' },
-  { name: 'infinity', label: 'Бесконечность' },
-  { name: 'circle', label: 'Круг' },
-  { name: 'circle-half-full', label: 'Половина' },
-  { name: 'fire', label: 'Огонь' },
 ];
 
-const CATALOG_NAMES = new Set<string>(EVENT_ICON_CATALOG.map((item) => item.name));
+const CATALOG_BY_NAME = new Map(EVENT_ICON_CATALOG.map((item) => [item.name, item]));
+const CATALOG_NAMES = new Set<string>(CATALOG_BY_NAME.keys());
 
 const LEGACY_ICON_ALIASES: Record<string, CatalogIconName> = {
   'auto-fix': SPLIT_STAR_ICON_ID,
+  'star-four-points': SPLIT_STAR_ICON_ID,
+  'heart-multiple': SPLIT_STAR_ICON_ID,
+  'weather-night': SPLIT_STAR_ICON_ID,
+  'weather-sunny': 'sun',
+  'heart-outline': 'heart-o',
+  medal: 'military-tech',
+  'moon-waning-crescent': 'moon',
+  'home-heart': 'gun',
 };
 
 export function normalizeStoredIconName(name: string | undefined): CatalogIconName | undefined {
@@ -115,13 +163,20 @@ export function normalizeStoredIconName(name: string | undefined): CatalogIconNa
   return LEGACY_ICON_ALIASES[name];
 }
 
+export function migrateStoredIconName(icon: string | undefined): string | undefined {
+  if (typeof icon !== 'string') {
+    return icon;
+  }
+  return normalizeStoredIconName(icon) ?? icon;
+}
+
 export function isCatalogIcon(name: string | undefined): name is CatalogIconName {
   return normalizeStoredIconName(name) !== undefined;
 }
 
 export function resolveCatalogIcon(
   name: string | undefined,
-  fallback: MaterialIconName,
+  fallback: CatalogIconName,
 ): CatalogIconName {
   return normalizeStoredIconName(name) ?? fallback;
 }
@@ -137,7 +192,21 @@ function catalogIconToGlyph(name: CatalogIconName, color?: string): EventGlyph {
   if (name === SPLIT_STAR_ICON_ID) {
     return { type: 'custom', id: SPLIT_STAR_ICON_ID, color };
   }
-  return { type: 'icon', name, color };
+  const option = CATALOG_BY_NAME.get(name);
+  const glyphName = option?.glyph ?? name;
+  const set = option?.set;
+  const glyph: EventGlyph =
+    set && set !== 'material' && set !== 'custom'
+      ? { type: 'icon', name: glyphName, set, color }
+      : { type: 'icon', name: glyphName, color };
+  if (glyph.type === 'icon' && option?.scale) {
+    return { ...glyph, scale: option.scale };
+  }
+  return glyph;
+}
+
+export function getCatalogGlyph(name: CatalogIconName, color?: string): EventGlyph {
+  return catalogIconToGlyph(name, color);
 }
 
 function automaticEventGlyph(event: DisplayEvent): EventGlyph {
@@ -187,13 +256,14 @@ export function getEventFormIconDefaults(event: DisplayEvent): {
 } {
   if (event.isCustom) {
     return {
-      icon: isCatalogIcon(event.icon) ? event.icon : DEFAULT_EVENT_ICON,
+      icon: normalizeStoredIconName(event.icon) ?? DEFAULT_EVENT_ICON,
       iconColor: event.iconColor,
     };
   }
 
-  if (isCatalogIcon(event.icon)) {
-    return { icon: event.icon, iconColor: event.iconColor };
+  const storedIcon = normalizeStoredIconName(event.icon);
+  if (storedIcon) {
+    return { icon: storedIcon, iconColor: event.iconColor };
   }
 
   if (event.id === PREDEFINED_EVENT_IDS.ENLISTMENT) {
@@ -239,13 +309,14 @@ export function getHolidayFormIconDefaults(holiday: DisplayHoliday): {
 } {
   if (holiday.isCustom) {
     return {
-      icon: isCatalogIcon(holiday.icon) ? holiday.icon : DEFAULT_HOLIDAY_ICON,
+      icon: normalizeStoredIconName(holiday.icon) ?? DEFAULT_HOLIDAY_ICON,
       iconColor: holiday.iconColor,
     };
   }
 
-  if (isCatalogIcon(holiday.icon)) {
-    return { icon: holiday.icon, iconColor: holiday.iconColor };
+  const storedIcon = normalizeStoredIconName(holiday.icon);
+  if (storedIcon) {
+    return { icon: storedIcon, iconColor: holiday.iconColor };
   }
 
   const auto = getAutomaticHolidayGlyph(holiday);
@@ -266,6 +337,8 @@ export function getEventGlyph(event: DisplayEvent): EventGlyph {
       serviceBoundaryDisplayMode(event) === 'icon'
         ? resolveServiceBoundaryColor(event)
         : undefined;
+  } else if (eventHighlightMode(event) === 'row') {
+    strokeColor = undefined;
   }
 
   if (normalizedIcon) {
@@ -287,10 +360,11 @@ export function getAutomaticHolidayGlyph(holiday: DisplayHoliday): EventGlyph {
 }
 
 export function getHolidayGlyph(holiday: DisplayHoliday): EventGlyph {
+  const strokeColor = holidayHighlightMode(holiday) === 'icon' ? holiday.iconColor : undefined;
   const normalizedIcon = normalizeStoredIconName(holiday.icon);
   if (normalizedIcon) {
-    return catalogIconToGlyph(normalizedIcon, holiday.iconColor);
+    return catalogIconToGlyph(normalizedIcon, strokeColor);
   }
 
-  return applyIconColor(getAutomaticHolidayGlyph(holiday), holiday.iconColor);
+  return applyIconColor(getAutomaticHolidayGlyph(holiday), strokeColor);
 }

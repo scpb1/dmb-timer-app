@@ -1,3 +1,5 @@
+import type { CardHighlightMode } from '@/types/events';
+
 export const HOLIDAY_NAME_MAX_LENGTH = 50;
 
 export interface HolidayOverride {
@@ -6,6 +8,7 @@ export interface HolidayOverride {
   day?: number;
   icon?: string;
   iconColor?: string;
+  highlightMode?: CardHighlightMode;
 }
 
 export interface CustomHolidayRecord {
@@ -15,6 +18,7 @@ export interface CustomHolidayRecord {
   day: number;
   icon?: string;
   iconColor?: string;
+  highlightMode?: CardHighlightMode;
 }
 
 export interface HolidaysStorage {
@@ -31,6 +35,7 @@ export interface DisplayHoliday {
   date: Date;
   icon?: string;
   iconColor?: string;
+  highlightMode?: CardHighlightMode;
   isCustom: boolean;
   isPast: boolean;
 }
@@ -120,14 +125,14 @@ export const PREDEFINED_HOLIDAYS: PredefinedHolidayTemplate[] = [
     defaultName: 'День Победы',
     month: 5,
     day: 9,
-    defaultIcon: 'medal',
+    defaultIcon: 'military-tech',
   },
   {
     id: PREDEFINED_HOLIDAY_IDS.SUMMER,
     defaultName: 'Лето',
     month: 6,
     day: 1,
-    defaultIcon: 'weather-sunny',
+    defaultIcon: 'sun',
     iconSize: 34,
   },
   {

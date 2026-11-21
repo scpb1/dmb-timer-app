@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -16,11 +16,11 @@ import { EventCard } from '@/components/events/EventCard';
 import { EventFormModal } from '@/components/events/EventFormModal';
 import { HolidayFormModal } from '@/components/events/HolidayFormModal';
 import { UndoSnackbar } from '@/components/events/UndoSnackbar';
-import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { SegmentedControl } from '@/components/trackers/SegmentedControl';
 import { useEvents } from '@/hooks/useEvents';
 import { useHolidays } from '@/hooks/useHolidays';
+import { useServiceTimer } from '@/hooks/useServiceTimer';
 import type { DisplayEvent } from '@/types/events';
 import type { DisplayHoliday } from '@/types/holidays';
 import {
@@ -30,10 +30,11 @@ import {
   formatEventDaysUntilCaption,
   isCalendarToday,
 } from '@/utils/eventCalculations';
+import { resolveHolidayCardStyle } from '@/utils/cardHighlight';
 import { getEventGlyph, getHolidayGlyph } from '@/utils/eventGlyphs';
 import {
   isServiceBoundaryEvent,
-  resolveServiceBoundaryCardStyle,
+  resolveEventCardStyle,
 } from '@/utils/serviceBoundaryEvents';
 import { formatHolidayDate, formatHolidayName } from '@/utils/holidayCalculations';
 import { useAppTheme } from '@/theme';
@@ -49,7 +50,7 @@ type ListRow =
   | { type: 'year'; key: string; year: number }
   | { type: 'item'; key: string; item: ListItem };
 
-const FILTER_OPTIONS: Array<{ value: ListFilter; label: string }> = [
+const FILTER_OPTIONS: { value: ListFilter; label: string }[] = [
   { value: 'all', label: 'Все' },
   { value: 'events', label: 'События' },
   { value: 'holidays', label: 'Праздники' },
@@ -76,6 +77,95 @@ function emptyMessage(filter: ListFilter): string {
 function rowHeight(row: ListRow): number {
   return row.type === 'year' ? YEAR_ROW_HEIGHT : ITEM_ROW_HEIGHT;
 }
+
+const eventListActions = {
+  editEvent: (_event: DisplayEvent) => {},
+  editHoliday: (_holiday: DisplayHoliday) => {},
+  deleteEvent: (_event: DisplayEvent) => {},
+  deleteHoliday: (_holiday: DisplayHoliday) => {},
+};
+
+let eventListItems = new Map<string, ListItem>();
+const eventPressHandlers = new Map<string, () => void>();
+
+function eventItemKey(item: ListItem): string {
+  if (item.kind === 'event') {
+    return `event:${item.event.id}`;
+  }
+  return `holiday:${item.holiday.id}:${item.holiday.date.getFullYear()}`;
+}
+
+function eventPress(action: 'edit' | 'delete', item: ListItem): () => void {
+  const key = `${action}:${eventItemKey(item)}`;
+  let handler = eventPressHandlers.get(key);
+  if (!handler) {
+    handler = () => {
+      const current = eventListItems.get(eventItemKey(item));
+      if (!current) {
+        return;
+      }
+      if (action === 'edit' && current.kind === 'event') {
+        eventListActions.editEvent(current.event);
+      } else if (action === 'delete' && current.kind === 'event') {
+        eventListActions.deleteEvent(current.event);
+      } else if (action === 'edit' && current.kind === 'holiday') {
+        eventListActions.editHoliday(current.holiday);
+      } else if (action === 'delete' && current.kind === 'holiday') {
+        eventListActions.deleteHoliday(current.holiday);
+      }
+    };
+    eventPressHandlers.set(key, handler);
+  }
+  return handler;
+}
+
+const EventListRow = memo(function EventListRow({
+  row,
+  primary,
+  secondary,
+}: {
+  row: ListRow;
+  primary: string;
+  secondary: string;
+}) {
+  if (row.type === 'year') {
+    return <Text style={[styles.yearHeader, { color: secondary }]}>{row.year}</Text>;
+  }
+
+  const { item } = row;
+  if (item.kind === 'event') {
+    return (
+      <EventCard
+        kind="event"
+        name={item.event.name}
+        dateText={formatEventDate(item.event.date)}
+        subtitle={formatEventDaysUntilCaption(item.event)}
+        isPast={item.event.isPast}
+        isToday={isCalendarToday(item.event.date)}
+        glyph={getEventGlyph(item.event)}
+        boundaryStyle={resolveEventCardStyle(item.event, primary)}
+        canDelete={!isServiceBoundaryEvent(item.event.id)}
+        onEdit={eventPress('edit', item)}
+        onDelete={eventPress('delete', item)}
+      />
+    );
+  }
+
+  return (
+    <EventCard
+      kind="holiday"
+      name={formatHolidayName(item.holiday)}
+      dateText={formatHolidayDate(item.holiday)}
+      subtitle={formatDaysUntilDate(item.holiday.date)}
+      isPast={item.holiday.isPast}
+      isToday={isCalendarToday(item.holiday.date)}
+      glyph={getHolidayGlyph(item.holiday)}
+      boundaryStyle={resolveHolidayCardStyle(item.holiday, primary)}
+      onEdit={eventPress('edit', item)}
+      onDelete={eventPress('delete', item)}
+    />
+  );
+});
 
 function buildRows(items: ListItem[]): ListRow[] {
   const uniqueYears = new Set(items.map((item) => item.date.getFullYear()));
@@ -122,6 +212,11 @@ export function EventsScreen() {
     undoDelete: undoHolidayDelete,
     reload: reloadHolidays,
   } = useHolidays();
+  const { activeTimer, customTimers, reload: reloadTimer } = useServiceTimer({ tick: false });
+  const eventsTitle =
+    customTimers.length > 0 && activeTimer?.name
+      ? `События · ${activeTimer.name}`
+      : 'События';
 
   const [filter, setFilter] = useState<ListFilter>('all');
   const listRef = useRef<FlatList<ListRow>>(null);
@@ -137,9 +232,10 @@ export function EventsScreen() {
   useFocusEffect(
     useCallback(() => {
       pendingScrollKey.current = null;
+      void reloadTimer();
       void reloadEvents();
       void reloadHolidays();
-    }, [reloadEvents, reloadHolidays]),
+    }, [reloadEvents, reloadHolidays, reloadTimer]),
   );
 
   const items = useMemo<ListItem[]>(() => {
@@ -167,7 +263,7 @@ export function EventsScreen() {
 
   const rows = useMemo(() => buildRows(items), [items]);
   const rowLayouts = useMemo(() => {
-    const layouts: Array<{ length: number; offset: number }> = [];
+    const layouts: { length: number; offset: number }[] = [];
     let offset = 0;
     for (const row of rows) {
       const length = rowHeight(row);
@@ -261,53 +357,33 @@ export function EventsScreen() {
     return () => clearTimeout(timer);
   }, [filter, isLoading, rows.length, scrollToUpcoming, upcomingIndex]);
 
-  const renderRow = ({ item: row }: { item: ListRow }) => {
-    if (row.type === 'year') {
-      return <Text style={[styles.yearHeader, { color: theme.text.secondary }]}>{row.year}</Text>;
-    }
-
-    const { item } = row;
-    if (item.kind === 'event') {
-      return (
-        <EventCard
-          kind="event"
-          name={item.event.name}
-          dateText={formatEventDate(item.event.date)}
-          subtitle={formatEventDaysUntilCaption(item.event)}
-          isPast={item.event.isPast}
-          isToday={isCalendarToday(item.event.date)}
-          glyph={getEventGlyph(item.event)}
-          boundaryStyle={resolveServiceBoundaryCardStyle(item.event)}
-          canDelete={!isServiceBoundaryEvent(item.event.id)}
-          onEdit={() => openEditEvent(item.event)}
-          onDelete={() => void deleteEvent(item.event)}
-        />
-      );
-    }
-
-    return (
-      <EventCard
-        kind="holiday"
-        name={formatHolidayName(item.holiday)}
-        dateText={formatHolidayDate(item.holiday)}
-        subtitle={formatDaysUntilDate(item.holiday.date)}
-        isPast={item.holiday.isPast}
-        isToday={isCalendarToday(item.holiday.date)}
-        glyph={getHolidayGlyph(item.holiday)}
-        onEdit={() => openEditHoliday(item.holiday)}
-        onDelete={() => void deleteHoliday(item.holiday)}
-      />
-    );
+  eventListItems = new Map(
+    rows.flatMap((row) => (row.type === 'item' ? [[eventItemKey(row.item), row.item] as const] : [])),
+  );
+  eventListActions.editEvent = openEditEvent;
+  eventListActions.editHoliday = openEditHoliday;
+  eventListActions.deleteEvent = (event) => {
+    void deleteEvent(event);
   };
+  eventListActions.deleteHoliday = (holiday) => {
+    void deleteHoliday(holiday);
+  };
+
+  const textPrimary = theme.text.primary;
+  const textSecondary = theme.text.secondary;
+  const renderRow = useCallback(
+    ({ item: row }: { item: ListRow }) => (
+      <EventListRow row={row} primary={textPrimary} secondary={textSecondary} />
+    ),
+    [textPrimary, textSecondary],
+  );
 
   return (
     <View style={styles.root}>
-      <ScreenBackground />
-
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <ScreenHeader
-            title="События"
+            title={eventsTitle}
             right={
               <Pressable
                 style={styles.addButton}

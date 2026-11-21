@@ -5,7 +5,6 @@ import type { DisplayEvent } from '@/types/events';
 import type { DisplayHoliday } from '@/types/holidays';
 import {
   buildEventsTimelineItems,
-  getEventsTimelineFillRatio,
   getEventsTimelineVisualFillRatio,
 } from '@/utils/eventsTimeline';
 
@@ -66,7 +65,6 @@ describe('buildEventsTimelineItems', () => {
     const visual = getEventsTimelineVisualFillRatio(items);
     expect(visual).toBeGreaterThan(0);
     expect(visual).toBeLessThan(1);
-    expect(getEventsTimelineFillRatio(items, now)).toBe(visual);
   });
 
   it('в день праздника ставит «Сегодня» и состояние here', () => {

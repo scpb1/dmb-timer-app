@@ -1,13 +1,10 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { EventGlyphBadge } from '@/components/events/EventGlyphBadge';
-import { SplitStarIcon, starIconVariantForName } from '@/components/events/SplitStarIcon';
 import {
   EVENT_ICON_CATALOG,
-  type CatalogIconName,
+  getCatalogGlyph,
   type EventGlyph,
-  type MaterialIconName,
 } from '@/utils/eventGlyphs';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
@@ -20,23 +17,6 @@ interface IconPickerProps {
   /** Белая иконка на заливке previewFillColor (призыв / дембель). */
   previewOnFill?: boolean;
   previewFillColor?: string;
-}
-
-function CatalogIconPreview({
-  name,
-  size,
-  color,
-}: {
-  name: CatalogIconName;
-  size: number;
-  color: string;
-}) {
-  const starVariant = starIconVariantForName(name);
-  if (starVariant) {
-    return <SplitStarIcon size={size} color={color} variant={starVariant} />;
-  }
-
-  return <MaterialCommunityIcons name={name as MaterialIconName} size={size} color={color} />;
 }
 
 export function IconPicker({
@@ -105,18 +85,12 @@ export function IconPicker({
               accessibilityLabel={option.label}
               accessibilityState={{ selected: isActive }}
             >
-              {previewOnFill ? (
-                <View
-                  style={[
-                    styles.fillPreview,
-                    { backgroundColor: fillColor },
-                  ]}
-                >
-                  <CatalogIconPreview name={option.name} size={22} color={iconColor} />
-                </View>
-              ) : (
-                <CatalogIconPreview name={option.name} size={22} color={iconColor} />
-              )}
+              <EventGlyphBadge
+                glyph={getCatalogGlyph(option.name)}
+                compact
+                color={iconColor}
+                backgroundColor={previewOnFill ? fillColor : undefined}
+              />
             </Pressable>
           );
         })}
@@ -145,13 +119,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 4,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fillPreview: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },

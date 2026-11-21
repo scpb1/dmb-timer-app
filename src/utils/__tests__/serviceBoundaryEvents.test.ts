@@ -36,7 +36,7 @@ describe('serviceBoundaryEvents', () => {
     });
   });
 
-  it('режим «по умолчанию»: обычная строка, цвет на иконке', () => {
+  it('режим «только иконка»: обычная строка, цвет на иконке', () => {
     expect(
       resolveServiceBoundaryCardStyle({
         id: PREDEFINED_EVENT_IDS.DEMOBILIZATION,
@@ -50,7 +50,24 @@ describe('serviceBoundaryEvents', () => {
     });
   });
 
-  it('режим «по умолчанию» после сброса — как обычное событие', () => {
+  it('режим строки после сброса заливает цветом иконки по умолчанию', () => {
+    expect(
+      resolveServiceBoundaryCardStyle(
+        {
+          ...enlist,
+          boundaryDisplay: 'row',
+          boundaryIconThemeDefault: true,
+        },
+        '#3E3630',
+      ),
+    ).toEqual({
+      rowAccent: '#3E3630',
+      badgeFill: '#3E3630',
+      glyphOnFill: true,
+    });
+  });
+
+  it('режим «только иконка» после сброса — как обычное событие', () => {
     expect(
       resolveServiceBoundaryCardStyle({
         ...enlist,

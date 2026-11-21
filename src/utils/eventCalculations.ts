@@ -19,7 +19,7 @@ import {
   dppMilestoneEventId,
   PREDEFINED_EVENT_IDS,
 } from '@/types/events';
-import { SPLIT_STAR_ICON_ID } from '@/utils/eventGlyphs';
+import { SPLIT_STAR_ICON_ID, migrateStoredIconName } from '@/utils/eventGlyphs';
 import { formatCount } from '@/utils/inflection';
 
 /** Ключ сортировки: призыв всегда первый, дембель — последний, остальное по календарю */
@@ -54,6 +54,7 @@ interface PredefinedTemplate {
   dateFormat: EventDateFormat;
   dddValue?: number;
   dppValue?: number;
+  percentValue?: number;
 }
 
 function generatePredefinedTemplates(
@@ -153,7 +154,7 @@ function generatePredefinedTemplates(
     });
   }
 
-  const trafficLight: Array<{ id: string; name: string; daysLeft: number }> = [
+  const trafficLight: { id: string; name: string; daysLeft: number }[] = [
     { id: PREDEFINED_EVENT_IDS.TRAFFIC_RED, name: 'Светофор — красный', daysLeft: 3 },
     { id: PREDEFINED_EVENT_IDS.TRAFFIC_YELLOW, name: 'Светофор — жёлтый', daysLeft: 2 },
     { id: PREDEFINED_EVENT_IDS.TRAFFIC_GREEN, name: 'Светофор — зелёный', daysLeft: 1 },
@@ -197,7 +198,8 @@ export function getDefaultEventListIds(
 }
 
 function migrateStoredStarIcon(icon: string | undefined): string | undefined {
-  return icon === 'star' ? SPLIT_STAR_ICON_ID : icon;
+  const next = icon === 'star' ? SPLIT_STAR_ICON_ID : icon;
+  return migrateStoredIconName(next);
 }
 
 /** Заменяет сохранённую material-звезду на «Звезда штамп» (3-я в каталоге). */
@@ -284,6 +286,70 @@ export function filterEventsInDefaultList(
   return events.filter((event) => allowed.has(event.id));
 }
 
+const EVENT_PERCENT_ERROR = 'Введите процент от 0 до 100, до двух знаков после запятой';
+
+/** Оставляет цифры и одну запятую/точку, не больше двух знаков после разделителя. */
+export function sanitizeEventPercentInput(text: string): string {
+  let separator: '.' | ',' | null = null;
+  let integer = '';
+  let fraction = '';
+
+  for (const ch of text) {
+    if (ch >= '0' && ch <= '9') {
+      if (separator) {
+        if (fraction.length < 2) {
+          fraction += ch;
+        }
+      } else if (integer.length < 3) {
+        integer += ch;
+      }
+    } else if ((ch === '.' || ch === ',') && separator === null) {
+      separator = ch;
+    }
+  }
+
+  if (separator) {
+    return `${integer}${separator}${fraction}`;
+  }
+  return integer;
+}
+
+function roundEventPercent(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/** Процент прошедшего срока: 0–100, до двух знаков; «50», «50,5», «,5» допустимы. */
+export function parseEventPercentInput(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed === '.' || trimmed === ',') {
+    return null;
+  }
+
+  const normalized = trimmed.replace(',', '.');
+  if (!/^\d{0,3}(\.\d{0,2})?$/.test(normalized)) {
+    return null;
+  }
+
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+    return null;
+  }
+
+  return roundEventPercent(parsed);
+}
+
+export function formatEventPercentInput(value: number): string {
+  const rounded = roundEventPercent(value);
+  if (Number.isInteger(rounded)) {
+    return String(rounded);
+  }
+  return rounded.toFixed(2).replace(/0$/, '');
+}
+
+export function eventPercentValidationError(raw: string): string | null {
+  return parseEventPercentInput(raw) === null ? EVENT_PERCENT_ERROR : null;
+}
+
 export function resolveEventDate(
   enlistment: Date,
   demobilization: Date,
@@ -291,6 +357,7 @@ export function resolveEventDate(
   dddValue?: number,
   dppValue?: number,
   dateValue?: string,
+  percentValue?: number,
 ): Date | null {
   const enlist = startOfDay(enlistment);
   const demob = startOfDay(demobilization);
@@ -307,6 +374,15 @@ export function resolveEventDate(
     return addDays(enlist, dppValue);
   }
 
+  if (dateFormat === 'percent' && percentValue !== undefined && Number.isFinite(percentValue)) {
+    if (percentValue < 0 || percentValue > 100) {
+      return null;
+    }
+    const totalDays = differenceInCalendarDays(demob, enlist);
+    const daysPassed = Math.round((totalDays * roundEventPercent(percentValue)) / 100);
+    return addDays(enlist, daysPassed);
+  }
+
   return null;
 }
 
@@ -319,6 +395,7 @@ function applyOverride(
   const dateFormat = override?.dateFormat ?? template.dateFormat;
   const dddValue = override?.dddValue ?? template.dddValue;
   const dppValue = override?.dppValue ?? template.dppValue;
+  const percentValue = override?.percentValue ?? template.percentValue;
   const dateValue = override?.dateValue;
 
   let date = template.date;
@@ -326,6 +403,7 @@ function applyOverride(
     override?.dateFormat !== undefined ||
     override?.dddValue !== undefined ||
     override?.dppValue !== undefined ||
+    override?.percentValue !== undefined ||
     override?.dateValue
   ) {
     const resolved = resolveEventDate(
@@ -335,6 +413,7 @@ function applyOverride(
       dddValue,
       dppValue,
       dateValue,
+      percentValue,
     );
     if (resolved) {
       date = resolved;
@@ -348,9 +427,11 @@ function applyOverride(
     dateFormat,
     dddValue,
     dppValue,
+    percentValue,
     dateValue,
     icon: override?.icon,
     iconColor: override?.iconColor,
+    highlightMode: override?.highlightMode,
     boundaryDisplay: override?.boundaryDisplay,
     boundaryIconThemeDefault: override?.boundaryIconThemeDefault,
     isCustom: false,
@@ -370,6 +451,7 @@ function customRecordToDisplay(
     record.dddValue,
     record.dppValue,
     record.dateValue,
+    record.percentValue,
   );
 
   if (!date) {
@@ -383,9 +465,11 @@ function customRecordToDisplay(
     dateFormat: record.dateFormat,
     dddValue: record.dddValue,
     dppValue: record.dppValue,
+    percentValue: record.percentValue,
     dateValue: record.dateValue,
     icon: record.icon,
     iconColor: record.iconColor,
+    highlightMode: record.highlightMode,
     isCustom: true,
     isPast: false,
   };
