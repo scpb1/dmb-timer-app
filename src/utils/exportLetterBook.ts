@@ -1,6 +1,6 @@
 import { Alert } from 'react-native';
 import * as FileSystem from 'expo-file-system';
-import { parseISO } from 'date-fns';
+import { parseStoredDate } from '@/utils/storedDate';
 
 import { CONFIG_KEYS } from '@/types/config';
 import type { LetterBookVariantId } from '@/types/letterBook';
@@ -101,8 +101,8 @@ async function resolveThemeTitles(entries: DiaryEntry[]): Promise<Map<string, st
   ]);
 
   const titles = new Map(themes.map((theme) => [theme.id, theme.title]));
-  const enlistmentDate = enlistmentRaw ? parseISO(enlistmentRaw) : null;
-  const demobilizationDate = demobilizationRaw ? parseISO(demobilizationRaw) : null;
+  const enlistmentDate = parseStoredDate(enlistmentRaw);
+  const demobilizationDate = parseStoredDate(demobilizationRaw);
   const holidays = buildDisplayHolidays(
     parseHolidaysStorage(holidaysRaw),
     enlistmentDate ?? new Date(),
@@ -155,8 +155,8 @@ export async function loadLetterBookPayload(
   const summary = await loadServiceSummarySafe({
     userName: userName ?? '',
     partnerName: partnerName ?? '',
-    enlistmentDate: enlistmentRaw ? parseISO(enlistmentRaw) : null,
-    demobilizationDate: demobilizationRaw ? parseISO(demobilizationRaw) : null,
+    enlistmentDate: parseStoredDate(enlistmentRaw),
+    demobilizationDate: parseStoredDate(demobilizationRaw),
   });
 
   return {

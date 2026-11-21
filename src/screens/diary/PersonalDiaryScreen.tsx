@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import type { RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { format } from 'date-fns';
@@ -6,6 +7,11 @@ import { format } from 'date-fns';
 import { DiaryEditor } from '@/components/diary/DiaryEditor';
 import { DiaryLockScreen } from '@/screens/diary/DiaryLockScreen';
 import { isDiaryLockEnabled } from '@/services/diaryLock';
+import {
+  touchDiarySession,
+  unlockDiarySession,
+  useDiarySessionUnlocked,
+} from '@/services/diarySession';
 import type { DiaryStackParamList } from '@/types/navigation';
 
 interface PersonalDiaryScreenProps {
@@ -17,7 +23,7 @@ export function PersonalDiaryScreen({ navigation, route }: PersonalDiaryScreenPr
   const date = route.params?.date ?? format(new Date(), 'yyyy-MM-dd');
   const [lockChecked, setLockChecked] = useState(false);
   const [needsUnlock, setNeedsUnlock] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
+  const sessionUnlocked = useDiarySessionUnlocked();
 
   useEffect(() => {
     void isDiaryLockEnabled().then((enabled) => {
@@ -30,20 +36,34 @@ export function PersonalDiaryScreen({ navigation, route }: PersonalDiaryScreenPr
     return null;
   }
 
-  if (needsUnlock && !unlocked) {
+  if (needsUnlock && !sessionUnlocked) {
     return (
       <DiaryLockScreen
-        onUnlock={() => setUnlocked(true)}
+        onUnlock={() => unlockDiarySession()}
         onCancel={() => navigation.goBack()}
       />
     );
   }
 
   return (
-    <DiaryEditor
-      kind="personal"
-      date={date}
-      onDateChange={(nextDate) => navigation.setParams({ date: nextDate })}
-    />
+    <View
+      style={styles.editor}
+      onStartShouldSetResponderCapture={() => {
+        touchDiarySession();
+        return false;
+      }}
+    >
+      <DiaryEditor
+        kind="personal"
+        date={date}
+        onDateChange={(nextDate) => navigation.setParams({ date: nextDate })}
+      />
+    </View>
   );
 }
+
+const styles = {
+  editor: {
+    flex: 1,
+  },
+} as const;

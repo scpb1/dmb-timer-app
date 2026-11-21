@@ -4,8 +4,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import { Feather } from '@expo/vector-icons';
 
 import { DiaryEditor } from '@/components/diary/DiaryEditor';
-import { useLetterThemes } from '@/hooks/useDiary';
-import { getDiaryEntry } from '@/services/database';
+import { resolveLetterDestination, useLetterThemes } from '@/hooks/useDiary';
 import { colors } from '@/theme/colors';
 import type { DiaryStackParamList } from '@/types/navigation';
 
@@ -35,9 +34,9 @@ export function LetterDiaryScreen({ navigation, route }: LetterDiaryScreenProps)
       return;
     }
 
-    const existing = await getDiaryEntry('letter', nextDate);
-    if (existing?.themeId) {
-      navigation.replace('LetterEditor', { date: nextDate, themeId: existing.themeId });
+    const destination = await resolveLetterDestination(nextDate);
+    if (destination.screen === 'LetterEditor') {
+      navigation.replace('LetterEditor', { date: nextDate, themeId: destination.themeId });
       return;
     }
 

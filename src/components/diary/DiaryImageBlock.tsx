@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -21,7 +21,7 @@ interface DiaryImageBlockViewProps {
 }
 
 /** Фото в дневнике: выбор, перенос, удаление, масштаб */
-export function DiaryImageBlockView({
+export const DiaryImageBlockView = memo(function DiaryImageBlockView({
   block,
   selected,
   workWidth,
@@ -141,7 +141,7 @@ export function DiaryImageBlockView({
       ) : null}
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: {

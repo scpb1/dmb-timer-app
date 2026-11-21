@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -21,11 +21,10 @@ import { DiaryDateButton } from '@/components/diary/DiaryDateButton';
 import { DiaryImageBlockView } from '@/components/diary/DiaryImageBlock';
 import { DiaryParagraph } from '@/components/diary/DiaryParagraph';
 import { DiaryToolbar } from '@/components/diary/DiaryToolbar';
-import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { persistDiaryPhoto, readImageSize, removeDiaryPhotoIfOwned, useDiaryEntry } from '@/hooks/useDiary';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
-import type { DiaryBlock, DiaryKind, DiaryTextStyle } from '@/types/diary';
+import type { DiaryBlock, DiaryKind, DiaryParagraphBlock, DiaryTextStyle } from '@/types/diary';
 import { DEFAULT_DIARY_TEXT_STYLE } from '@/types/diary';
 import {
   applyStyleToRange,
@@ -56,6 +55,125 @@ interface Selection {
   start: number;
   end: number;
 }
+
+const diaryBlockActions = {
+  focus: (_id: string) => {},
+  changeSpans: (_id: string, _spans: DiaryParagraphBlock['spans']) => {},
+  selection: (_id: string, _start: number, _end: number) => {},
+  selectImage: (_id: string) => {},
+  deleteImage: (_id: string) => {},
+  moveImage: (_id: string, _translationY: number) => {},
+  resizeImage: (_id: string, _widthRatio: number) => {},
+  drag: (_active: boolean) => {},
+  layout: (_id: string, _y: number, _height: number) => {},
+  inputRef: (_id: string, _ref: TextInput | null) => {},
+};
+
+const paragraphHandlers = new Map<
+  string,
+  {
+    onFocus: () => void;
+    onChangeSpans: (spans: DiaryParagraphBlock['spans']) => void;
+    onSelectionChange: (start: number, end: number) => void;
+    inputRef: (ref: TextInput | null) => void;
+  }
+>();
+
+function paragraphHandlersFor(id: string) {
+  let handlers = paragraphHandlers.get(id);
+  if (!handlers) {
+    handlers = {
+      onFocus: () => diaryBlockActions.focus(id),
+      onChangeSpans: (spans) => diaryBlockActions.changeSpans(id, spans),
+      onSelectionChange: (start, end) => diaryBlockActions.selection(id, start, end),
+      inputRef: (ref) => diaryBlockActions.inputRef(id, ref),
+    };
+    paragraphHandlers.set(id, handlers);
+  }
+  return handlers;
+}
+
+const imageHandlers = new Map<
+  string,
+  {
+    onSelect: () => void;
+    onDelete: () => void;
+    onMoveEnd: (translationY: number) => void;
+    onResize: (widthRatio: number) => void;
+  }
+>();
+
+function imageHandlersFor(id: string) {
+  let handlers = imageHandlers.get(id);
+  if (!handlers) {
+    handlers = {
+      onSelect: () => diaryBlockActions.selectImage(id),
+      onDelete: () => diaryBlockActions.deleteImage(id),
+      onMoveEnd: (translationY) => diaryBlockActions.moveImage(id, translationY),
+      onResize: (widthRatio) => diaryBlockActions.resizeImage(id, widthRatio),
+    };
+    imageHandlers.set(id, handlers);
+  }
+  return handlers;
+}
+
+const DiaryBlockRow = memo(function DiaryBlockRow({
+  block,
+  typingStyle,
+  editable,
+  selected,
+  workWidth,
+  workHeight,
+}: {
+  block: DiaryBlock;
+  typingStyle: DiaryTextStyle;
+  editable: boolean;
+  selected: boolean;
+  workWidth: number;
+  workHeight: number;
+}) {
+  if (block.type === 'paragraph') {
+    const handlers = paragraphHandlersFor(block.id);
+    return (
+      <View
+        onLayout={(event) => {
+          diaryBlockActions.layout(block.id, event.nativeEvent.layout.y, event.nativeEvent.layout.height);
+        }}
+      >
+        <DiaryParagraph
+          block={block}
+          typingStyle={typingStyle}
+          editable={editable}
+          inputRef={handlers.inputRef}
+          onFocus={handlers.onFocus}
+          onChangeSpans={handlers.onChangeSpans}
+          onSelectionChange={handlers.onSelectionChange}
+        />
+      </View>
+    );
+  }
+
+  const handlers = imageHandlersFor(block.id);
+  return (
+    <View
+      onLayout={(event) => {
+        diaryBlockActions.layout(block.id, event.nativeEvent.layout.y, event.nativeEvent.layout.height);
+      }}
+    >
+      <DiaryImageBlockView
+        block={block}
+        selected={selected}
+        workWidth={workWidth}
+        workHeight={workHeight}
+        onSelect={handlers.onSelect}
+        onDelete={handlers.onDelete}
+        onMoveEnd={handlers.onMoveEnd}
+        onResize={handlers.onResize}
+        onDragActiveChange={diaryBlockActions.drag}
+      />
+    </View>
+  );
+});
 
 /** Общий лист дневника: текст, фото, форматирование, сохранение */
 export function DiaryEditor({
@@ -105,8 +223,11 @@ export function DiaryEditor({
     setIsEditing(true);
   }, [date, startFresh]);
 
+  const pageMatches =
+    !entry || (entry.entryDate === date && entry.kind === kind);
+
   useEffect(() => {
-    if (startFresh || isLoading) {
+    if (startFresh || isLoading || !pageMatches) {
       return;
     }
 
@@ -116,9 +237,14 @@ export function DiaryEditor({
     setFocusedBlockId(document.blocks.find((block) => block.type === 'paragraph')?.id ?? null);
     setSelectedImageId(null);
     setIsEditing(false);
-  }, [date, startFresh, isLoading, entry?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- document меняется при save
+  }, [date, kind, startFresh, isLoading, pageMatches, entry?.id]);
 
   const persist = useCallback(async (exitEditing = false) => {
+    if (entry && (entry.entryDate !== date || entry.kind !== kind)) {
+      return false;
+    }
+
     setIsSaving(true);
     const ok = await save({ version: 1, blocks: blocksRef.current }, themeId);
     setIsSaving(false);
@@ -132,13 +258,13 @@ export function DiaryEditor({
       Alert.alert('Не удалось сохранить', 'Попробуйте ещё раз');
     }
     return ok;
-  }, [save, themeId]);
+  }, [date, entry, kind, save, themeId]);
 
   const persistRef = useRef(persist);
   persistRef.current = persist;
 
   useEffect(() => {
-    if (!isEditing || !dirty || isSaving) {
+    if (!isEditing || !dirty || isSaving || !pageMatches) {
       return;
     }
 
@@ -147,7 +273,7 @@ export function DiaryEditor({
     }, 700);
 
     return () => clearTimeout(timer);
-  }, [blocks, dirty, isEditing, isSaving]);
+  }, [blocks, dirty, isEditing, isSaving, pageMatches]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
@@ -313,12 +439,51 @@ export function DiaryEditor({
     Object.values(inputRefs.current).forEach((ref) => ref?.blur());
   };
 
+  diaryBlockActions.focus = (id) => {
+    setFocusedBlockId(id);
+    setSelectedImageId(null);
+  };
+  diaryBlockActions.changeSpans = (id, spans) => {
+    setBlocks((current) =>
+      current.map((item) => (item.id === id && item.type === 'paragraph' ? { ...item, spans } : item)),
+    );
+  };
+  diaryBlockActions.selection = handleParagraphSelection;
+  diaryBlockActions.selectImage = (id) => {
+    if (!isEditing) {
+      return;
+    }
+    blurInputs();
+    setSelectedImageId(id);
+    setFocusedBlockId(id);
+  };
+  diaryBlockActions.deleteImage = (id) => {
+    const block = blocksRef.current.find((item) => item.id === id);
+    if (block?.type === 'image') {
+      void removeDiaryPhotoIfOwned(block.uri);
+    }
+    setBlocks(removeBlock(blocksRef.current, id));
+    setSelectedImageId(null);
+  };
+  diaryBlockActions.moveImage = handleMoveImage;
+  diaryBlockActions.resizeImage = (id, widthRatio) => {
+    setBlocks((current) =>
+      current.map((item) => (item.id === id && item.type === 'image' ? { ...item, widthRatio } : item)),
+    );
+  };
+  diaryBlockActions.drag = setDragging;
+  diaryBlockActions.layout = (id, y, height) => {
+    layoutsRef.current[id] = { y, height };
+  };
+  diaryBlockActions.inputRef = (id, ref) => {
+    inputRefs.current[id] = ref;
+  };
+
   const parsedDate = parseDateStamp(date);
   const maximumDate = new Date();
 
   return (
     <View style={styles.root}>
-      <ScreenBackground />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <KeyboardAvoidingView
           style={styles.flex}
@@ -396,71 +561,19 @@ export function DiaryEditor({
                 onScrollBeginDrag={() => setSelectedImageId(null)}
               >
                 {blocks.map((block) => (
-                  <View
+                  <DiaryBlockRow
                     key={block.id}
-                    onLayout={(event) => {
-                      layoutsRef.current[block.id] = {
-                        y: event.nativeEvent.layout.y,
-                        height: event.nativeEvent.layout.height,
-                      };
-                    }}
-                  >
-                    {block.type === 'paragraph' ? (
-                      <DiaryParagraph
-                        block={block}
-                        typingStyle={typingStyle}
-                        editable={isEditing}
-                        inputRef={(ref) => {
-                          inputRefs.current[block.id] = ref;
-                        }}
-                        onFocus={() => {
-                          setFocusedBlockId(block.id);
-                          setSelectedImageId(null);
-                        }}
-                        onChangeSpans={(spans) => {
-                          setBlocks((current) =>
-                            current.map((item) =>
-                              item.id === block.id && item.type === 'paragraph' ? { ...item, spans } : item,
-                            ),
-                          );
-                        }}
-                        onSelectionChange={(start, end) => handleParagraphSelection(block.id, start, end)}
-                      />
-                    ) : (
-                      <DiaryImageBlockView
-                        block={block}
-                        selected={isEditing && selectedImageId === block.id}
-                        workWidth={Math.max(0, workSize.width - 32)}
-                        workHeight={Math.max(0, workSize.height - 24)}
-                        onSelect={() => {
-                          if (!isEditing) {
-                            return;
-                          }
-                          blurInputs();
-                          setSelectedImageId(block.id);
-                          setFocusedBlockId(block.id);
-                        }}
-                        onDelete={() => {
-                          if (block.type === 'image') {
-                            void removeDiaryPhotoIfOwned(block.uri);
-                          }
-                          setBlocks(removeBlock(blocksRef.current, block.id));
-                          setSelectedImageId(null);
-                        }}
-                        onMoveEnd={(translationY) => handleMoveImage(block.id, translationY)}
-                        onResize={(widthRatio) => {
-                          setBlocks((current) =>
-                            current.map((item) =>
-                              item.id === block.id && item.type === 'image'
-                                ? { ...item, widthRatio }
-                                : item,
-                            ),
-                          );
-                        }}
-                        onDragActiveChange={setDragging}
-                      />
-                    )}
-                  </View>
+                    block={block}
+                    typingStyle={
+                      block.type === 'paragraph' && focusedBlockId === block.id
+                        ? typingStyle
+                        : DEFAULT_DIARY_TEXT_STYLE
+                    }
+                    editable={isEditing}
+                    selected={block.type === 'image' && isEditing && selectedImageId === block.id}
+                    workWidth={block.type === 'image' ? Math.max(0, workSize.width - 32) : 0}
+                    workHeight={block.type === 'image' ? Math.max(0, workSize.height - 24) : 0}
+                  />
                 ))}
               </ScrollView>
             </View>

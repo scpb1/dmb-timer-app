@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { ScreenBackground } from '@/components/common/ScreenBackground';
 import {
+  DIARY_LOCK_DISCLOSURE_SHORT,
   DIARY_PIN_LENGTH,
   DIARY_RECOVERY_ANSWER_MIN_LENGTH,
   authenticateDiaryBiometrics,
   getBiometricAvailability,
   getDiaryLockStatus,
+  getDiaryPinLength,
   getDiaryRecoveryQuestion,
   hasDiaryRecovery,
   isDiaryBiometricsEnabled,
@@ -52,8 +53,30 @@ export function DiaryLockScreen({ onUnlock, onCancel }: DiaryLockScreenProps) {
   const [hasFingerprint, setHasFingerprint] = useState(false);
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pinLength, setPinLength] = useState(DIARY_PIN_LENGTH);
+  const [resetGrant, setResetGrant] = useState<string | null>(null);
 
   const pinLocked = Boolean(lockedUntil && lockedUntil > Date.now());
+
+  const tryBiometrics = useCallback(async () => {
+    const status = await getDiaryLockStatus();
+    if (status.locked) {
+      setLockedUntil(status.lockedUntil);
+      setError(lockHint(status.lockedUntil));
+      return;
+    }
+    const result = await authenticateDiaryBiometrics();
+    if (!result.ok) {
+      return;
+    }
+    if (result.needsNewPin && result.resetGrant) {
+      setResetGrant(result.resetGrant);
+      setMode('newPin');
+      setError(null);
+      return;
+    }
+    onUnlock();
+  }, [onUnlock]);
 
   useEffect(() => {
     void Promise.all([
@@ -62,7 +85,8 @@ export function DiaryLockScreen({ onUnlock, onCancel }: DiaryLockScreenProps) {
       hasDiaryRecovery(),
       getDiaryRecoveryQuestion(),
       getDiaryLockStatus(),
-    ]).then(([bioEnabled, availability, hasRecovery, recoveryQuestion, status]) => {
+      getDiaryPinLength(),
+    ]).then(([bioEnabled, availability, hasRecovery, recoveryQuestion, status, length]) => {
       const canUseBio = FEATURES.biometrics && bioEnabled && availability.enrolled;
       setBiometricsOn(canUseBio);
       setHasFace(availability.face);
@@ -70,29 +94,24 @@ export function DiaryLockScreen({ onUnlock, onCancel }: DiaryLockScreenProps) {
       setRecoveryAvailable(hasRecovery);
       setQuestion(recoveryQuestion);
       setLockedUntil(status.lockedUntil);
+      setPinLength(length);
       if (canUseBio && !status.locked) {
         void tryBiometrics();
       }
     });
-  }, []);
-
-  const tryBiometrics = async () => {
-    const status = await getDiaryLockStatus();
-    if (status.locked) {
-      setLockedUntil(status.lockedUntil);
-      setError(lockHint(status.lockedUntil));
-      return;
-    }
-    const ok = await authenticateDiaryBiometrics();
-    if (ok) {
-      onUnlock();
-    }
-  };
+  }, [tryBiometrics]);
 
   const verifyEnteredPin = async (value: string) => {
     setBusy(true);
     const result = await verifyDiaryPin(value);
     setBusy(false);
+    if (result.ok && result.needsNewPin && result.resetGrant) {
+      setResetGrant(result.resetGrant);
+      setMode('newPin');
+      setPin('');
+      setError(null);
+      return;
+    }
     if (result.ok) {
       onUnlock();
       return;
@@ -108,13 +127,13 @@ export function DiaryLockScreen({ onUnlock, onCancel }: DiaryLockScreenProps) {
   };
 
   const handleDigit = (digit: string) => {
-    if (busy || pinLocked || pin.length >= DIARY_PIN_LENGTH) {
+    if (busy || pinLocked || pin.length >= pinLength) {
       return;
     }
     setError(null);
     const next = pin + digit;
     setPin(next);
-    if (next.length === DIARY_PIN_LENGTH) {
+    if (next.length === pinLength) {
       void verifyEnteredPin(next);
     }
   };
@@ -133,8 +152,11 @@ export function DiaryLockScreen({ onUnlock, onCancel }: DiaryLockScreenProps) {
       return;
     }
 
+    setBusy(true);
     const result = await verifyDiaryRecoveryAnswer(answer);
-    if (result.ok) {
+    setBusy(false);
+    if (result.ok && result.resetGrant) {
+      setResetGrant(result.resetGrant);
       setMode('newPin');
       setError(null);
       setAnswer('');
@@ -151,10 +173,16 @@ export function DiaryLockScreen({ onUnlock, onCancel }: DiaryLockScreenProps) {
 
   const handleSetNewPin = async () => {
     if (newPin.length !== DIARY_PIN_LENGTH || newPin !== newPinRepeat) {
-      setError('Введите одинаковый код из 4 цифр');
+      setError(`Введите одинаковый код из ${DIARY_PIN_LENGTH} цифр`);
       return;
     }
-    const ok = await resetDiaryPinAfterRecovery(newPin);
+    if (!resetGrant) {
+      setError('Подтвердите ответ ещё раз');
+      return;
+    }
+    setBusy(true);
+    const ok = await resetDiaryPinAfterRecovery(newPin, resetGrant);
+    setBusy(false);
     if (ok) {
       onUnlock();
       return;
@@ -164,7 +192,6 @@ export function DiaryLockScreen({ onUnlock, onCancel }: DiaryLockScreenProps) {
 
   return (
     <View style={styles.root}>
-      <ScreenBackground />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <Pressable
           onPress={onCancel}
@@ -178,12 +205,17 @@ export function DiaryLockScreen({ onUnlock, onCancel }: DiaryLockScreenProps) {
 
         <View style={styles.body}>
           <Text style={styles.title}>Личный дневник</Text>
+          <Text style={styles.hint}>{DIARY_LOCK_DISCLOSURE_SHORT}</Text>
 
           {mode === 'pin' ? (
             <>
-              <Text style={styles.hint}>Введите код, чтобы открыть записи</Text>
-              <View style={styles.dots} accessibilityLabel={`Введено ${pin.length} из ${DIARY_PIN_LENGTH}`}>
-                {Array.from({ length: DIARY_PIN_LENGTH }, (_, index) => (
+              <Text style={styles.hint}>
+                {pinLength === DIARY_PIN_LENGTH
+                  ? `Введите код из ${DIARY_PIN_LENGTH} цифр`
+                  : 'Введите прежний код из 4 цифр'}
+              </Text>
+              <View style={styles.dots} accessibilityLabel={`Введено ${pin.length} из ${pinLength}`}>
+                {Array.from({ length: pinLength }, (_, index) => (
                   <View
                     key={index}
                     style={[styles.dot, index < pin.length ? styles.dotFilled : null]}
@@ -305,7 +337,7 @@ export function DiaryLockScreen({ onUnlock, onCancel }: DiaryLockScreenProps) {
 
           {mode === 'newPin' ? (
             <>
-              <Text style={styles.hint}>Придумайте новый код из 4 цифр</Text>
+              <Text style={styles.hint}>Придумайте новый код из 6 цифр</Text>
               <TextInput
                 value={newPin}
                 onChangeText={(value) => setNewPin(value.replace(/\D/g, '').slice(0, DIARY_PIN_LENGTH))}

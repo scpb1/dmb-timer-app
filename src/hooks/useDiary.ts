@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as FileSystem from 'expo-file-system';
 import { Image } from 'react-native';
 import { parseISO } from 'date-fns';
+import { useFocusEffect } from '@react-navigation/native';
 
 import type { DiaryDocument, DiaryEntry, DiaryKind, LetterTheme } from '@/types/diary';
 import { CONFIG_KEYS } from '@/types/config';
 import {
   getConfig,
+  getDiaryCalendarMarks,
   getDiaryEntry,
   getLetterThemes,
   getUsedLetterThemeIds,
@@ -21,6 +23,8 @@ import {
   resolveHolidayThemeTitle,
 } from '@/utils/holidayCalculations';
 import { logger } from '@/utils/logger';
+import { imageExtension } from '@/utils/mediaExtension';
+import { DIARY_MEDIA_DIRECTORY } from '@/constants/mediaDirectories';
 import { rescheduleAppNotifications } from '@/services/holidayNotifications';
 
 async function ensureDiaryDirectory(): Promise<string> {
@@ -29,20 +33,12 @@ async function ensureDiaryDirectory(): Promise<string> {
     throw new Error('Нет доступа к файловой системе');
   }
 
-  const dir = `${base}diary/`;
+  const dir = `${base}${DIARY_MEDIA_DIRECTORY}`;
   const info = await FileSystem.getInfoAsync(dir);
   if (!info.exists) {
     await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
   }
   return dir;
-}
-
-function getImageExtension(uri: string): string {
-  const fromUri = uri.split('.').pop()?.split('?')[0];
-  if (fromUri && fromUri.length <= 5) {
-    return fromUri;
-  }
-  return 'jpg';
 }
 
 export async function persistDiaryPhoto(sourceUri: string): Promise<string> {
@@ -51,7 +47,7 @@ export async function persistDiaryPhoto(sourceUri: string): Promise<string> {
     return sourceUri;
   }
 
-  const dest = `${dir}${createDiaryId()}.${getImageExtension(sourceUri)}`;
+  const dest = `${dir}${createDiaryId()}.${imageExtension(sourceUri)}`;
   await FileSystem.copyAsync({ from: sourceUri, to: dest });
   return dest;
 }
@@ -94,17 +90,33 @@ interface UseDiaryEntryResult {
 export function useDiaryEntry(kind: DiaryKind, entryDate: string): UseDiaryEntryResult {
   const [isLoading, setIsLoading] = useState(true);
   const [entry, setEntry] = useState<DiaryEntry | null>(null);
+  const requestIdRef = useRef(0);
+  const pageRef = useRef({ kind, entryDate });
+  pageRef.current = { kind, entryDate };
 
   const reload = useCallback(async () => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    const requestKind = kind;
+    const requestDate = entryDate;
+
     try {
       setIsLoading(true);
-      const next = await getDiaryEntry(kind, entryDate);
+      const next = await getDiaryEntry(requestKind, requestDate);
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
       setEntry(next);
     } catch (error) {
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
       logger.error('Ошибка загрузки дневника', error);
       setEntry(null);
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [kind, entryDate]);
 
@@ -114,15 +126,19 @@ export function useDiaryEntry(kind: DiaryKind, entryDate: string): UseDiaryEntry
 
   const save = useCallback(
     async (document: DiaryDocument, themeId?: string): Promise<boolean> => {
+      const savedKind = kind;
+      const savedDate = entryDate;
       try {
         const saved = await upsertDiaryEntry({
-          kind,
-          entryDate,
+          kind: savedKind,
+          entryDate: savedDate,
           themeId,
           document,
         });
-        setEntry(saved);
-        if (kind === 'letter') {
+        if (pageRef.current.kind === savedKind && pageRef.current.entryDate === savedDate) {
+          setEntry(saved);
+        }
+        if (savedKind === 'letter') {
           void rescheduleAppNotifications();
         }
         return true;
@@ -232,4 +248,48 @@ export function pickPreferredTheme(
   }
 
   return themes.find((theme) => isHolidayThemeId(theme.id)) ?? pickRandomTheme(themes);
+}
+
+export type DiaryCalendarMarks = Record<string, { personal?: boolean; letter?: boolean }>;
+
+export type LetterDestination =
+  | { screen: 'LetterEditor'; themeId: string }
+  | { screen: 'LetterTheme' };
+
+/** Куда открывать письмо на дату: редактор, если тема уже выбрана. */
+export async function resolveLetterDestination(date: string): Promise<LetterDestination> {
+  const existing = await getDiaryEntry('letter', date);
+  if (existing?.themeId) {
+    return { screen: 'LetterEditor', themeId: existing.themeId };
+  }
+  return { screen: 'LetterTheme' };
+}
+
+/** Точки календаря дневника. Обновляется, когда экран снова в фокусе. */
+export function useDiaryCalendar() {
+  const [marks, setMarks] = useState<DiaryCalendarMarks>({});
+
+  const reload = useCallback(async () => {
+    try {
+      const loaded = await getDiaryCalendarMarks();
+      const next: DiaryCalendarMarks = {};
+      for (const date of loaded.personal) {
+        next[date] = { ...next[date], personal: true };
+      }
+      for (const date of loaded.letter) {
+        next[date] = { ...next[date], letter: true };
+      }
+      setMarks(next);
+    } catch (error) {
+      logger.error('Ошибка загрузки календаря дневника', error);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void reload();
+    }, [reload]),
+  );
+
+  return { marks, reload };
 }

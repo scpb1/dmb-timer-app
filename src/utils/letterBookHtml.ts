@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 import { APP_NAME } from '@/constants';
@@ -54,6 +54,15 @@ export function formatLetterDate(dateKey: string): {
   monthLabel: string;
 } {
   const date = parseISO(dateKey);
+  if (!isValid(date)) {
+    const label = dateKey.trim() || 'Без даты';
+    return {
+      dateLabel: label,
+      weekdayLabel: '',
+      monthKey: 'invalid',
+      monthLabel: label,
+    };
+  }
   return {
     dateLabel: format(date, 'd MMMM yyyy', { locale: ru }),
     weekdayLabel: capitalize(format(date, 'EEEE', { locale: ru })),
@@ -394,8 +403,8 @@ function buildClassic(payload: LetterBookPayload): string {
 
 function groupByMonth(
   letters: LetterBookLetter[],
-): Array<{ monthLabel: string; letters: LetterBookLetter[] }> {
-  const groups: Array<{ monthKey: string; monthLabel: string; letters: LetterBookLetter[] }> = [];
+): { monthLabel: string; letters: LetterBookLetter[] }[] {
+  const groups: { monthKey: string; monthLabel: string; letters: LetterBookLetter[] }[] = [];
   for (const letter of letters) {
     const last = groups[groups.length - 1];
     if (last && last.monthKey === letter.monthKey) {

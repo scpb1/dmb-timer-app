@@ -13,7 +13,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import type { StackNavigationProp } from '@react-navigation/stack';
 
-import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { SettingsField } from '@/components/common/SettingsField';
 import { useDatabaseProfile } from '@/hooks/useDatabaseProfile';
@@ -23,9 +22,13 @@ import {
   switchDatabaseProfile,
 } from '@/services/database';
 import {
+  DIARY_LEGACY_PIN_LENGTH,
+  DIARY_LOCK_DISCLOSURE,
   DIARY_PIN_LENGTH,
   DIARY_RECOVERY_ANSWER_MIN_LENGTH,
+  authenticateDiaryBiometrics,
   getBiometricAvailability,
+  getDiaryPinLength,
   getDiaryRecoveryQuestion,
   hasDiaryRecovery,
   isDiaryBiometricsEnabled,
@@ -33,7 +36,9 @@ import {
   removeDiaryLock,
   setDiaryBiometricsEnabled,
   setDiaryPin,
+  verifyDiaryPin,
 } from '@/services/diaryLock';
+import { lockDiarySession } from '@/services/diarySession';
 import { FEATURES } from '@/constants';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
@@ -48,10 +53,15 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
   const databaseProfile = useDatabaseProfile();
   const [pin, setPin] = useState('');
   const [pinRepeat, setPinRepeat] = useState('');
+  const [currentPin, setCurrentPin] = useState('');
+  const [proof, setProof] = useState<string | null>(null);
+  const [storedPinLength, setStoredPinLength] = useState(DIARY_PIN_LENGTH);
+  const [isSaving, setIsSaving] = useState(false);
   const [recoveryQuestion, setRecoveryQuestion] = useState('');
   const [recoveryAnswer, setRecoveryAnswer] = useState('');
   const [recoveryEnabled, setRecoveryEnabled] = useState(false);
   const [lockEnabled, setLockEnabled] = useState(false);
+  const [lockReady, setLockReady] = useState(false);
   const [biometricsEnabled, setBiometricsEnabled] = useState(false);
   const [biometricsAvailable, setBiometricsAvailable] = useState(false);
   const [isSwitchingDatabase, setIsSwitchingDatabase] = useState(false);
@@ -62,19 +72,58 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
       isDiaryBiometricsEnabled(),
       getBiometricAvailability(),
       hasDiaryRecovery(),
-      getDiaryRecoveryQuestion(),
-    ]).then(([enabled, bioEnabled, availability, hasRecovery, question]) => {
+      getDiaryPinLength(),
+    ]).then(([enabled, bioEnabled, availability, hasRecovery, length]) => {
       setLockEnabled(enabled);
       setBiometricsEnabled(bioEnabled);
       setBiometricsAvailable(availability.hardware && availability.enrolled);
       setRecoveryEnabled(hasRecovery);
-      setRecoveryQuestion(question ?? '');
+      setStoredPinLength(length);
+      setLockReady(true);
+    }).catch(() => {
+      setLockEnabled(false);
+      setLockReady(true);
     });
   }, []);
 
+  const revealRecoveryQuestion = async () => {
+    const question = await getDiaryRecoveryQuestion();
+    setRecoveryQuestion(question ?? '');
+  };
+
+  const handleConfirmPin = async () => {
+    setIsSaving(true);
+    const result = await verifyDiaryPin(currentPin);
+    setIsSaving(false);
+    if (!result.ok || !result.grant) {
+      setCurrentPin('');
+      Alert.alert(
+        'Код',
+        result.locked ? 'Слишком много попыток. Подождите и попробуйте снова' : 'Неверный код',
+      );
+      return;
+    }
+    setProof(result.grant);
+    await revealRecoveryQuestion();
+  };
+
+  const handleConfirmBiometrics = async () => {
+    const result = await authenticateDiaryBiometrics();
+    if (!result.ok || !result.grant) {
+      Alert.alert('Биометрия', 'Не удалось подтвердить');
+      return;
+    }
+    setProof(result.grant);
+    await revealRecoveryQuestion();
+  };
+
   const handleSavePin = async () => {
     if (pin.length !== DIARY_PIN_LENGTH || pin !== pinRepeat) {
-      Alert.alert('Код', 'Введите одинаковый код из 4 цифр');
+      Alert.alert('Код', `Введите одинаковый код из ${DIARY_PIN_LENGTH} цифр`);
+      return;
+    }
+    if (lockEnabled && !proof) {
+      Alert.alert('Код', 'Сначала подтвердите текущий код');
       return;
     }
     if (!recoveryEnabled || recoveryAnswer.trim()) {
@@ -89,53 +138,94 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
         return;
       }
     }
+    setIsSaving(true);
     const ok = await setDiaryPin(
       pin,
       recoveryQuestion.trim() && recoveryAnswer.trim()
         ? { question: recoveryQuestion, answer: recoveryAnswer }
         : undefined,
+      lockEnabled ? proof ?? undefined : undefined,
+      { enableBiometrics: !lockEnabled && biometricsAvailable && !biometricsEnabled },
     );
+    setIsSaving(false);
     if (ok) {
+      const firstSetup = !lockEnabled;
       setLockEnabled(true);
       setRecoveryEnabled(true);
+      setStoredPinLength(DIARY_PIN_LENGTH);
       setPin('');
       setPinRepeat('');
+      setCurrentPin('');
       setRecoveryAnswer('');
-      if (biometricsAvailable && !biometricsEnabled) {
-        await setDiaryBiometricsEnabled(true);
+      setRecoveryQuestion('');
+      setProof(null);
+      if (firstSetup && biometricsAvailable) {
         setBiometricsEnabled(true);
       }
-      Alert.alert('Готово', 'Личный дневник теперь закрыт кодом');
+      Alert.alert('Готово', 'Личный дневник закрыт кодом из 6 цифр');
     } else {
-      Alert.alert('Ошибка', 'Не удалось сохранить код. Проверьте вопрос и ответ');
+      setProof(null);
+      Alert.alert(
+        'Ошибка',
+        lockEnabled
+          ? 'Не удалось сохранить код. Подтвердите текущий код ещё раз'
+          : 'Не удалось сохранить код. Проверьте вопрос и ответ',
+      );
     }
   };
 
   const handleRemoveLock = () => {
+    if (!proof) {
+      Alert.alert('Код', 'Сначала подтвердите текущий код');
+      return;
+    }
+    const grant = proof;
     Alert.alert('Снять защиту?', 'Личный дневник станет открытым', [
       { text: 'Отмена', style: 'cancel' },
       {
         text: 'Снять',
         style: 'destructive',
-        onPress: async () => {
-          await removeDiaryLock();
-          setLockEnabled(false);
-          setBiometricsEnabled(false);
+        onPress: () => {
+          void (async () => {
+            const removed = await removeDiaryLock(grant);
+            if (!removed) {
+              setProof(null);
+              Alert.alert('Код', 'Подтвердите текущий код ещё раз');
+              return;
+            }
+            lockDiarySession();
+            setLockEnabled(false);
+            setBiometricsEnabled(false);
+            setRecoveryEnabled(false);
+            setRecoveryQuestion('');
+            setProof(null);
+            setCurrentPin('');
+          })();
         },
       },
     ]);
   };
 
   const handleBiometricsToggle = async (next: boolean) => {
-    if (next && !lockEnabled) {
+    if (!lockEnabled) {
       Alert.alert('Сначала задайте код', 'Биометрия — дополнительный способ входа');
+      return;
+    }
+    if (!proof) {
+      Alert.alert('Код', 'Сначала подтвердите текущий код');
       return;
     }
     if (next && !biometricsAvailable) {
       Alert.alert('Недоступно', 'На устройстве нет сохранённого отпечатка или лица');
       return;
     }
-    await setDiaryBiometricsEnabled(next);
+    const ok = await setDiaryBiometricsEnabled(next, proof);
+    setProof(null);
+    setRecoveryQuestion('');
+    if (!ok) {
+      Alert.alert('Код', 'Подтвердите текущий код ещё раз');
+      return;
+    }
     setBiometricsEnabled(next);
   };
 
@@ -195,7 +285,6 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
 
   return (
     <View style={styles.root}>
-      <ScreenBackground />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.topRow}>
           <Pressable
@@ -220,15 +309,55 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
         ) : (
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <Text style={styles.sectionTitle}>Защита личного дневника</Text>
+            <Text style={styles.hint}>{DIARY_LOCK_DISCLOSURE}</Text>
             <Text style={styles.hint}>
-              Код спрашивается при входе в личный дневник.
               {FEATURES.biometrics
-                ? ' Если на телефоне есть отпечаток или Face ID, можно открывать им.'
-                : ''}{' '}
-              Имена и даты службы теперь в настройках таймера на главной.
+                ? 'Если на телефоне есть отпечаток или Face ID, можно открывать им. '
+                : ''}
+              Имена и даты службы теперь в настройках таймера на главной. Экран сам закрывается через минуту и когда приложение уходит в фон.
             </Text>
+
+            {!lockReady ? (
+              <ActivityIndicator color={colors.light.text.primary} />
+            ) : lockEnabled && !proof ? (
+              <>
+                {storedPinLength === DIARY_LEGACY_PIN_LENGTH ? (
+                  <Text style={styles.hint}>
+                    Сейчас код из 4 цифр. После подтверждения задайте новый из 6: короткий код перебирается слишком быстро.
+                  </Text>
+                ) : (
+                  <Text style={styles.hint}>
+                    Смена кода, вопрос, биометрия и снятие защиты — только после текущего кода.
+                  </Text>
+                )}
+                <SettingsField
+                  label={
+                    storedPinLength === DIARY_LEGACY_PIN_LENGTH ? 'Текущий код из 4 цифр' : 'Текущий код'
+                  }
+                  value={currentPin}
+                  onChangeText={setCurrentPin}
+                  keyboardType="number-pad"
+                  maxLength={storedPinLength}
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+                <Pressable
+                  style={styles.button}
+                  onPress={() => void handleConfirmPin()}
+                  disabled={isSaving}
+                >
+                  <Text style={styles.buttonText}>Подтвердить код</Text>
+                </Pressable>
+                {FEATURES.biometrics && biometricsEnabled ? (
+                  <Pressable style={styles.linkButton} onPress={() => void handleConfirmBiometrics()}>
+                    <Text style={styles.linkText}>Подтвердить биометрией</Text>
+                  </Pressable>
+                ) : null}
+              </>
+            ) : (
+              <>
             <SettingsField
-              label={lockEnabled ? 'Новый код' : 'Код из 4 цифр'}
+              label={lockEnabled ? 'Новый код из 6 цифр' : 'Код из 6 цифр'}
               value={pin}
               onChangeText={setPin}
               keyboardType="number-pad"
@@ -263,7 +392,11 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
               placeholder={recoveryEnabled ? 'Оставьте пустым, чтобы не менять' : 'Ответ'}
               autoCapitalize="none"
             />
-            <Pressable style={styles.button} onPress={() => void handleSavePin()}>
+            <Pressable
+              style={styles.button}
+              onPress={() => void handleSavePin()}
+              disabled={isSaving}
+            >
               <Text style={styles.buttonText}>{lockEnabled ? 'Сменить код' : 'Включить код'}</Text>
             </Pressable>
 
@@ -291,6 +424,8 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
                 <Text style={styles.linkText}>Отключить защиту</Text>
               </Pressable>
             ) : null}
+              </>
+            )}
 
             <Text style={styles.sectionTitle}>Данные для проверки</Text>
             <Text style={styles.hint}>

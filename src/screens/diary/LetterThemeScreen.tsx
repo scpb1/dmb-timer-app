@@ -7,12 +7,16 @@ import { format } from 'date-fns';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { AnimatedButton } from '@/components/common/AnimatedButton';
 import { AnimatedText } from '@/components/common/AnimatedText';
 import { LetterThemePickerModal } from '@/components/diary/LetterThemePickerModal';
-import { pickPreferredTheme, pickRandomTheme, useLetterThemes } from '@/hooks/useDiary';
-import { getDiaryEntry } from '@/services/database';
+import {
+  pickPreferredTheme,
+  pickRandomTheme,
+  resolveLetterDestination,
+  useDiaryEntry,
+  useLetterThemes,
+} from '@/hooks/useDiary';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import {
@@ -31,27 +35,16 @@ interface LetterThemeScreenProps {
 export function LetterThemeScreen({ navigation, route }: LetterThemeScreenProps) {
   const date = route.params?.date ?? format(new Date(), 'yyyy-MM-dd');
   const { isLoading, themes, usedThemeIds, unusedThemes, reload } = useLetterThemes(date);
+  const letterPage = useDiaryEntry('letter', date);
+  const hasExisting = Boolean(letterPage.entry?.themeId);
   const [theme, setTheme] = useState<LetterTheme | null>(null);
   const [readyVisible, setReadyVisible] = useState(false);
   const [runId, setRunId] = useState(0);
-  const [hasExisting, setHasExisting] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
     void reload();
   }, [reload, date]);
-
-  useEffect(() => {
-    let active = true;
-    getDiaryEntry('letter', date).then((entry) => {
-      if (active) {
-        setHasExisting(Boolean(entry?.themeId));
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [date]);
 
   useEffect(() => {
     if (isLoading) {
@@ -98,15 +91,14 @@ export function LetterThemeScreen({ navigation, route }: LetterThemeScreenProps)
   };
 
   const openExisting = async () => {
-    const existing = await getDiaryEntry('letter', date);
-    if (existing?.themeId) {
-      navigation.replace('LetterEditor', { date, themeId: existing.themeId });
+    const destination = await resolveLetterDestination(date);
+    if (destination.screen === 'LetterEditor') {
+      navigation.replace('LetterEditor', { date, themeId: destination.themeId });
     }
   };
 
   return (
     <View style={styles.root}>
-      <ScreenBackground />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.header}>
           <Pressable

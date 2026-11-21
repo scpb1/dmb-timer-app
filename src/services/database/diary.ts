@@ -10,6 +10,7 @@ import {
 import { LETTER_THEMES_SEED_VERSION, SEED_LETTER_THEMES } from '@/data/letterThemes';
 import { isDocumentBlank, parseDiaryDocument, serializeDiaryDocument } from '@/utils/diaryContent';
 import { logger } from '@/utils/logger';
+import { enqueueDatabaseOp, withSqliteBusyRetry } from './queue';
 
 let diaryDatabase: SQLiteDatabase | null = null;
 
@@ -28,6 +29,7 @@ const CREATE_DIARY_ENTRIES_TABLE = `
     entry_date TEXT NOT NULL,
     theme_id TEXT,
     content_json TEXT NOT NULL,
+    has_content INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL,
     UNIQUE(kind, entry_date)
   );
@@ -41,10 +43,52 @@ function getDiaryDatabase(): SQLiteDatabase {
   return diaryDatabase;
 }
 
+function runDiaryOp<T>(work: () => Promise<T>, failureMessage: string): Promise<T> {
+  return enqueueDatabaseOp(() => withSqliteBusyRetry(work)).catch((error: unknown) => {
+    logger.error(failureMessage, error);
+    throw error;
+  });
+}
+
+const DIARY_HAS_CONTENT_BACKFILL = 'diary_has_content_backfill';
+
+async function ensureDiaryHasContent(database: SQLiteDatabase): Promise<void> {
+  const columns = await database.getAllAsync<{ name: string }>('PRAGMA table_info(diary_entries)');
+  if (!columns.some((column) => column.name === 'has_content')) {
+    await database.execAsync(
+      'ALTER TABLE diary_entries ADD COLUMN has_content INTEGER NOT NULL DEFAULT 0',
+    );
+  }
+
+  const marker = await database.getFirstAsync<{ value: string }>(
+    'SELECT value FROM config WHERE key = ?',
+    [DIARY_HAS_CONTENT_BACKFILL],
+  );
+  if (marker?.value === '1') {
+    return;
+  }
+
+  const rows = await database.getAllAsync<{ id: string; content_json: string }>(
+    'SELECT id, content_json FROM diary_entries',
+  );
+  for (const row of rows) {
+    const hasContent = isDocumentBlank(parseDiaryDocument(row.content_json)) ? 0 : 1;
+    await database.runAsync('UPDATE diary_entries SET has_content = ? WHERE id = ?', [
+      hasContent,
+      row.id,
+    ]);
+  }
+  await database.runAsync('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', [
+    DIARY_HAS_CONTENT_BACKFILL,
+    '1',
+  ]);
+}
+
 export async function initDiarySchema(database: SQLiteDatabase): Promise<void> {
   diaryDatabase = database;
   await database.execAsync(CREATE_LETTER_THEMES_TABLE);
   await database.execAsync(CREATE_DIARY_ENTRIES_TABLE);
+  await ensureDiaryHasContent(database);
   await seedLetterThemes(database);
 }
 
@@ -81,9 +125,13 @@ async function seedLetterThemes(database: SQLiteDatabase): Promise<void> {
   });
 }
 
-export async function resetDiaryEntries(): Promise<void> {
+export async function deleteAllDiaryEntries(): Promise<void> {
   const db = getDiaryDatabase();
   await db.runAsync('DELETE FROM diary_entries');
+}
+
+export function resetDiaryEntries(): Promise<void> {
+  return runDiaryOp(deleteAllDiaryEntries, 'Ошибка очистки записей дневника');
 }
 
 interface DiaryEntryRow {
@@ -106,22 +154,48 @@ function mapEntry(row: DiaryEntryRow): DiaryEntry {
   };
 }
 
-export async function getLetterThemes(): Promise<LetterTheme[]> {
-  try {
-    const db = getDiaryDatabase();
-    const rows = await db.getAllAsync<{ id: string; title: string; sort_order: number }>(
-      'SELECT id, title, sort_order FROM letter_themes ORDER BY sort_order ASC',
-    );
+const DIARY_ENTRY_COLUMNS = `id, kind, entry_date, theme_id, content_json, updated_at`;
 
-    return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      sortOrder: row.sort_order,
-    }));
-  } catch (error) {
-    logger.error('Ошибка чтения тем писем', error);
-    throw error;
+async function readLetterThemes(): Promise<LetterTheme[]> {
+  const db = getDiaryDatabase();
+  const rows = await db.getAllAsync<{ id: string; title: string; sort_order: number }>(
+    'SELECT id, title, sort_order FROM letter_themes ORDER BY sort_order ASC',
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    sortOrder: row.sort_order,
+  }));
+}
+
+export function getLetterThemes(): Promise<LetterTheme[]> {
+  return runDiaryOp(readLetterThemes, 'Ошибка чтения тем писем');
+}
+
+async function insertCustomLetterThemeRow(normalized: string): Promise<LetterTheme> {
+  const db = getDiaryDatabase();
+  const existing = await db.getAllAsync<{ title: string }>('SELECT title FROM letter_themes');
+  const key = normalized.toLocaleLowerCase('ru');
+  if (existing.some((row) => row.title.toLocaleLowerCase('ru') === key)) {
+    throw new Error('Такая тема уже есть');
   }
+
+  const maxRow = await db.getFirstAsync<{ max_order: number | null }>(
+    'SELECT MAX(sort_order) as max_order FROM letter_themes',
+  );
+  const theme: LetterTheme = {
+    id: `${CUSTOM_LETTER_THEME_ID_PREFIX}${Crypto.randomUUID()}`,
+    title: normalized,
+    sortOrder: (maxRow?.max_order ?? 0) + 1,
+  };
+
+  await db.runAsync('INSERT INTO letter_themes (id, title, sort_order) VALUES (?, ?, ?)', [
+    theme.id,
+    theme.title,
+    theme.sortOrder,
+  ]);
+  return theme;
 }
 
 export async function insertCustomLetterTheme(title: string): Promise<LetterTheme> {
@@ -134,162 +208,157 @@ export async function insertCustomLetterTheme(title: string): Promise<LetterThem
   }
 
   try {
-    const db = getDiaryDatabase();
-    const existing = await db.getAllAsync<{ title: string }>('SELECT title FROM letter_themes');
-    const key = normalized.toLocaleLowerCase('ru');
-    if (existing.some((row) => row.title.toLocaleLowerCase('ru') === key)) {
-      throw new Error('Такая тема уже есть');
-    }
-
-    const maxRow = await db.getFirstAsync<{ max_order: number | null }>(
-      'SELECT MAX(sort_order) as max_order FROM letter_themes',
+    return await enqueueDatabaseOp(() =>
+      withSqliteBusyRetry(() => insertCustomLetterThemeRow(normalized)),
     );
-    const theme: LetterTheme = {
-      id: `${CUSTOM_LETTER_THEME_ID_PREFIX}${Crypto.randomUUID()}`,
-      title: normalized,
-      sortOrder: (maxRow?.max_order ?? 0) + 1,
-    };
-
-    await db.runAsync('INSERT INTO letter_themes (id, title, sort_order) VALUES (?, ?, ?)', [
-      theme.id,
-      theme.title,
-      theme.sortOrder,
-    ]);
-    return theme;
   } catch (error) {
-    if (error instanceof Error && error.message !== 'Такая тема уже есть') {
+    if (!(error instanceof Error) || error.message !== 'Такая тема уже есть') {
       logger.error('Ошибка добавления своей темы', error);
     }
     throw error;
   }
 }
 
-export async function getUsedLetterThemeIds(excludeEntryDate?: string): Promise<string[]> {
-  try {
-    const db = getDiaryDatabase();
-    const rows = excludeEntryDate
-      ? await db.getAllAsync<{ theme_id: string }>(
-          `SELECT DISTINCT theme_id FROM diary_entries
-           WHERE kind = 'letter' AND theme_id IS NOT NULL AND entry_date != ?`,
-          [excludeEntryDate],
-        )
-      : await db.getAllAsync<{ theme_id: string }>(
-          `SELECT DISTINCT theme_id FROM diary_entries
-           WHERE kind = 'letter' AND theme_id IS NOT NULL`,
-        );
+async function readUsedLetterThemeIds(excludeEntryDate?: string): Promise<string[]> {
+  const db = getDiaryDatabase();
+  const rows = excludeEntryDate
+    ? await db.getAllAsync<{ theme_id: string }>(
+        `SELECT DISTINCT theme_id FROM diary_entries
+         WHERE kind = 'letter' AND theme_id IS NOT NULL AND entry_date != ?`,
+        [excludeEntryDate],
+      )
+    : await db.getAllAsync<{ theme_id: string }>(
+        `SELECT DISTINCT theme_id FROM diary_entries
+         WHERE kind = 'letter' AND theme_id IS NOT NULL`,
+      );
 
-    return rows.map((row) => row.theme_id).filter(Boolean);
-  } catch (error) {
-    logger.error('Ошибка чтения использованных тем', error);
-    throw error;
-  }
+  return rows.map((row) => row.theme_id).filter(Boolean);
 }
 
-export async function countDiaryEntriesByKind(): Promise<{ personal: number; letter: number }> {
-  try {
-    const db = getDiaryDatabase();
-    const rows = await db.getAllAsync<{ kind: DiaryKind; count: number }>(
-      'SELECT kind, COUNT(*) as count FROM diary_entries GROUP BY kind',
-    );
+export function getUsedLetterThemeIds(excludeEntryDate?: string): Promise<string[]> {
+  return runDiaryOp(
+    () => readUsedLetterThemeIds(excludeEntryDate),
+    'Ошибка чтения использованных тем',
+  );
+}
 
-    const result = { personal: 0, letter: 0 };
-    for (const row of rows) {
-      if (row.kind === 'personal' || row.kind === 'letter') {
-        result[row.kind] = Number(row.count) || 0;
-      }
+async function readDiaryEntryCounts(): Promise<{ personal: number; letter: number }> {
+  const db = getDiaryDatabase();
+  const rows = await db.getAllAsync<{ kind: DiaryKind; count: number }>(
+    'SELECT kind, COUNT(*) as count FROM diary_entries GROUP BY kind',
+  );
+
+  const result = { personal: 0, letter: 0 };
+  for (const row of rows) {
+    if (row.kind === 'personal' || row.kind === 'letter') {
+      result[row.kind] = Number(row.count) || 0;
     }
-    return result;
-  } catch (error) {
-    logger.error('Ошибка подсчёта записей дневника', error);
-    throw error;
   }
+  return result;
 }
 
-export async function getDiaryEntriesByKind(kind: DiaryKind): Promise<DiaryEntry[]> {
-  try {
-    const db = getDiaryDatabase();
-    const rows = await db.getAllAsync<DiaryEntryRow>(
-      `SELECT id, kind, entry_date, theme_id, content_json, updated_at
-       FROM diary_entries
-       WHERE kind = ?
-       ORDER BY entry_date ASC`,
-      [kind],
-    );
+export function countDiaryEntriesByKind(): Promise<{ personal: number; letter: number }> {
+  return runDiaryOp(readDiaryEntryCounts, 'Ошибка подсчёта записей дневника');
+}
 
-    return rows.map(mapEntry);
-  } catch (error) {
-    logger.error('Ошибка чтения записей дневника', error);
-    throw error;
+async function readDiaryEntriesByKind(kind: DiaryKind): Promise<DiaryEntry[]> {
+  const db = getDiaryDatabase();
+  const rows = await db.getAllAsync<DiaryEntryRow>(
+    `SELECT ${DIARY_ENTRY_COLUMNS}
+     FROM diary_entries
+     WHERE kind = ?
+     ORDER BY entry_date ASC`,
+    [kind],
+  );
+
+  return rows.map(mapEntry);
+}
+
+export function getDiaryEntriesByKind(kind: DiaryKind): Promise<DiaryEntry[]> {
+  return runDiaryOp(() => readDiaryEntriesByKind(kind), 'Ошибка чтения записей дневника');
+}
+
+async function readDiaryCalendarMarks(): Promise<{ personal: string[]; letter: string[] }> {
+  const db = getDiaryDatabase();
+  const rows = await db.getAllAsync<{ entry_date: string; kind: DiaryKind }>(
+    `SELECT entry_date, kind
+     FROM diary_entries
+     WHERE has_content = 1 AND kind IN ('personal', 'letter')
+     ORDER BY entry_date ASC`,
+  );
+
+  const personal: string[] = [];
+  const letter: string[] = [];
+  for (const row of rows) {
+    if (row.kind === 'personal') {
+      personal.push(row.entry_date);
+    } else if (row.kind === 'letter') {
+      letter.push(row.entry_date);
+    }
   }
+
+  return { personal, letter };
 }
 
 /** Даты непустых записей для календаря дневника */
-export async function getDiaryCalendarMarks(): Promise<{
+export function getDiaryCalendarMarks(): Promise<{
   personal: string[];
   letter: string[];
 }> {
-  const [personalEntries, letterEntries] = await Promise.all([
-    getDiaryEntriesByKind('personal'),
-    getDiaryEntriesByKind('letter'),
-  ]);
-
-  return {
-    personal: personalEntries
-      .filter((entry) => !isDocumentBlank(entry.document))
-      .map((entry) => entry.entryDate),
-    letter: letterEntries
-      .filter((entry) => !isDocumentBlank(entry.document))
-      .map((entry) => entry.entryDate),
-  };
+  return runDiaryOp(readDiaryCalendarMarks, 'Ошибка чтения отметок календаря дневника');
 }
 
-export async function getDiaryEntry(kind: DiaryKind, entryDate: string): Promise<DiaryEntry | null> {
-  try {
-    const db = getDiaryDatabase();
-    const row = await db.getFirstAsync<DiaryEntryRow>(
-      `SELECT id, kind, entry_date, theme_id, content_json, updated_at
-       FROM diary_entries
-       WHERE kind = ? AND entry_date = ?`,
-      [kind, entryDate],
-    );
+async function readDiaryEntry(kind: DiaryKind, entryDate: string): Promise<DiaryEntry | null> {
+  const db = getDiaryDatabase();
+  const row = await db.getFirstAsync<DiaryEntryRow>(
+    `SELECT ${DIARY_ENTRY_COLUMNS}
+     FROM diary_entries
+     WHERE kind = ? AND entry_date = ?`,
+    [kind, entryDate],
+  );
 
-    return row ? mapEntry(row) : null;
-  } catch (error) {
-    logger.error('Ошибка чтения записи дневника', error);
-    throw error;
-  }
+  return row ? mapEntry(row) : null;
 }
 
-export async function upsertDiaryEntry(input: {
+export function getDiaryEntry(kind: DiaryKind, entryDate: string): Promise<DiaryEntry | null> {
+  return runDiaryOp(() => readDiaryEntry(kind, entryDate), 'Ошибка чтения записи дневника');
+}
+
+async function writeDiaryEntry(input: {
   kind: DiaryKind;
   entryDate: string;
   themeId?: string;
   document: DiaryEntry['document'];
 }): Promise<DiaryEntry> {
-  try {
-    const db = getDiaryDatabase();
-    const existing = await getDiaryEntry(input.kind, input.entryDate);
-    const id = existing?.id ?? Crypto.randomUUID();
-    const updatedAt = formatISO(new Date());
-    const contentJson = serializeDiaryDocument(input.document);
+  const db = getDiaryDatabase();
+  const existing = await readDiaryEntry(input.kind, input.entryDate);
+  const id = existing?.id ?? Crypto.randomUUID();
+  const updatedAt = formatISO(new Date());
+  const contentJson = serializeDiaryDocument(input.document);
+  const hasContent = isDocumentBlank(input.document) ? 0 : 1;
 
-    await db.runAsync(
-      `INSERT OR REPLACE INTO diary_entries
-        (id, kind, entry_date, theme_id, content_json, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, input.kind, input.entryDate, input.themeId ?? null, contentJson, updatedAt],
-    );
+  await db.runAsync(
+    `INSERT OR REPLACE INTO diary_entries
+      (id, kind, entry_date, theme_id, content_json, has_content, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id, input.kind, input.entryDate, input.themeId ?? null, contentJson, hasContent, updatedAt],
+  );
 
-    return {
-      id,
-      kind: input.kind,
-      entryDate: input.entryDate,
-      themeId: input.themeId,
-      document: input.document,
-      updatedAt,
-    };
-  } catch (error) {
-    logger.error('Ошибка сохранения записи дневника', error);
-    throw error;
-  }
+  return {
+    id,
+    kind: input.kind,
+    entryDate: input.entryDate,
+    themeId: input.themeId,
+    document: input.document,
+    updatedAt,
+  };
+}
+
+export function upsertDiaryEntry(input: {
+  kind: DiaryKind;
+  entryDate: string;
+  themeId?: string;
+  document: DiaryEntry['document'];
+}): Promise<DiaryEntry> {
+  return runDiaryOp(() => writeDiaryEntry(input), 'Ошибка сохранения записи дневника');
 }

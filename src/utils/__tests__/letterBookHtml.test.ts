@@ -1,12 +1,12 @@
+import { DEFAULT_DIARY_TEXT_STYLE } from '@/types/diary';
+import { buildLetterBookHtml, formatLetterDate } from '@/utils/letterBookHtml';
+import type { LetterBookPayload } from '@/utils/letterBookHtml';
+
 jest.mock('@/services/database', () => ({
   getConfig: jest.fn(),
   setConfig: jest.fn(),
   countDiaryEntriesByKind: jest.fn(),
 }));
-
-import { DEFAULT_DIARY_TEXT_STYLE } from '@/types/diary';
-import { buildLetterBookHtml, formatLetterDate } from '@/utils/letterBookHtml';
-import type { LetterBookPayload } from '@/utils/letterBookHtml';
 
 const payload: LetterBookPayload = {
   userName: 'Анна',
@@ -60,6 +60,15 @@ describe('letterBookHtml', () => {
       weekdayLabel: 'Воскресенье',
       monthKey: '2025-06',
       monthLabel: 'Июнь 2025',
+    });
+  });
+
+  it('не падает на битой дате письма', () => {
+    expect(formatLetterDate('not-a-date')).toEqual({
+      dateLabel: 'not-a-date',
+      weekdayLabel: '',
+      monthKey: 'invalid',
+      monthLabel: 'not-a-date',
     });
   });
 

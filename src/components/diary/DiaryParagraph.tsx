@@ -1,5 +1,5 @@
+import { memo, useRef } from 'react';
 import { Platform, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useRef } from 'react';
 
 import type { DiaryParagraphBlock, DiaryTextStyle } from '@/types/diary';
 import { applyTextChange, flattenSpans, toRnTextStyle } from '@/utils/diaryContent';
@@ -15,7 +15,7 @@ interface DiaryParagraphProps {
 }
 
 /** Абзац дневника с вложенными стилями внутри TextInput */
-export function DiaryParagraph({
+export const DiaryParagraph = memo(function DiaryParagraph({
   block,
   typingStyle,
   editable = true,
@@ -24,11 +24,12 @@ export function DiaryParagraph({
   onFocus,
   inputRef,
 }: DiaryParagraphProps) {
-  const text = flattenSpans(block.spans);
+  const spans = Array.isArray(block.spans) ? block.spans : [];
+  const text = flattenSpans(spans);
   const lastTextRef = useRef(text);
-  const spansRef = useRef(block.spans);
+  const spansRef = useRef(spans);
   lastTextRef.current = text;
-  spansRef.current = block.spans;
+  spansRef.current = spans;
 
   return (
     <View style={styles.wrap}>
@@ -53,7 +54,7 @@ export function DiaryParagraph({
         }}
         style={[styles.input, toRnTextStyle(typingStyle)]}
       >
-        {block.spans.map((span) => (
+        {spans.map((span) => (
           <Text key={span.id} style={toRnTextStyle(span.style)}>
             {span.text}
           </Text>
@@ -61,7 +62,7 @@ export function DiaryParagraph({
       </TextInput>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: {

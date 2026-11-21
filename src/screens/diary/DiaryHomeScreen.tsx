@@ -7,19 +7,18 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Feather } from '@expo/vector-icons';
 
-import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
+import { FEATURES } from '@/constants';
 import { LetterBookExportModal } from '@/components/diary/LetterBookExportModal';
 import { SandboxModeBanner } from '@/components/common/SandboxModeBanner';
 import { TrackerCalendar, type DiaryDayMarks } from '@/components/trackers/TrackerCalendar';
 import { useDatabaseProfile } from '@/hooks/useDatabaseProfile';
-import { getDiaryCalendarMarks, getDiaryEntry } from '@/services/database';
+import { resolveLetterDestination, useDiaryCalendar } from '@/hooks/useDiary';
+import { isDiaryLockEnabled } from '@/services/diaryLock';
+import { useDiarySessionUnlocked } from '@/services/diarySession';
 import { colors, useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
-import { logger } from '@/utils/logger';
 import type { DiaryStackParamList } from '@/types/navigation';
-
-const SHOW_LETTER_BOOK_HOME_ENTRY = false;
 
 interface DiaryHomeScreenProps {
   navigation: StackNavigationProp<DiaryStackParamList, 'DiaryHome'>;
@@ -37,29 +36,18 @@ function stampFromDate(date: Date): string {
 export function DiaryHomeScreen({ navigation }: DiaryHomeScreenProps) {
   const theme = useAppTheme();
   const [bookVisible, setBookVisible] = useState(false);
-  const [kindMarks, setKindMarks] = useState<DiaryDayMarks>({});
+  const [lockEnabled, setLockEnabled] = useState<boolean | null>(null);
+  const { marks: kindMarks } = useDiaryCalendar();
+  const sessionUnlocked = useDiarySessionUnlocked();
   const databaseProfile = useDatabaseProfile();
-
-  const loadMarks = useCallback(async () => {
-    try {
-      const marks = await getDiaryCalendarMarks();
-      const next: DiaryDayMarks = {};
-      for (const date of marks.personal) {
-        next[date] = { ...next[date], personal: true };
-      }
-      for (const date of marks.letter) {
-        next[date] = { ...next[date], letter: true };
-      }
-      setKindMarks(next);
-    } catch (error) {
-      logger.error('Ошибка загрузки календаря дневника', error);
-    }
-  }, []);
+  const personalVisible = lockEnabled === false || (lockEnabled === true && sessionUnlocked);
 
   useFocusEffect(
     useCallback(() => {
-      void loadMarks();
-    }, [loadMarks]),
+      void isDiaryLockEnabled()
+        .then(setLockEnabled)
+        .catch(() => setLockEnabled(false));
+    }, []),
   );
 
   const openPersonal = (date = todayStamp()) => {
@@ -67,9 +55,9 @@ export function DiaryHomeScreen({ navigation }: DiaryHomeScreenProps) {
   };
 
   const openLetters = async (date = todayStamp()) => {
-    const existing = await getDiaryEntry('letter', date);
-    if (existing?.themeId) {
-      navigation.navigate('LetterEditor', { date, themeId: existing.themeId });
+    const destination = await resolveLetterDestination(date);
+    if (destination.screen === 'LetterEditor') {
+      navigation.navigate('LetterEditor', { date, themeId: destination.themeId });
       return;
     }
 
@@ -86,11 +74,23 @@ export function DiaryHomeScreen({ navigation }: DiaryHomeScreenProps) {
     ]);
   };
 
-  const hasAnyMarks = useMemo(() => Object.keys(kindMarks).length > 0, [kindMarks]);
+  const visibleMarks = useMemo(() => {
+    if (personalVisible) {
+      return kindMarks;
+    }
+    const next: DiaryDayMarks = {};
+    for (const [date, mark] of Object.entries(kindMarks)) {
+      if (mark.letter) {
+        next[date] = { letter: true };
+      }
+    }
+    return next;
+  }, [kindMarks, personalVisible]);
+
+  const hasAnyMarks = useMemo(() => Object.keys(visibleMarks).length > 0, [visibleMarks]);
 
   return (
     <View style={styles.root}>
-      <ScreenBackground />
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScreenHeader
           title="Дневник"
@@ -113,16 +113,20 @@ export function DiaryHomeScreen({ navigation }: DiaryHomeScreenProps) {
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.subtitle}>
-            Точки на календаре — дни с записями. Чёрная: личный дневник, красная: письмо.
+            {personalVisible
+              ? 'Точки на календаре — дни с записями. Чёрная: личный дневник, красная: письмо.'
+              : 'Красная точка — день с письмом. Даты личного дневника скрыты, пока не введён код.'}
           </Text>
 
-          <TrackerCalendar kindMarks={kindMarks} onDayPress={handleDayPress} />
+          <TrackerCalendar kindMarks={visibleMarks} onDayPress={handleDayPress} />
 
           <View style={styles.legend}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, styles.legendPersonal]} />
-              <Text style={styles.legendPersonalText}>Личный дневник</Text>
-            </View>
+            {personalVisible ? (
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, styles.legendPersonal]} />
+                <Text style={styles.legendPersonalText}>Личный дневник</Text>
+              </View>
+            ) : null}
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, styles.legendLetter]} />
               <Text style={styles.legendLetterText}>Письмо</Text>
@@ -164,7 +168,7 @@ export function DiaryHomeScreen({ navigation }: DiaryHomeScreenProps) {
             <Feather name="chevron-right" size={22} color={theme.text.secondary} />
           </Pressable>
 
-          {SHOW_LETTER_BOOK_HOME_ENTRY ? (
+          {FEATURES.letterBookHomeEntry ? (
             <Pressable
               style={styles.card}
               onPress={() => setBookVisible(true)}

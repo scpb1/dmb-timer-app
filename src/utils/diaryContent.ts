@@ -98,8 +98,11 @@ export function createEmptyDocument(
   };
 }
 
-export function flattenSpans(spans: DiaryTextSpan[]): string {
-  return spans.map((span) => span.text).join('');
+export function flattenSpans(spans: readonly DiaryTextSpan[] | null | undefined): string {
+  if (!Array.isArray(spans)) {
+    return '';
+  }
+  return spans.map((span) => (typeof span?.text === 'string' ? span.text : '')).join('');
 }
 
 export function isParagraphEmpty(block: DiaryBlock): boolean {
@@ -107,9 +110,13 @@ export function isParagraphEmpty(block: DiaryBlock): boolean {
 }
 
 export function isDocumentBlank(document: DiaryDocument): boolean {
+  if (!document || !Array.isArray(document.blocks)) {
+    return true;
+  }
+
   return document.blocks.every((block) => {
-    if (block.type === 'image') {
-      return false;
+    if (!block || block.type !== 'paragraph') {
+      return block?.type !== 'image';
     }
     return flattenSpans(block.spans).trim().length === 0;
   });
@@ -482,6 +489,102 @@ export function dropIndexForY(
   return layouts.length - 1;
 }
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function normalizeStoredStyle(style: unknown): DiaryTextStyle {
+  if (!style || typeof style !== 'object') {
+    return cloneStyle(DEFAULT_DIARY_TEXT_STYLE);
+  }
+
+  const raw = style as Partial<DiaryTextStyle>;
+  return {
+    fontId: raw.fontId === 'system' ? 'system' : DEFAULT_DIARY_TEXT_STYLE.fontId,
+    fontSize:
+      isFiniteNumber(raw.fontSize) && raw.fontSize > 0
+        ? raw.fontSize
+        : DEFAULT_DIARY_TEXT_STYLE.fontSize,
+    color: typeof raw.color === 'string' && raw.color.trim() ? raw.color : DEFAULT_DIARY_TEXT_STYLE.color,
+    bold: raw.bold === true,
+    italic: raw.italic === true,
+    underline: raw.underline === true,
+  };
+}
+
+function normalizeStoredSpan(span: unknown): DiaryTextSpan | null {
+  if (!span || typeof span !== 'object') {
+    return null;
+  }
+
+  const raw = span as Partial<DiaryTextSpan>;
+  if (typeof raw.text !== 'string') {
+    return null;
+  }
+
+  return {
+    id: typeof raw.id === 'string' && raw.id ? raw.id : createDiaryId(),
+    text: raw.text,
+    style: normalizeStoredStyle(raw.style),
+  };
+}
+
+function emptyParagraph(id: string): DiaryParagraphBlock {
+  const block = createEmptyParagraph();
+  return { ...block, id };
+}
+
+function normalizeStoredBlock(block: unknown): DiaryBlock | null {
+  if (!block || typeof block !== 'object') {
+    return null;
+  }
+
+  const raw = block as {
+    id?: unknown;
+    type?: unknown;
+    spans?: unknown;
+    uri?: unknown;
+    aspectRatio?: unknown;
+    widthRatio?: unknown;
+  };
+  if (typeof raw.id !== 'string' || !raw.id) {
+    return null;
+  }
+
+  if (raw.type === 'paragraph') {
+    if (!Array.isArray(raw.spans)) {
+      return emptyParagraph(raw.id);
+    }
+
+    const spans = raw.spans
+      .map((span) => normalizeStoredSpan(span))
+      .filter((span): span is DiaryTextSpan => span !== null);
+    if (spans.length === 0) {
+      return emptyParagraph(raw.id);
+    }
+
+    return { id: raw.id, type: 'paragraph', spans };
+  }
+
+  if (raw.type === 'image') {
+    if (typeof raw.uri !== 'string' || !raw.uri || !isFiniteNumber(raw.aspectRatio) || raw.aspectRatio <= 0) {
+      return null;
+    }
+
+    return {
+      id: raw.id,
+      type: 'image',
+      uri: raw.uri,
+      aspectRatio: raw.aspectRatio,
+      widthRatio: clampPhotoRatio(
+        isFiniteNumber(raw.widthRatio) ? raw.widthRatio : DIARY_DEFAULT_PHOTO_RATIO,
+      ),
+    };
+  }
+
+  return null;
+}
+
 export function parseDiaryDocument(raw: string | null | undefined): DiaryDocument {
   if (!raw) {
     return createEmptyDocument();
@@ -493,12 +596,9 @@ export function parseDiaryDocument(raw: string | null | undefined): DiaryDocumen
       return createEmptyDocument();
     }
 
-    const blocks = parsed.blocks.filter(
-      (block): block is DiaryBlock =>
-        Boolean(block) &&
-        typeof block.id === 'string' &&
-        (block.type === 'paragraph' || block.type === 'image'),
-    );
+    const blocks = parsed.blocks
+      .map((block) => normalizeStoredBlock(block))
+      .filter((block): block is DiaryBlock => block !== null);
 
     return {
       version: 1,
