@@ -1,24 +1,33 @@
-import { Platform } from 'react-native';
-import { addDays, format, isAfter, setHours, setMilliseconds, setMinutes, setSeconds, startOfDay } from 'date-fns';
+import {
+  dueNotificationRequests,
+  letterReminderRequests,
+} from '@/services/notifications/notificationPlan';
 
 import { FEATURES } from '@/constants';
 import { CONFIG_KEYS } from '@/types/config';
 import { getConfig, getDiaryCalendarMarks, setConfig } from '@/services/database';
-import {
-  buildDisplayHolidays,
-  formatHolidayTodayBody,
-  parseHolidaysStorage,
-} from '@/utils/holidayCalculations';
+import { buildDisplayHolidays, parseHolidaysStorage } from '@/utils/holidayCalculations';
 import { buildDisplayEvents, parseEventsStorage } from '@/utils/eventCalculations';
-import { isHolidayNotificationsAvailable } from '@/utils/nativeAvailability';
+import {
+  EVENT_NOTIFICATION_ID_PREFIX,
+  HOLIDAY_NOTIFICATION_ID_PREFIX,
+  groupEventNotifications,
+  groupHolidayNotifications,
+} from '@/utils/timerNotifications';
+import { isTimerNotificationEnabled, loadTimerRecords } from '@/utils/timerRecords';
+import { rescheduleParcelNotifications } from '@/utils/parcelNotifications';
 import { logger } from '@/utils/logger';
+import {
+  ensureAndroidChannel,
+  getNotificationsApi,
+  NOTIFICATION_CHANNELS,
+  type NativeNotificationsApi,
+} from '@/services/notifications/nativeNotifications';
+import { registerMemoryCacheReset } from '@/services/memoryCaches';
 
-const EVENTS_CHANNEL_ID = 'holidays';
-const LETTERS_CHANNEL_ID = 'letters';
-const HOLIDAY_ID_PREFIX = 'holiday:';
-const EVENT_ID_PREFIX = 'event:';
+const EVENTS_CHANNEL_ID = NOTIFICATION_CHANNELS.holidays.id;
+const LETTERS_CHANNEL_ID = NOTIFICATION_CHANNELS.letters.id;
 const LETTER_ID_PREFIX = 'letter:';
-const ANDROID_IMPORTANCE_HIGH = 6;
 const LETTER_REMINDER_DAYS = 8;
 const EVENT_HOUR = 0;
 const EVENT_MINUTE = 0;
@@ -50,120 +59,45 @@ const LETTER_REMINDERS = [
   },
 ] as const;
 
-type AppNotificationsApi = {
-  getPermissionsAsync: () => Promise<{ status: string }>;
-  requestPermissionsAsync: () => Promise<{ status: string }>;
-  setNotificationChannelAsync: (
-    channelId: string,
-    channel: { name: string; importance: number; sound: string },
-  ) => Promise<unknown>;
-  getAllScheduledNotificationsAsync: () => Promise<Array<{ identifier: string }>>;
-  cancelScheduledNotificationAsync: (identifier: string) => Promise<void>;
-  scheduleNotificationAsync: (request: {
-    identifier: string;
-    content: { title: string; body: string; sound: boolean };
-    trigger: { date: Date; channelId: string };
-  }) => Promise<string>;
-};
-
-let notificationsApi: AppNotificationsApi | null | undefined;
-
-function loadAppNotifications(): AppNotificationsApi | null {
-  if (notificationsApi !== undefined) {
-    return notificationsApi;
-  }
-
-  if (!isHolidayNotificationsAvailable()) {
-    notificationsApi = null;
-    return null;
-  }
-
-  try {
-    const handlerModule =
-      require('expo-notifications/build/NotificationsHandler') as typeof import('expo-notifications/build/NotificationsHandler');
-    const permissions =
-      require('expo-notifications/build/NotificationPermissions') as typeof import('expo-notifications/build/NotificationPermissions');
-    const setNotificationChannelAsync = (
-      require('expo-notifications/build/setNotificationChannelAsync') as typeof import('expo-notifications/build/setNotificationChannelAsync')
-    ).default;
-    const getAllScheduledNotificationsAsync = (
-      require('expo-notifications/build/getAllScheduledNotificationsAsync') as typeof import('expo-notifications/build/getAllScheduledNotificationsAsync')
-    ).default;
-    const cancelScheduledNotificationAsync = (
-      require('expo-notifications/build/cancelScheduledNotificationAsync') as typeof import('expo-notifications/build/cancelScheduledNotificationAsync')
-    ).default;
-    const scheduleNotificationAsync = (
-      require('expo-notifications/build/scheduleNotificationAsync') as typeof import('expo-notifications/build/scheduleNotificationAsync')
-    ).default;
-
-    if (typeof handlerModule?.setNotificationHandler !== 'function') {
-      notificationsApi = null;
-      return null;
-    }
-
-    handlerModule.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      }),
-    });
-
-    notificationsApi = {
-      getPermissionsAsync: permissions.getPermissionsAsync,
-      requestPermissionsAsync: permissions.requestPermissionsAsync,
-      setNotificationChannelAsync,
-      getAllScheduledNotificationsAsync,
-      cancelScheduledNotificationAsync,
-      scheduleNotificationAsync,
-    };
-    return notificationsApi;
-  } catch (error) {
-    logger.warn('Нативный модуль уведомлений недоступен', error);
-    notificationsApi = null;
-    return null;
-  }
-}
-
-async function ensureChannels(api: AppNotificationsApi) {
-  if (Platform.OS !== 'android') {
-    return;
-  }
-
-  await api.setNotificationChannelAsync(EVENTS_CHANNEL_ID, {
-    name: 'События и праздники',
-    importance: ANDROID_IMPORTANCE_HIGH,
-    sound: 'default',
-  });
-  await api.setNotificationChannelAsync(LETTERS_CHANNEL_ID, {
-    name: 'Письма',
-    importance: ANDROID_IMPORTANCE_HIGH,
-    sound: 'default',
-  });
-}
-
-function atTime(date: Date, hour: number, minute: number): Date {
-  return setMilliseconds(setSeconds(setMinutes(setHours(startOfDay(date), hour), minute), 0), 0);
+async function ensureChannels(): Promise<void> {
+  await ensureAndroidChannel('holidays');
+  await ensureAndroidChannel('letters');
 }
 
 function isAppNotificationId(identifier: string): boolean {
   return (
-    identifier.startsWith(HOLIDAY_ID_PREFIX) ||
-    identifier.startsWith(EVENT_ID_PREFIX) ||
+    identifier.startsWith(HOLIDAY_NOTIFICATION_ID_PREFIX) ||
+    identifier.startsWith(EVENT_NOTIFICATION_ID_PREFIX) ||
     identifier.startsWith(LETTER_ID_PREFIX)
   );
 }
 
+let notificationsEnabledCache: boolean | null = null;
+
+/** Уже прочитанное значение, чтобы экран настроек не рисовал тумблер из «выкл». */
+export function peekNotificationsEnabled(): boolean | null {
+  return notificationsEnabledCache;
+}
+
 export async function readNotificationsEnabled(): Promise<boolean> {
   const value = await getConfig(CONFIG_KEYS.NOTIFICATIONS_ENABLED);
-  return value === 'true';
+  const enabled = value === 'true';
+  notificationsEnabledCache = enabled;
+  return enabled;
 }
 
 export async function writeNotificationsEnabled(enabled: boolean): Promise<void> {
+  notificationsEnabledCache = enabled;
   await setConfig(CONFIG_KEYS.NOTIFICATIONS_ENABLED, enabled ? 'true' : 'false');
 }
 
-async function cancelAppNotifications(api: AppNotificationsApi): Promise<void> {
+export function clearNotificationsEnabledCache(): void {
+  notificationsEnabledCache = null;
+}
+
+registerMemoryCacheReset(clearNotificationsEnabledCache);
+
+async function cancelAppNotifications(api: NativeNotificationsApi): Promise<void> {
   const scheduled = await api.getAllScheduledNotificationsAsync();
   await Promise.all(
     scheduled
@@ -180,13 +114,14 @@ export async function applyAppNotificationsPreference(
 ): Promise<AppNotificationsPreferenceResult> {
   await writeNotificationsEnabled(enabled);
 
-  const api = loadAppNotifications();
+  const api = getNotificationsApi();
   if (!api) {
     return 'unavailable';
   }
 
   if (!enabled) {
     await cancelAppNotifications(api);
+    await rescheduleParcelNotifications();
     return 'granted';
   }
 
@@ -194,13 +129,15 @@ export async function applyAppNotificationsPreference(
   const current = await api.getPermissionsAsync();
   if (current.status !== 'granted') {
     await writeNotificationsEnabled(false);
+    await rescheduleParcelNotifications();
     return 'denied';
   }
+  await rescheduleParcelNotifications();
   return 'granted';
 }
 
 export async function requestHolidayNotificationPermission(): Promise<boolean> {
-  const api = loadAppNotifications();
+  const api = getNotificationsApi();
   if (!api) {
     return false;
   }
@@ -214,15 +151,32 @@ export async function requestHolidayNotificationPermission(): Promise<boolean> {
   return requested.status === 'granted';
 }
 
-export async function rescheduleAppNotifications(): Promise<void> {
+function warnRejectedSchedules(label: string, results: PromiseSettledResult<unknown>[]): void {
+  const rejected = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected',
+  );
+  if (rejected.length === 0) {
+    return;
+  }
+  logger.warn(`${label}: не поставлено ${rejected.length} из ${results.length}`, rejected[0]?.reason);
+}
+
+async function runRescheduleAppNotifications(token: number): Promise<void> {
+  const stale = () => token !== rescheduleGeneration;
   try {
-    const api = loadAppNotifications();
-    if (!api) {
+    const api = getNotificationsApi();
+    if (!api || stale()) {
       return;
     }
 
     const enabled = await readNotificationsEnabled();
+    if (stale()) {
+      return;
+    }
     await cancelAppNotifications(api);
+    if (stale()) {
+      return;
+    }
 
     if (!enabled) {
       return;
@@ -233,125 +187,106 @@ export async function rescheduleAppNotifications(): Promise<void> {
       return;
     }
 
-    await ensureChannels(api);
+    await ensureChannels();
 
-    const [holidaysRaw, eventsRaw, enlistmentRaw, demobilizationRaw] = await Promise.all([
+    const [holidaysRaw, eventsRaw, timerRecords] = await Promise.all([
       getConfig(CONFIG_KEYS.HOLIDAYS_DATA),
       getConfig(CONFIG_KEYS.EVENTS_DATA),
-      getConfig(CONFIG_KEYS.ENLISTMENT_DATE),
-      getConfig(CONFIG_KEYS.DEMOBILIZATION_DATE),
+      loadTimerRecords(),
     ]);
 
     const now = new Date();
-    const serviceRange =
-      enlistmentRaw && demobilizationRaw
-        ? { start: new Date(enlistmentRaw), end: new Date(demobilizationRaw) }
-        : null;
-
-    const holidays = buildDisplayHolidays(
-      parseHolidaysStorage(holidaysRaw),
-      now,
-      serviceRange,
+    const holidaysStorage = parseHolidaysStorage(holidaysRaw);
+    const eventsStorage = parseEventsStorage(eventsRaw);
+    const enabledTimers = timerRecords.allTimers.filter((timer) =>
+      isTimerNotificationEnabled(timer.id, timerRecords.storage.notificationDisabledIds),
     );
 
-    const holidaySchedules = holidays.flatMap((holiday) => {
-      const fireAt = atTime(holiday.date, EVENT_HOUR, EVENT_MINUTE);
-      if (!isAfter(fireAt, now)) {
-        return [];
-      }
-
-      const year = holiday.date.getFullYear();
-      return [
-        api.scheduleNotificationAsync({
-          identifier: `${HOLIDAY_ID_PREFIX}${holiday.id}:${year}`,
-          content: {
-            title: holiday.name,
-            body: formatHolidayTodayBody(holiday.name, holiday.id),
-            sound: true,
-          },
-          trigger: {
-            date: fireAt,
-            channelId: EVENTS_CHANNEL_ID,
-          },
+    const holidayNotifications = groupHolidayNotifications(
+      enabledTimers.map((timer) => ({
+        holidays: buildDisplayHolidays(holidaysStorage, now, {
+          start: timer.startDate,
+          end: timer.endDate,
         }),
-      ];
-    });
-    await Promise.all(holidaySchedules);
+      })),
+    );
 
-    if (enlistmentRaw && demobilizationRaw) {
-      const events = buildDisplayEvents(
-        new Date(enlistmentRaw),
-        new Date(demobilizationRaw),
-        parseEventsStorage(eventsRaw),
-        now,
-      );
+    const eventNotifications = groupEventNotifications(
+      enabledTimers.map((timer) => ({
+        timer: { id: timer.id, name: timer.name },
+        events: buildDisplayEvents(timer.startDate, timer.endDate, eventsStorage, now),
+      })),
+    );
 
-      const eventSchedules = events.flatMap((event) => {
-        const fireAt = atTime(event.date, EVENT_HOUR, EVENT_MINUTE);
-        if (!isAfter(fireAt, now)) {
-          return [];
-        }
-
-        return [
-          api.scheduleNotificationAsync({
-            identifier: `${EVENT_ID_PREFIX}${event.id}:${format(event.date, 'yyyy-MM-dd')}`,
-            content: {
-              title: event.name,
-              body: `Сегодня ${event.name}`,
-              sound: true,
-            },
-            trigger: {
-              date: fireAt,
-              channelId: EVENTS_CHANNEL_ID,
-            },
-          }),
-        ];
-      });
-      await Promise.all(eventSchedules);
-    }
+    const occurrenceRequests = dueNotificationRequests(
+      [...holidayNotifications, ...eventNotifications],
+      now,
+      EVENTS_CHANNEL_ID,
+      EVENT_HOUR,
+      EVENT_MINUTE,
+    );
+    warnRejectedSchedules(
+      'События и праздники',
+      await Promise.allSettled(
+        occurrenceRequests.map((request) => api.scheduleNotificationAsync(request)),
+      ),
+    );
 
     if (FEATURES.letterNotifications) {
       const letterMarks = await getDiaryCalendarMarks().catch(() => ({
         personal: [],
         letter: [] as string[],
       }));
-      const writtenLetterDates = new Set(letterMarks.letter);
-      const letterSchedules: Promise<string>[] = [];
-      for (let offset = 0; offset < LETTER_REMINDER_DAYS; offset += 1) {
-        const day = addDays(startOfDay(now), offset);
-        const stamp = format(day, 'yyyy-MM-dd');
-        if (writtenLetterDates.has(stamp)) {
-          continue;
-        }
-
-        for (const reminder of LETTER_REMINDERS) {
-          const fireAt = atTime(day, reminder.hour, reminder.minute);
-          if (!isAfter(fireAt, now)) {
-            continue;
-          }
-
-          letterSchedules.push(
-            api.scheduleNotificationAsync({
-              identifier: `${LETTER_ID_PREFIX}${stamp}:${reminder.hour}`,
-              content: {
-                title: reminder.title,
-                body: reminder.body,
-                sound: true,
-              },
-              trigger: {
-                date: fireAt,
-                channelId: LETTERS_CHANNEL_ID,
-              },
-            }),
-          );
-        }
-      }
-      await Promise.all(letterSchedules);
+      const letterRequests = letterReminderRequests(
+        now,
+        new Set(letterMarks.letter),
+        LETTER_REMINDERS,
+        LETTER_REMINDER_DAYS,
+        LETTERS_CHANNEL_ID,
+        LETTER_ID_PREFIX,
+      );
+      warnRejectedSchedules(
+        'Письма',
+        await Promise.allSettled(
+          letterRequests.map((request) => api.scheduleNotificationAsync(request)),
+        ),
+      );
     }
   } catch (error) {
     logger.error('Не удалось обновить уведомления', error);
   }
 }
 
-/** @deprecated используй rescheduleAppNotifications */
-export const rescheduleHolidayNotifications = rescheduleAppNotifications;
+const RESCHEDULE_DEBOUNCE_MS = 400;
+let rescheduleTimer: ReturnType<typeof setTimeout> | null = null;
+let rescheduleChain: Promise<void> = Promise.resolve();
+let rescheduleWaiters: (() => void)[] = [];
+let rescheduleGeneration = 0;
+
+/** Схлопывает пачку вызовов и не даёт старому прогону дописать расписание после нового. */
+export function rescheduleAppNotifications(): Promise<void> {
+  const generation = ++rescheduleGeneration;
+  return new Promise((resolve) => {
+    rescheduleWaiters.push(resolve);
+    if (rescheduleTimer) {
+      clearTimeout(rescheduleTimer);
+    }
+    rescheduleTimer = setTimeout(() => {
+      rescheduleTimer = null;
+      const waiters = rescheduleWaiters;
+      rescheduleWaiters = [];
+      rescheduleChain = rescheduleChain
+        .catch(() => undefined)
+        .then(() => {
+          if (generation !== rescheduleGeneration) {
+            return;
+          }
+          return runRescheduleAppNotifications(generation);
+        })
+        .finally(() => {
+          waiters.forEach((done) => done());
+        });
+    }, RESCHEDULE_DEBOUNCE_MS);
+  });
+}
+
