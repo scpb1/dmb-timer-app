@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>M1 · Список</title>
+  <link rel="stylesheet" href="../timer/_shared.css" />
+  <link rel="stylesheet" href="_more.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Меню «Ещё»</a>
+  <div class="phone">
+    <div class="stage">
+      <span class="badge">M1</span>
+      <div class="home-ghost">
+        <div class="ring-wrap">
+          <div class="ring-thin"></div>
+          <div class="ring-label"><span class="big">142</span><span class="unit">дня</span></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="caption">Прошло</div><div class="val">223</div><div class="sub">дня</div></div>
+          <div class="stat-card"><div class="caption">Осталось</div><div class="val">142</div><div class="sub">дня</div></div>
+        </div>
+      </div>
+      <button class="scrim is-open" id="scrim" type="button" aria-label="Закрыть"></button>
+      <div class="sheet is-open" id="sheet" role="dialog" aria-labelledby="sheet-title">
+        <h2 class="sheet-title" id="sheet-title">Разделы в разработке</h2>
+        <div class="soon-list">
+          <div class="soon-row">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            <div>
+              <span class="soon-name">Виджеты</span>
+              <span class="soon-hint">Таймер на рабочем столе</span>
+            </div>
+          </div>
+          <div class="soon-row">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <div>
+              <span class="soon-name">Трекеры</span>
+              <span class="soon-hint">Звонки и встречи</span>
+            </div>
+          </div>
+          <div class="soon-row">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <div>
+              <span class="soon-name">Календарь</span>
+              <span class="soon-hint">Даты службы</span>
+            </div>
+          </div>
+          <div class="soon-row">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <div>
+              <span class="soon-name">Дневник</span>
+              <span class="soon-hint">Своя страница на каждый день</span>
+            </div>
+          </div>
+          <div class="soon-row">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <div>
+              <span class="soon-name">Письма</span>
+              <span class="soon-hint">Письмо ему по теме дня</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <button class="tab" type="button" aria-label="События">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          <span class="tick"></span>
+        </button>
+        <button class="tab is-home is-on" type="button" aria-label="Главная">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="tick"></span>
+        </button>
+        <button class="tab can-press" id="more" type="button" aria-label="Ещё" aria-expanded="true">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          <span class="tick"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <p class="proto-note">Список не кликается: заголовок уже говорит, что разделов ещё нет. Подписи разделяют дневник, письма и календарь, которые в одной фразе звучат как одно и то же.</p>
+  <script src="_more.js"></script>
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Настройки — как показать прокрутку</title>
+  <link rel="stylesheet" href="../_shared.css" />
+  <link rel="stylesheet" href="scroll-affordance.css" />
+</head>
+<body>
+  <div class="page">
+    <a class="back" href="index.html">← Настройки UI</a>
+    <div class="page-head">
+      <h1>Настройки таймера — видно, что можно листать</h1>
+      <p>
+        Один и тот же первый экран. Переключайте вариант и прокрутите список внутри телефона:
+        полоса прокрутки по умолчанию скрыта, как в приложении.
+      </p>
+    </div>
+
+    <div class="switch" role="tablist">
+      <button type="button" data-v="baseline">Как сейчас</button>
+      <button type="button" data-v="peek">Подрезанная карточка</button>
+      <button type="button" data-v="fade">Тень снизу</button>
+      <button type="button" data-v="combo">Подрез + растворение</button>
+      <button type="button" data-v="bar">Полоса прокрутки</button>
+      <button type="button" data-v="nudge">Сдвиг один раз</button>
+      <button type="button" data-v="split">Отдельный экран</button>
+      <button type="button" data-v="hint-once">В прод · один раз</button>
+    </div>
+    <p class="note" id="note"></p>
+
+    <div class="phone" id="phone">
+      <div class="settings-screen">
+        <header class="settings-header">
+          <button class="icon-btn" type="button" aria-label="Назад">‹</button>
+          <h1>Настройки таймера</h1>
+          <span></span>
+        </header>
+
+        <div class="scroll-viewport" id="scroll">
+          <div class="profile">
+            <label class="field">
+              <span>Ваше имя</span>
+              <div class="fake-input">Аня</div>
+            </label>
+            <label class="field">
+              <span>Имя любимого</span>
+              <div class="fake-input">Серёжа</div>
+            </label>
+            <button class="save" type="button">Сохранить имена</button>
+
+            <label class="field">
+              <span>Дата призыва</span>
+              <div class="fake-input">12.11.2024</div>
+            </label>
+            <label class="field">
+              <span>Дата дембеля</span>
+              <div class="fake-input">12.11.2025</div>
+            </label>
+            <div class="presets">
+              <div class="cap">или срок от даты призыва</div>
+              <div class="chips">
+                <span>365 дней</span>
+                <span>547 дней</span>
+              </div>
+            </div>
+            <button class="save" type="button">Сохранить даты</button>
+
+            <div class="switch-row">
+              <div>
+                <strong>Уведомления о праздниках и событиях</strong>
+                <small>Напоминание в полночь в день события</small>
+              </div>
+              <div class="toggle" aria-hidden="true"><i></i></div>
+            </div>
+
+            <div class="theme-link">
+              <div>
+                <strong>Сменить тему</strong>
+                <small>Фон, плашки и текст</small>
+              </div>
+              <span class="chev">›</span>
+            </div>
+          </div>
+
+          <div class="tail-long">
+            <section class="photo">
+              <span class="block-label">Фото на фоне</span>
+              <div class="photo-preview">
+                <span class="ph-icon" aria-hidden="true"></span>
+                Обычный фон
+              </div>
+              <button class="photo-btn" type="button">Выбрать фото</button>
+              <p class="hint">Затемнение можно будет настроить после выбора</p>
+            </section>
+
+            <p class="block-label" style="margin-top:22px">Вид таймера</p>
+            <div class="tiles">
+              <div class="tile is-on">
+                <div class="pv"><div class="ring"></div></div>
+                <div class="name">Круговой</div>
+              </div>
+              <div class="tile">
+                <div class="pv"><div class="bar"><i></i></div></div>
+                <div class="name">Линейный</div>
+              </div>
+              <div class="tile">
+                <div class="pv"><strong style="font-size:1.1rem;font-weight:500">287</strong></div>
+                <div class="name">Рамка</div>
+              </div>
+              <div class="tile">
+                <div class="pv"><span style="letter-spacing:2px;font-size:0.7rem">●●●<br>●○○</span></div>
+                <div class="name">Сетка</div>
+              </div>
+            </div>
+
+            <p class="block-label" style="margin-top:18px">Режим плашек</p>
+            <div class="seg-row">
+              <span class="is-on">Дни</span>
+              <span>Недели</span>
+              <span>Месяцы</span>
+            </div>
+
+            <button class="export" type="button">Выгрузить плашку</button>
+            <p class="hint">PNG-картинка, которую можно вставить в своё видео</p>
+            <button class="delete" type="button">Удалить все данные</button>
+          </div>
+
+          <div class="tail-split">
+            <button class="nav-row" type="button" id="openLook">
+              <div>
+                <strong>Вид таймера</strong>
+                <small>Фото, тип, режимы, выгрузка</small>
+              </div>
+              <span class="chev">›</span>
+            </button>
+            <button class="delete" type="button">Удалить все данные</button>
+          </div>
+        </div>
+
+        <div class="veil" aria-hidden="true"></div>
+        <div class="hint-once" id="hintOnce" hidden>
+          <span>листай вниз</span>
+        </div>
+        <div class="faux-bar" aria-hidden="true"><i id="thumb"></i></div>
+        <div class="nudge-chev" id="nudge" hidden aria-hidden="true">⌄</div>
+
+        <nav class="tabbar" aria-hidden="true">
+          <span class="tab">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+              <line x1="4" y1="22" x2="4" y2="15"></line>
+            </svg>
+            <i class="tick"></i>
+          </span>
+          <span class="tab is-on">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="8"></circle>
+              <polyline points="12 8 12 12 15 14"></polyline>
+            </svg>
+            <i class="tick"></i>
+          </span>
+          <span class="tab">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            <i class="tick"></i>
+          </span>
+        </nav>
+
+        <div class="drill" id="drill">
+          <header class="settings-header">
+            <button class="drill-back" type="button" id="closeLook" aria-label="Назад">‹</button>
+            <h1>Вид таймера</h1>
+            <span></span>
+          </header>
+          <div class="scroll-viewport">
+            <section class="photo">
+              <span class="block-label">Фото на фоне</span>
+              <div class="photo-preview">
+                <span class="ph-icon" aria-hidden="true"></span>
+                Обычный фон
+              </div>
+              <button class="photo-btn" type="button">Выбрать фото</button>
+              <p class="hint">Затемнение можно будет настроить после выбора</p>
+            </section>
+            <p class="block-label" style="margin-top:22px">Тип</p>
+            <div class="tiles">
+              <div class="tile is-on">
+                <div class="pv"><div class="ring"></div></div>
+                <div class="name">Круговой</div>
+              </div>
+              <div class="tile">
+                <div class="pv"><div class="bar"><i></i></div></div>
+                <div class="name">Линейный</div>
+              </div>
+              <div class="tile">
+                <div class="pv"><strong style="font-size:1.1rem;font-weight:500">287</strong></div>
+                <div class="name">Рамка</div>
+              </div>
+              <div class="tile">
+                <div class="pv"><span style="letter-spacing:2px;font-size:0.7rem">●●●<br>●○○</span></div>
+                <div class="name">Сетка</div>
+              </div>
+            </div>
+            <p class="block-label" style="margin-top:18px">Режим плашек</p>
+            <div class="seg-row">
+              <span class="is-on">Дни</span>
+              <span>Недели</span>
+              <span>Месяцы</span>
+            </div>
+            <button class="export" type="button">Выгрузить плашку</button>
+            <p class="hint">PNG-картинка, которую можно вставить в своё видео</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="replay" id="replay" type="button" hidden>Показать сдвиг ещё раз</button>
+  </div>
+
+  <script>
+    const phone = document.getElementById('phone');
+    const scroll = document.getElementById('scroll');
+    const note = document.getElementById('note');
+    const nudge = document.getElementById('nudge');
+    const replay = document.getElementById('replay');
+    const drill = document.getElementById('drill');
+    const hintOnce = document.getElementById('hintOnce');
+
+    const VARIANTS = {
+      baseline: {
+        fill: true,
+        note: 'Как в приложении: блок заканчивается на «Сменить тему», ниже пустое место над таббаром. Фото и вид таймера есть, но край экрана их не обрезает — кажется, что список кончился.',
+      },
+      peek: {
+        note: 'Следующая секция начинается сразу под темой и не помещается целиком. Обрезанная карточка «Фото на фоне» — сигнал, что ниже есть ещё.',
+      },
+      fade: {
+        fill: true,
+        veil: true,
+        note: 'Тень у нижнего края списка. Градиент в цвет фона на пустом месте не читается, поэтому здесь именно тень. Она гаснет, когда доскроллили до конца.',
+      },
+      combo: {
+        mask: true,
+        note: 'Подрезанное фото растворяется в фоне. Край карточки виден, градиент не спорит с пустым местом, потому что пустого места нет. Гаснет в конце списка.',
+      },
+      bar: {
+        fill: true,
+        bar: true,
+        note: 'Полоса прокрутки остаётся на экране, бегунок не внизу. На iPhone системная полоса вспыхивает и прячется, на Android держится дольше.',
+      },
+      nudge: {
+        fill: true,
+        nudge: true,
+        note: 'При открытии список на секунду приспускается и возвращается — мелькает «Фото на фоне». Стрелка гаснет после первого движения пальцем.',
+      },
+      split: {
+        split: true,
+        note: 'Вид таймера — отдельная строка на первом экране. Нажмите её: фото, тип и выгрузка открываются следующим экраном, их не нужно искать скроллом.',
+      },
+      'hint-once': {
+        mask: true,
+        hintOnce: true,
+        note: 'Как в приложении: подрезанное фото, полоска с «листай вниз» только при первом заходе. Тап по полоске, скролл или поле ввода — подсказка исчезает навсегда, лёгкое затемнение остаётся до конца списка.',
+      },
+    };
+
+    let nudgeToken = 0;
+    let nudgeLock = false;
+
+    const thumb = document.getElementById('thumb');
+
+    function updateEdge() {
+      const remain = scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight;
+      phone.classList.toggle('at-end', remain < 16);
+      const track = thumb.parentElement.clientHeight;
+      const travel = scroll.scrollHeight - scroll.clientHeight;
+      const h = Math.max(36, track * (scroll.clientHeight / scroll.scrollHeight));
+      const top = travel <= 0 ? 0 : (scroll.scrollTop / travel) * (track - h);
+      thumb.style.height = `${h}px`;
+      thumb.style.transform = `translateY(${top}px)`;
+    }
+
+    function ease(t) {
+      return t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2;
+    }
+
+    function playNudge() {
+      const token = ++nudgeToken;
+      nudgeLock = true;
+      nudge.classList.remove('is-gone');
+      const t0 = performance.now();
+      const duration = 1500;
+      function frame(now) {
+        if (token !== nudgeToken) return;
+        const t = Math.min(1, (now - t0) / duration);
+        let y = 0;
+        if (t < 0.18) y = 0;
+        else if (t < 0.42) y = ease((t - 0.18) / 0.24) * 96;
+        else if (t < 0.58) y = 96;
+        else y = 96 * (1 - ease((t - 0.58) / 0.42));
+        scroll.scrollTop = y;
+        if (t < 1) requestAnimationFrame(frame);
+        else {
+          scroll.scrollTop = 0;
+          nudgeLock = false;
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function apply(name) {
+      const variant = VARIANTS[name];
+      nudgeToken += 1;
+      nudgeLock = false;
+      phone.dataset.variant = name;
+      phone.classList.toggle('fill-fold', Boolean(variant.fill));
+      phone.classList.toggle('show-veil', Boolean(variant.veil));
+      phone.classList.toggle('show-mask', Boolean(variant.mask));
+      phone.classList.toggle('show-bar', Boolean(variant.bar));
+      phone.classList.toggle('is-split', Boolean(variant.split));
+      phone.classList.toggle('show-hint-once', Boolean(variant.hintOnce));
+      hintOnce.hidden = !variant.hintOnce;
+      phone.classList.remove('drill-open');
+      document.querySelectorAll('.switch button').forEach((button) => {
+        const on = button.dataset.v === name;
+        button.classList.toggle('is-on', on);
+        button.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      note.textContent = variant.note;
+      replay.hidden = !variant.nudge;
+      nudge.hidden = !variant.nudge;
+      nudge.classList.remove('is-gone');
+      scroll.scrollTop = 0;
+      updateEdge();
+      if (variant.nudge) void playNudge();
+    }
+
+    document.querySelectorAll('.switch button').forEach((button) => {
+      button.addEventListener('click', () => apply(button.dataset.v));
+    });
+
+    function hideHintOnce() {
+      if (phone.dataset.variant !== 'hint-once') return;
+      phone.classList.remove('show-hint-once');
+      hintOnce.hidden = true;
+    }
+
+    hintOnce.addEventListener('click', hideHintOnce);
+
+    scroll.addEventListener('scroll', () => {
+      updateEdge();
+      if (phone.dataset.variant === 'hint-once' && scroll.scrollTop > 8) {
+        hideHintOnce();
+      }
+      if (!nudgeLock && phone.dataset.variant === 'nudge' && scroll.scrollTop > 12) {
+        nudge.classList.add('is-gone');
+      }
+    }, { passive: true });
+
+    replay.addEventListener('click', () => {
+      if (phone.dataset.variant === 'nudge') void playNudge();
+    });
+
+    document.getElementById('openLook').addEventListener('click', () => {
+      phone.classList.add('drill-open');
+    });
+    document.getElementById('closeLook').addEventListener('click', () => {
+      phone.classList.remove('drill-open');
+    });
+
+    apply('baseline');
+  </script>
+</body>
+</html>

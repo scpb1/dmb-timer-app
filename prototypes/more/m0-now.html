@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>M0 · Как сейчас</title>
+  <link rel="stylesheet" href="../timer/_shared.css" />
+  <link rel="stylesheet" href="_more.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Меню «Ещё»</a>
+  <div class="phone">
+    <div class="stage">
+      <span class="badge">M0</span>
+      <div class="home-ghost">
+        <div class="ring-wrap">
+          <div class="ring-thin"></div>
+          <div class="ring-label"><span class="big">142</span><span class="unit">дня</span></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="caption">Прошло</div><div class="val">223</div><div class="sub">дня</div></div>
+          <div class="stat-card"><div class="caption">Осталось</div><div class="val">142</div><div class="sub">дня</div></div>
+        </div>
+      </div>
+      <button class="scrim is-open" id="scrim" type="button" aria-label="Закрыть"></button>
+      <div class="sheet is-open" id="sheet" role="dialog" aria-label="Разделы в разработке">
+        <p class="sheet-plain">Разделы в разработке</p>
+      </div>
+      <div class="tabbar">
+        <button class="tab" type="button" aria-label="События">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          <span class="tick"></span>
+        </button>
+        <button class="tab is-home is-on" type="button" aria-label="Главная">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="tick"></span>
+        </button>
+        <button class="tab can-press" id="more" type="button" aria-label="Ещё" aria-expanded="true">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          <span class="tick"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <p class="proto-note">Как в приложении: статус есть, названий нет. Нажмите на затемнение, чтобы закрыть, и на три полоски, чтобы открыть снова.</p>
+  <script src="_more.js"></script>
+</body>
+</html>

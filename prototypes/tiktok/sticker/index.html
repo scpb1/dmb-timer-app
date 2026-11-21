@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Белая плашка для ролика</title>
+  <style>
+    @font-face {
+      font-family: "dmb-timer-sans";
+      src: url("../../../assets/fonts/dmb-timer-sans.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "dmb-timer-sans";
+      src: url("../../../assets/fonts/dmb-timer-sans-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "BlackOpsOne-Regular";
+      src: url("../../../assets/fonts/BlackOpsOne-Regular.otf") format("opentype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      padding: 1.5rem 1.25rem 3rem;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #d4cdc0;
+      color: #3e3630;
+    }
+
+    a.back {
+      display: inline-block;
+      margin-bottom: 0.8rem;
+      color: #5a524a;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+
+    h1 {
+      font-family: "dmb-timer-sans", "Segoe UI", sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .lead {
+      max-width: 42rem;
+      color: #6f655c;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      margin-bottom: 1.4rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+      max-width: 1220px;
+    }
+
+    article h2 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .tag {
+      display: block;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8a7d72;
+      margin-bottom: 0.3rem;
+    }
+
+    .hint {
+      margin-top: 0.55rem;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      color: #6f655c;
+    }
+
+    .stage {
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      background:
+        radial-gradient(ellipse 55% 28% at 50% 22%, rgba(236, 206, 178, 0.7), transparent 70%),
+        radial-gradient(ellipse 90% 40% at 50% 88%, rgba(18, 14, 12, 0.85), transparent 72%),
+        linear-gradient(165deg, #8d735c 0%, #4a3b32 38%, #241c18 100%);
+      box-shadow: 0 10px 28px rgba(62, 54, 48, 0.16);
+    }
+
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(115deg, transparent 40%, rgba(90, 70, 48, 0.35) 41%, rgba(90, 70, 48, 0.35) 46%, transparent 47%),
+        linear-gradient(115deg, transparent 58%, rgba(40, 32, 26, 0.45) 59%, rgba(40, 32, 26, 0.45) 68%, transparent 69%);
+      pointer-events: none;
+    }
+
+    .card-slot {
+      position: absolute;
+      left: 7%;
+      right: 7%;
+      top: 46%;
+      z-index: 1;
+    }
+
+    /* ——— сейчас: как плашка в приложении ——— */
+    .now {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      background: rgba(255, 255, 255, 0.48);
+      border: 1px solid rgba(167, 154, 138, 0.35);
+      border-radius: 4px;
+      padding: 16px 8px;
+      text-align: center;
+      font-family: "dmb-timer-sans", "Segoe UI", sans-serif;
+    }
+    .now .div { background: rgba(167, 154, 138, 0.35); margin: 2px 0; }
+    .now .title {
+      font-size: 14px;
+      color: #a79a8a;
+      margin-bottom: 8px;
+    }
+    .now .val {
+      font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+      font-size: 36px;
+      line-height: 40px;
+      color: #3e3630;
+    }
+    .now .unit { font-size: 14px; color: #a79a8a; margin-top: 2px; }
+    .now .det {
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 18px;
+      color: #a79a8a;
+    }
+
+    /* ——— наша вёрстка, сплошной белый ——— */
+    .ours {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      background: #fff;
+      border-radius: 4px;
+      padding: 16px 8px;
+      text-align: center;
+      font-family: "dmb-timer-sans", "Segoe UI", sans-serif;
+    }
+    .ours .div { background: #e6e2dc; margin: 2px 0; }
+    .ours .title {
+      font-size: 14px;
+      color: #6f655c;
+      margin-bottom: 8px;
+    }
+    .ours .val {
+      font-family: "BlackOpsOne-Regular", Impact, sans-serif;
+      font-size: 36px;
+      line-height: 40px;
+      color: #1c1917;
+    }
+    .ours .unit { font-size: 14px; color: #6f655c; margin-top: 2px; }
+    .ours .det {
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 18px;
+      color: #6f655c;
+    }
+
+    /* ——— лист как на кропе ——— */
+    .sheet {
+      background: #fff;
+      border-radius: 2px;
+      padding: 16px 12px 10px;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: #1a1a1a;
+    }
+    .sheet .cols {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      column-gap: 10px;
+    }
+    .sheet .title {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+    .sheet .days {
+      margin-top: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .sheet .time {
+      margin-top: 12px;
+      font-size: 12px;
+      line-height: 1.35;
+      color: #8d8d8d;
+      font-weight: 500;
+    }
+    .modes {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: 18px;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: #d0d0d0;
+      font-weight: 600;
+    }
+
+    .stage.record .card-slot {
+      left: 4%;
+      right: 4%;
+      top: 32%;
+    }
+    .stage.record .sheet { padding: 18px 14px 12px; }
+    .stage.record .sheet .title { font-size: 17px; }
+    .stage.record .sheet .days { font-size: 16px; margin-top: 12px; }
+    .stage.record .sheet .time { font-size: 13px; margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../timer/index.html">← Прототипы таймера</a>
+  <h1>Белая плашка для ролика</h1>
+  <p class="lead">
+    Один и тот же кадр и цифры со скрина: 56 дней и 308 дней. Секунды идут.
+    Приложение не менялось — это только макеты.
+  </p>
+
+  <div class="grid">
+    <article>
+      <span class="tag">0 · сейчас</span>
+      <h2>Полупрозрачная</h2>
+      <div class="stage">
+        <div class="card-slot">
+          <div class="now">
+            <div>
+              <div class="title">прошло</div>
+              <div class="val">56</div>
+              <div class="unit">дней</div>
+              <div class="det">
+                <div class="h">0 часов</div>
+                <div class="m">6 минут</div>
+                <div class="s">23 секунды</div>
+              </div>
+            </div>
+            <div class="div"></div>
+            <div>
+              <div class="title">осталось</div>
+              <div class="val">308</div>
+              <div class="unit">дней</div>
+              <div class="det">
+                <div class="h">23 часа</div>
+                <div class="m">53 минуты</div>
+                <div class="s">36 секунд</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Как в приложении: белый на 48%, рамка, текст по центру. Край на кадре рваный, прямоугольник не вырезается.</p>
+    </article>
+
+    <article>
+      <span class="tag">1 · минимум</span>
+      <h2>Наша, но белая</h2>
+      <div class="stage">
+        <div class="card-slot">
+          <div class="ours">
+            <div>
+              <div class="title">прошло</div>
+              <div class="val">56</div>
+              <div class="unit">дней</div>
+              <div class="det">
+                <div class="h">0 часов</div>
+                <div class="m">6 минут</div>
+                <div class="s">23 секунды</div>
+              </div>
+            </div>
+            <div class="div"></div>
+            <div>
+              <div class="title">осталось</div>
+              <div class="val">308</div>
+              <div class="unit">дней</div>
+              <div class="det">
+                <div class="h">23 часа</div>
+                <div class="m">53 минуты</div>
+                <div class="s">36 секунд</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Та же вёрстка и Black Ops. Меняется только заливка: сплошной белый, тёмный текст, без рамки.</p>
+    </article>
+
+    <article>
+      <span class="tag">2 · как кроп</span>
+      <h2>Лист со скрина</h2>
+      <div class="stage">
+        <div class="card-slot">
+          <div class="sheet">
+            <div class="cols">
+              <div>
+                <div class="title">ПРОШЛО</div>
+                <div class="days">56 дней</div>
+                <div class="time">
+                  <div class="h">0 часов</div>
+                  <div class="m">6 минут</div>
+                  <div class="s">23 секунды</div>
+                </div>
+              </div>
+              <div>
+                <div class="title">ОСТАЛОСЬ</div>
+                <div class="days">308 дней</div>
+                <div class="time">
+                  <div class="h">23 часа</div>
+                  <div class="m">53 минуты</div>
+                  <div class="s">36 секунд</div>
+                </div>
+              </div>
+            </div>
+            <div class="modes"><span>Д</span><span>МД</span><span>МНД</span><span>НД</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Как второе фото: капс, «56 дней» одной строкой, серое время, слева. Режимы внизу почти не видны, но попадают в кроп.</p>
+    </article>
+
+    <article>
+      <span class="tag">3 · запись экрана</span>
+      <h2>Лист крупнее</h2>
+      <div class="stage record">
+        <div class="card-slot">
+          <div class="sheet">
+            <div class="cols">
+              <div>
+                <div class="title">ПРОШЛО</div>
+                <div class="days">56 дней</div>
+                <div class="time">
+                  <div class="h">0 часов</div>
+                  <div class="m">6 минут</div>
+                  <div class="s">23 секунды</div>
+                </div>
+              </div>
+              <div>
+                <div class="title">ОСТАЛОСЬ</div>
+                <div class="days">308 дней</div>
+                <div class="time">
+                  <div class="h">23 часа</div>
+                  <div class="m">53 минуты</div>
+                  <div class="s">36 секунд</div>
+                </div>
+              </div>
+            </div>
+            <div class="modes"><span>Д</span><span>МД</span><span>МНД</span><span>НД</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Тот же лист на большую часть кадра. Так проще записать экран и обрезать один белый прямоугольник.</p>
+    </article>
+  </div>
+
+  <script>
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce) {
+
+    const forms = {
+      hour: ["час", "часа", "часов"],
+      minute: ["минута", "минуты", "минут"],
+      second: ["секунда", "секунды", "секунд"],
+    };
+
+    function plural(n, key) {
+      const [one, few, many] = forms[key];
+      const n10 = n % 10;
+      const n100 = n % 100;
+      if (n10 === 1 && n100 !== 11) return n + " " + one;
+      if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return n + " " + few;
+      return n + " " + many;
+    }
+
+    const left = { h: 0, m: 6, s: 23 };
+    const right = { h: 23, m: 53, s: 36 };
+
+    function paint(root, t) {
+      root.querySelector(".h").textContent = plural(t.h, "hour");
+      root.querySelector(".m").textContent = plural(t.m, "minute");
+      root.querySelector(".s").textContent = plural(t.s, "second");
+    }
+
+    function tick(t) {
+      t.s += 1;
+      if (t.s >= 60) {
+        t.s = 0;
+        t.m += 1;
+      }
+      if (t.m >= 60) {
+        t.m = 0;
+        t.h += 1;
+      }
+    }
+
+    const blocks = [...document.querySelectorAll(".det, .time")];
+    setInterval(() => {
+      tick(left);
+      tick(right);
+      blocks.forEach((block, index) => paint(block, index % 2 === 0 ? left : right));
+    }, 1000);
+    }
+  </script>
+</body>
+</html>

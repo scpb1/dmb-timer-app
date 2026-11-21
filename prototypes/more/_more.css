@@ -1,0 +1,262 @@
+/* Плашка «Ещё» над нижней панелью. Телефон — из ../timer/_shared.css */
+
+.badge {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  z-index: 5;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.stage {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+.home-ghost {
+  padding: 72px 20px 120px;
+}
+
+.ring-wrap {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  margin: 8px auto 22px;
+}
+
+.ring-wrap .ring-thin {
+  width: 168px;
+  height: 168px;
+  margin: 0;
+}
+
+.ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ring-label .big {
+  font-size: 2.75rem;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.ring-label .unit {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.tabbar {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 18px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: rgba(255, 255, 255, 0.48);
+  border: 1px solid rgba(167, 154, 138, 0.28);
+  border-radius: 4px;
+  padding: 12px 6px 10px;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.tab.can-press {
+  cursor: pointer;
+}
+
+.tab.is-on {
+  color: var(--text);
+}
+
+.tab.is-home.is-on {
+  color: var(--accent);
+}
+
+.tick {
+  width: 26px;
+  height: 2px;
+  border-radius: 1px;
+  background: transparent;
+}
+
+.tab.is-on .tick {
+  background: currentColor;
+}
+
+.scrim,
+.sheet {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scrim.is-open,
+.sheet.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.28);
+  border: none;
+  cursor: pointer;
+}
+
+.sheet {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 96px;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--overlay-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.sheet-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+  text-align: center;
+  padding: 16px 16px 14px;
+}
+
+.sheet-plain {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+  text-align: center;
+  padding: 18px 16px;
+}
+
+.sheet-copy {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+  text-align: center;
+  padding: 14px 20px 18px;
+  border-top: 1px solid rgba(167, 154, 138, 0.22);
+}
+
+.soon-list {
+  border-top: 1px solid rgba(167, 154, 138, 0.22);
+}
+
+.soon-row {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  column-gap: 12px;
+  align-items: center;
+  padding: 11px 16px;
+}
+
+.soon-row + .soon-row {
+  border-top: 1px solid rgba(167, 154, 138, 0.16);
+}
+
+.soon-name {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.soon-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 16px 18px;
+  border-top: 1px solid rgba(167, 154, 138, 0.22);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(167, 154, 138, 0.4);
+  border-radius: 99px;
+  padding: 6px 12px 6px 10px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.soon-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 0;
+  padding: 8px 8px 14px;
+  border-top: 1px solid rgba(167, 154, 138, 0.22);
+}
+
+.soon-tile {
+  width: 33.33%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ico {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: block;
+}
+
+.chip .ico {
+  width: 16px;
+  height: 16px;
+}
+
+.proto-note {
+  max-width: 390px;
+  margin: 14px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #5a524a;
+}

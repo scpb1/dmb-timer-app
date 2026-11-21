@@ -1,0 +1,254 @@
+:root {
+  --text: #3e3630;
+  --muted: #a79a8a;
+  --accent: #e53935;
+  --plaques: rgba(255, 255, 255, 0.48);
+  --border: rgba(167, 154, 138, 0.35);
+  --bg: linear-gradient(165deg, #fcf7df 0%, #ede8d5 45%, #e4d0b4 100%);
+  --card: rgba(255, 255, 255, 0.55);
+  --pick: rgba(229, 57, 53, 0.1);
+  --pick-border: rgba(229, 57, 53, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--text);
+  padding: 1.75rem 1.25rem 3rem;
+}
+
+h1 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+}
+
+.lead {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  max-width: 42rem;
+  line-height: 1.55;
+}
+
+.pick-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 0 1rem;
+  max-width: 1100px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  font-size: 0.86rem;
+  color: var(--muted);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.pick-bar strong {
+  color: var(--text);
+  font-family: ui-monospace, monospace;
+  font-size: 0.92rem;
+}
+
+h2.section {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin: 1.75rem 0 0.65rem;
+  max-width: 1100px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  max-width: 1100px;
+}
+
+.variant {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem 1.1rem 1.05rem;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.variant:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(62, 54, 48, 0.07);
+}
+
+.variant.picked {
+  border-color: var(--pick-border);
+  background: var(--pick);
+  box-shadow: 0 0 0 1px var(--pick-border);
+}
+
+.variant .code {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.variant .name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+}
+
+.variant .desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0 0 0.85rem;
+  min-height: 2.4em;
+}
+
+.variant .previews {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.preview-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-row .lbl {
+  width: 52px;
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.preview-row .slot {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-ring {
+  width: 88px;
+  height: 88px;
+}
+
+.preview-linear {
+  width: 100%;
+  max-width: 200px;
+  height: 14px;
+  display: flex;
+  gap: 2px;
+}
+
+.preview-linear .seg {
+  flex: 1;
+  height: 100%;
+  border-radius: 2px;
+  min-width: 2px;
+}
+
+.preview-dots {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  max-width: 200px;
+}
+
+.preview-dots .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 99px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.preview-track {
+  width: 100%;
+  max-width: 200px;
+  height: 5px;
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+}
+
+.preview-track .fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 21%;
+  background: var(--accent);
+  border-radius: 99px;
+}
+
+.preview-spine {
+  width: 4px;
+  height: 48px;
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+}
+
+.preview-spine .fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 21%;
+  background: var(--accent);
+}
+
+.photo-strip {
+  margin-top: 8px;
+  padding: 10px 10px 8px;
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.5)),
+    linear-gradient(120deg, #5c5348 0%, #3e3630 50%, #2a2420 100%);
+  border: 1px solid rgba(242, 240, 236, 0.25);
+}
+
+.photo-strip .lbl-photo {
+  font-size: 0.6rem;
+  color: rgba(242, 240, 236, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.photo-strip .preview-linear .seg.on {
+  background: #f2f0ec !important;
+}
+
+.photo-strip .preview-track .fill {
+  background: #f2f0ec;
+}
+
+.photo-strip .preview-spine .fill {
+  background: #f2f0ec;
+}
+
+a.back {
+  display: inline-block;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}

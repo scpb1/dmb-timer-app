@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Меню «Ещё» — прототипы</title>
+  <style>
+    :root {
+      --text: #3e3630;
+      --muted: #8a7d6e;
+      --card: rgba(255, 255, 255, 0.55);
+      --border: rgba(167, 154, 138, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: linear-gradient(165deg, #fcf7df 0%, #ede8d5 45%, #c7d3db 100%);
+      min-height: 100vh;
+      color: var(--text);
+      padding: 2rem 1.5rem 3rem;
+    }
+    h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.5rem; }
+    p.lead, .why {
+      margin: 0 0 0.75rem;
+      max-width: 42rem;
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+    .why { margin-bottom: 1.4rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+      max-width: 1100px;
+    }
+    a.card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.1rem 1.2rem 1.15rem;
+    }
+    a.card:hover { box-shadow: 0 8px 24px rgba(62, 54, 48, 0.08); }
+    a.card.pick {
+      border-color: rgba(229, 57, 53, 0.45);
+      background: rgba(255, 255, 255, 0.78);
+    }
+    .tag {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    a.card h2 { margin: 0 0 0.4rem; font-size: 1.02rem; font-weight: 600; }
+    a.card p { margin: 0; font-size: 0.86rem; line-height: 1.45; color: #5a524a; }
+  </style>
+</head>
+<body>
+  <h1>Меню «Ещё»</h1>
+  <p class="lead">
+    По трём полоскам сейчас открывается плашка с одной фразой «Разделы в разработке».
+    Из неё не видно, что появятся виджеты, трекеры, календарь, дневник и письма.
+  </p>
+  <p class="why">
+    Лучше оставить плашку и показать пять разделов списком: иконка, имя и одна строка, что это.
+    Заголовок по-прежнему говорит, что их ещё нет, поэтому строки без стрелок и никуда не ведут.
+    Чипы и одна фраза называют разделы, но дневник, письма и календарь в ней сливаются.
+    Сетка выглядит как кнопки, которые ничего не открывают.
+  </p>
+
+  <div class="grid">
+    <a class="card pick" href="m1-rows.html">
+      <span class="tag">M1 · рекомендую</span>
+      <h2>Список</h2>
+      <p>Пять строк. Имя читается отдельно, короткая подпись отличает дневник от писем и календаря.</p>
+    </a>
+    <a class="card" href="m2-chips.html">
+      <span class="tag">M2</span>
+      <h2>Чипы</h2>
+      <p>Короче списка. Имена на месте, но без пояснения, чем раздел отличается от соседнего.</p>
+    </a>
+    <a class="card" href="m3-sentence.html">
+      <span class="tag">M3</span>
+      <h2>Одна фраза</h2>
+      <p>Та же плашка, что сейчас, только в тексте перечислены пять названий.</p>
+    </a>
+    <a class="card" href="m4-grid.html">
+      <span class="tag">M4</span>
+      <h2>Сетка</h2>
+      <p>Иконки и имена, как мини-меню. Сильнее всего похоже на разделы, которые уже можно открыть.</p>
+    </a>
+    <a class="card" href="m0-now.html">
+      <span class="tag">M0 · как сейчас</span>
+      <h2>Только фраза</h2>
+      <p>«Разделы в разработке» без имён. Для сравнения с остальными.</p>
+    </a>
+  </div>
+</body>
+</html>
