@@ -21,6 +21,9 @@ function normalizeUsername(value: string): string {
   return value.replace(/^@/, '').toLowerCase();
 }
 
+/** Временно false — подписка не проверяется, включи true перед продом */
+export const subscriptionRequired = false;
+
 export const config = {
   botToken: required('BOT_TOKEN'),
   channelUsername: normalizeUsername(optional('CHANNEL_USERNAME') ?? 'girly_ddd'),
@@ -28,6 +31,7 @@ export const config = {
   adminChatId: optional('ADMIN_CHAT_ID') ? Number(optional('ADMIN_CHAT_ID')) : undefined,
   timezone: optional('TZ') ?? 'Europe/Moscow',
   dataFile: path.resolve(__dirname, '..', 'data', 'store.json'),
+  subscriptionRequired,
 };
 
 if (config.botToken.includes('сюда_токен')) {

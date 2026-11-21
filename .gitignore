@@ -32,6 +32,7 @@ yarn-error.*
 # local env files
 .env*.local
 .env
+.bot-deploy.env
 
 # telegram bot local data
 bot/data/

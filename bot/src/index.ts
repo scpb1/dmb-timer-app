@@ -1,13 +1,17 @@
 import { createBot } from './bot';
 import { config } from './config';
+import { digestFitEstimate, startGroupScheduler } from './digest';
+import { seedKnownEvents } from './store';
+import { DIGEST_HOUR } from './time';
 
 async function main(): Promise<void> {
+  seedKnownEvents();
   const bot = createBot();
 
   await bot.api.setMyCommands(
     [
       { command: 'start', description: 'Начать и проверить подписку' },
-      { command: 'srok', description: 'Сколько прошло и осталось' },
+      { command: 'mydmb', description: 'Сколько прошло и осталось' },
       { command: 'prazdniki', description: 'События' },
       { command: 'author', description: 'Написать автору' },
       { command: 'cancel', description: 'Отменить текущий шаг' },
@@ -17,15 +21,28 @@ async function main(): Promise<void> {
 
   await bot.api.setMyCommands(
     [
-      { command: 'srok', description: 'Срок службы' },
-      { command: 'ddd', description: 'Срок службы' },
+      { command: 'mydmb', description: 'Твой срок службы' },
+      { command: 'newdmb', description: 'Встать в сводку беседы' },
+      { command: 'list_dmb', description: 'Ближайшие дембеля' },
+      { command: 'list_events', description: 'События на сегодня' },
+      { command: 'lists_settings', description: 'Настройки автосводки и событий' },
+      { command: 'next_event', description: 'Ближайшее событие' },
+      { command: 'list_next_events', description: 'Ближайшие события всех' },
+      { command: 'calendar', description: 'Календарь на месяц' },
+      { command: 'out_dmb', description: 'Выйти из сводки чата' },
     ],
     { scope: { type: 'all_group_chats' } },
   );
 
+  const fit = digestFitEstimate();
   console.log(`Канал для подписки: @${config.channelUsername}`);
   console.log(`Отзывы: @${config.adminUsername}`);
-  console.log('Вставь токен, если ещё не вставила, и не закрывай это окно — бот жив, пока программа запущена.');
+  console.log(
+    `Сводка бесед в ${DIGEST_HOUR}:00 по Москве. В одно сообщение влезает примерно ${fit.typicalUsers} человек, если имя короткое.`,
+  );
+  console.log('Не закрывай это окно — бот жив, пока программа запущена.');
+
+  startGroupScheduler(bot.api);
 
   await bot.start({
     onStart: (info) => {

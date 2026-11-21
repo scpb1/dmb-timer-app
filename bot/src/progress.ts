@@ -3,6 +3,13 @@ import { ru } from 'date-fns/locale';
 
 export type TimerPhase = 'before' | 'active' | 'after';
 
+export interface TimeBreakdown {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
 export interface ServiceProgress {
   phase: TimerPhase;
   totalDays: number;
@@ -12,6 +19,8 @@ export interface ServiceProgress {
   daysAfterEnd: number;
   progressPercent: number;
 }
+
+const ZERO_BREAKDOWN: TimeBreakdown = { days: 0, hours: 0, minutes: 0, seconds: 0 };
 
 function dayCountForm(count: number): 'one' | 'few' | 'many' {
   const abs = Math.abs(Math.trunc(count));
@@ -42,6 +51,80 @@ export function inflectDays(count: number): string {
 
 export function formatDays(count: number): string {
   return `${count} ${inflectDays(count)}`;
+}
+
+export function inflectHours(count: number): string {
+  switch (dayCountForm(count)) {
+    case 'one':
+      return 'час';
+    case 'few':
+      return 'часа';
+    case 'many':
+      return 'часов';
+  }
+}
+
+export function inflectMinutes(count: number): string {
+  switch (dayCountForm(count)) {
+    case 'one':
+      return 'минута';
+    case 'few':
+      return 'минуты';
+    case 'many':
+      return 'минут';
+  }
+}
+
+export function inflectSeconds(count: number): string {
+  switch (dayCountForm(count)) {
+    case 'one':
+      return 'секунда';
+    case 'few':
+      return 'секунды';
+    case 'many':
+      return 'секунд';
+  }
+}
+
+export function getTimeBreakdown(from: Date, to: Date): TimeBreakdown {
+  const diffMs = Math.max(0, to.getTime() - from.getTime());
+  const totalSeconds = Math.floor(diffMs / 1000);
+  return {
+    days: Math.floor(totalSeconds / 86400),
+    hours: Math.floor((totalSeconds % 86400) / 3600),
+    minutes: Math.floor((totalSeconds % 3600) / 60),
+    seconds: totalSeconds % 60,
+  };
+}
+
+export function serviceTimeBreakdowns(
+  enlistmentDate: Date,
+  demobilizationDate: Date,
+  now: Date,
+  phase: TimerPhase,
+): { passed: TimeBreakdown; remaining: TimeBreakdown } {
+  const enlistmentStart = startOfDay(enlistmentDate);
+  const demobilizationStart = startOfDay(demobilizationDate);
+
+  if (phase === 'before') {
+    return { passed: ZERO_BREAKDOWN, remaining: getTimeBreakdown(now, enlistmentStart) };
+  }
+  if (phase === 'after') {
+    return { passed: getTimeBreakdown(demobilizationStart, now), remaining: ZERO_BREAKDOWN };
+  }
+
+  return {
+    passed: getTimeBreakdown(enlistmentStart, now),
+    remaining: getTimeBreakdown(now, demobilizationStart),
+  };
+}
+
+export function formatClockLines(breakdown: TimeBreakdown): string[] {
+  return [
+    `${breakdown.hours} ${inflectHours(breakdown.hours)}`,
+    `${breakdown.minutes} ${inflectMinutes(breakdown.minutes)}`,
+    `${breakdown.seconds} ${inflectSeconds(breakdown.seconds)}`,
+  ];
 }
 
 export function passedHeading(count: number): string {
@@ -136,13 +219,15 @@ export function calculateServiceProgress(
   const daysPassed = phase === 'after' ? totalDays : Math.min(rawDaysPassed, totalDays);
   const daysLeft =
     phase === 'after' ? 0 : Math.max(0, differenceInCalendarDays(demobilization, today));
+  const totalMs = demobilization.getTime() - enlistment.getTime();
+  const elapsedMs = Math.max(0, now.getTime() - enlistment.getTime());
   const progressRatio =
     phase === 'before'
       ? 0
       : phase === 'after'
         ? 1
-        : totalDays > 0
-          ? Math.min(1, Math.max(0, daysPassed / totalDays))
+        : totalMs > 0
+          ? Math.min(1, Math.max(0, elapsedMs / totalMs))
           : 0;
 
   return {
