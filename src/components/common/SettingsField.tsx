@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { SETTINGS_FIELD_HEIGHT } from '@/components/common/settingsFieldMetrics';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
@@ -12,6 +13,7 @@ interface SettingsFieldProps {
   maxLength?: number;
   secureTextEntry?: boolean;
   autoCapitalize?: 'none' | 'words';
+  onFocus?: () => void;
 }
 
 export function SettingsField({
@@ -23,6 +25,7 @@ export function SettingsField({
   maxLength,
   secureTextEntry,
   autoCapitalize = 'words',
+  onFocus,
 }: SettingsFieldProps) {
   const theme = useAppTheme();
   return (
@@ -31,6 +34,7 @@ export function SettingsField({
       <TextInput
         value={value}
         onChangeText={onChangeText}
+        onFocus={onFocus}
         placeholder={placeholder}
         placeholderTextColor={theme.input.placeholder}
         style={[
@@ -39,6 +43,7 @@ export function SettingsField({
             color: theme.text.primary,
             borderColor: theme.overlay.border,
             backgroundColor: theme.overlay.fill,
+            height: SETTINGS_FIELD_HEIGHT,
           },
         ]}
         keyboardType={keyboardType}
@@ -62,8 +67,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 4,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 0,
     fontFamily: typography.fontFamily.sans,
     fontSize: 16,
+    textAlignVertical: 'center',
   },
 });

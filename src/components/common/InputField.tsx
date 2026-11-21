@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   label: {
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
     fontSize: 22,
     textAlign: 'center',
     marginBottom: 24,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
   },
   input: {
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
     borderBottomWidth: 1,
     fontSize: 24,
     lineHeight: 32,
@@ -150,6 +150,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 12,
     fontSize: 14,
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
   },
 });

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import { SERVICE_DURATION_PRESETS } from '@/constants';
 import { colors, useAppTheme } from '@/theme';
@@ -7,22 +7,30 @@ import type { ThemeMode } from '@/types/onboarding';
 
 interface ServiceDurationPresetsProps {
   onSelect: (days: number) => void;
+  onBeforeSelect?: () => void;
   themeMode?: ThemeMode;
+  showCaption?: boolean;
+  style?: ViewStyle;
 }
 
 /** Кнопки «365 / 547 дней» рядом с пикером дембеля */
 export function ServiceDurationPresets({
   onSelect,
+  onBeforeSelect,
   themeMode,
+  showCaption = true,
+  style,
 }: ServiceDurationPresetsProps) {
   const appTheme = useAppTheme();
   const theme = themeMode ? colors[themeMode] : appTheme;
 
   return (
-    <View style={styles.wrap}>
-      <Text style={[styles.caption, { color: theme.text.secondary }]}>
-        или срок от даты призыва
-      </Text>
+    <View style={[styles.wrap, style]}>
+      {showCaption ? (
+        <Text style={[styles.caption, { color: theme.text.secondary }]}>
+          или срок от даты призыва
+        </Text>
+      ) : null}
       <View style={styles.row}>
         {SERVICE_DURATION_PRESETS.map((preset) => (
           <Pressable
@@ -34,7 +42,10 @@ export function ServiceDurationPresets({
                 backgroundColor: theme.overlay.fill,
               },
             ]}
-            onPress={() => onSelect(preset.days)}
+            onPress={() => {
+              onBeforeSelect?.();
+              onSelect(preset.days);
+            }}
             accessibilityRole="button"
             accessibilityLabel={preset.label}
           >

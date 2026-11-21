@@ -41,7 +41,7 @@ export function PulsingHint({ children, style }: PulsingHintProps) {
 
 const styles = StyleSheet.create({
   hint: {
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
     fontSize: 16,
     textAlign: 'center',
   },

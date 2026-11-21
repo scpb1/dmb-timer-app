@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Dimensions, Keyboard, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import Animated, {
   Easing,
@@ -78,29 +78,56 @@ function ThemeGradient({ tokens, width, height, gradientId, sheenEndY }: ThemeGr
   );
 }
 
-function useGradientSize() {
-  const [size, setSize] = useState<GradientSize>({ width: 0, height: 0 });
-  const onLayout = (width: number, height: number) => {
-    setSize((current) =>
-      current.width === width && current.height === height ? current : { width, height },
-    );
+function readGradientSize(windowWidth: number, windowHeight: number): GradientSize {
+  const screen = Dimensions.get('screen');
+  return {
+    width: windowWidth,
+    /** Клавиатура на Android уменьшает window.height — градиент держим на высоте экрана. */
+    height: Math.max(windowHeight, screen.height),
   };
-  return { size, onLayout };
+}
+
+/** Сразу берём размер экрана, чтобы SVG не сжимался вместе с клавиатурой. */
+function useGradientSize() {
+  const window = useWindowDimensions();
+  const [size, setSize] = useState<GradientSize>(() =>
+    readGradientSize(window.width, window.height),
+  );
+
+  useEffect(() => {
+    const next = readGradientSize(window.width, window.height);
+    setSize((current) =>
+      current.width === next.width && current.height === next.height ? current : next,
+    );
+  }, [window.width, window.height]);
+
+  useEffect(() => {
+    const restore = () => {
+      const next = readGradientSize(
+        Dimensions.get('window').width,
+        Dimensions.get('window').height,
+      );
+      setSize((current) =>
+        current.width === next.width && current.height === next.height ? current : next,
+      );
+    };
+    const hide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      restore,
+    );
+    return () => hide.remove();
+  }, []);
+
+  return size;
 }
 
 function AppThemeBackground() {
   const { theme } = useColorTheme();
-  const { size, onLayout } = useGradientSize();
+  const size = useGradientSize();
   const sheenEndY = theme.scheme === 'dark' ? '100%' : '85%';
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background.start }]}
-      onLayout={(event) => {
-        const { width, height } = event.nativeEvent.layout;
-        onLayout(width, height);
-      }}
-    >
+    <View style={[styles.container, { backgroundColor: theme.colors.background.start }]}>
       {size.width > 0 ? (
         <ThemeGradient
           tokens={theme.colors}
@@ -116,7 +143,7 @@ function AppThemeBackground() {
 
 function OnboardingBackground({ themeMode }: { themeMode: ThemeMode }) {
   const themeProgress = useSharedValue(themeMode === 'dark' ? 0 : 1);
-  const { size, onLayout } = useGradientSize();
+  const size = useGradientSize();
 
   useEffect(() => {
     themeProgress.value = withTiming(themeMode === 'dark' ? 0 : 1, {
@@ -134,13 +161,7 @@ function OnboardingBackground({ themeMode }: { themeMode: ThemeMode }) {
   }));
 
   return (
-    <View
-      style={styles.container}
-      onLayout={(event) => {
-        const { width, height } = event.nativeEvent.layout;
-        onLayout(width, height);
-      }}
-    >
+    <View style={styles.container}>
       <Animated.View
         style={[styles.layer, { backgroundColor: colors.dark.background.start }, darkLayerStyle]}
       >
@@ -185,6 +206,7 @@ export function ScreenBackground({ themeMode }: ScreenBackgroundProps) {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
   },
   layer: {
     ...StyleSheet.absoluteFillObject,

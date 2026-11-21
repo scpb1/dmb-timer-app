@@ -93,6 +93,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 18,
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
   },
 });

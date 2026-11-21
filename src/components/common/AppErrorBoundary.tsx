@@ -8,6 +8,8 @@ import { logger } from '@/utils/logger';
 interface AppErrorBoundaryProps {
   children: ReactNode;
   onReset: () => void;
+  /** Подпись кнопки восстановления. На вкладке это «Назад», в корне — перезапуск. */
+  actionLabel?: string;
 }
 
 interface AppErrorBoundaryState {
@@ -57,9 +59,9 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
           ]}
           onPress={this.handleReset}
           accessibilityRole="button"
-          accessibilityLabel="Перезапустить"
+          accessibilityLabel={this.props.actionLabel ?? 'Перезапустить'}
         >
-          <Text style={styles.buttonLabel}>Перезапустить</Text>
+          <Text style={styles.buttonLabel}>{this.props.actionLabel ?? 'Перезапустить'}</Text>
         </Pressable>
       </View>
     );

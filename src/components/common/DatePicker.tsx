@@ -5,9 +5,10 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextStyle,
   View,
-  ViewStyle,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
 } from 'react-native';
 import DateTimePicker, {
   DateTimePickerAndroid,
@@ -16,6 +17,7 @@ import DateTimePicker, {
 import { format, startOfDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
+import { SETTINGS_FIELD_HEIGHT } from '@/components/common/settingsFieldMetrics';
 import { colors, useAppTheme, useColorTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 import type { ThemeMode } from '@/types/onboarding';
@@ -26,10 +28,13 @@ interface DatePickerProps {
   onChange: (date: Date) => void;
   minimumDate?: Date;
   maximumDate?: Date;
-  labelStyle?: TextStyle;
-  buttonStyle?: ViewStyle;
-  buttonTextStyle?: TextStyle;
+  /** Как поля в настройках (`SettingsField`): подпись 14, поле overlay, текст слева */
+  appearance?: 'default' | 'settings';
+  labelStyle?: StyleProp<TextStyle>;
+  buttonStyle?: StyleProp<ViewStyle>;
+  buttonTextStyle?: StyleProp<TextStyle>;
   themeMode?: ThemeMode;
+  onBeforeOpen?: () => void;
 }
 
 function pickerValue(value: Date | null): Date {
@@ -54,10 +59,12 @@ export function DatePicker({
   onChange,
   minimumDate,
   maximumDate,
+  appearance = 'default',
   labelStyle,
   buttonStyle,
   buttonTextStyle,
   themeMode,
+  onBeforeOpen,
 }: DatePickerProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState<Date>(pickerValue(value));
@@ -70,7 +77,11 @@ export function DatePicker({
     ? format(value, 'd MMMM yyyy', { locale: ru })
     : 'Выберите дату';
 
+  const isSettings = appearance === 'settings';
+  const labelColor = isSettings ? theme.text.secondary : theme.text.primary;
+
   const openPicker = () => {
+    onBeforeOpen?.();
     const initial = pickerValue(value);
 
     if (Platform.OS === 'android') {
@@ -103,20 +114,37 @@ export function DatePicker({
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={[styles.label, { color: theme.text.primary }, labelStyle]}>{label}</Text>
+    <View style={[styles.container, isSettings && styles.containerSettings]}>
+      <Text
+        style={[
+          isSettings ? styles.labelSettings : styles.label,
+          { color: labelColor },
+          labelStyle,
+        ]}
+      >
+        {label}
+      </Text>
 
       <Pressable
         style={[
-          styles.button,
-          { borderColor: theme.input.border },
+          isSettings ? styles.buttonSettings : styles.button,
+          {
+            borderColor: isSettings ? theme.overlay.border : theme.input.border,
+            backgroundColor: isSettings ? theme.overlay.fill : undefined,
+          },
           buttonStyle,
         ]}
         onPress={openPicker}
         accessibilityRole="button"
         accessibilityLabel={label}
       >
-        <Text style={[styles.buttonText, { color: theme.text.primary }, buttonTextStyle]}>
+        <Text
+          style={[
+            isSettings ? styles.buttonTextSettings : styles.buttonText,
+            { color: theme.text.primary },
+            buttonTextStyle,
+          ]}
+        >
           {formattedValue}
         </Text>
       </Pressable>
@@ -156,11 +184,20 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 16,
   },
+  containerSettings: {
+    marginBottom: 0,
+    gap: 8,
+  },
   label: {
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
     fontSize: 16,
     marginBottom: 8,
     textAlign: 'center',
+  },
+  labelSettings: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 14,
+    textAlign: 'left',
   },
   button: {
     borderWidth: 1,
@@ -169,10 +206,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginHorizontal: 24,
   },
+  buttonSettings: {
+    borderWidth: 1,
+    borderRadius: 4,
+    height: SETTINGS_FIELD_HEIGHT,
+    paddingHorizontal: 14,
+    marginHorizontal: 0,
+    justifyContent: 'center',
+  },
   buttonText: {
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
     fontSize: 18,
     textAlign: 'center',
+  },
+  buttonTextSettings: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 16,
+    textAlign: 'left',
   },
   modalOverlay: {
     flex: 1,

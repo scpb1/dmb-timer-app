@@ -157,7 +157,7 @@ export function AnimatedText({
 
 const styles = StyleSheet.create({
   text: {
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
     textAlign: 'center',
   },
 });

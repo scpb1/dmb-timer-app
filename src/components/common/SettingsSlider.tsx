@@ -24,6 +24,10 @@ interface SettingsSliderProps {
   formatValue?: (value: number) => string;
   /** Живое значение на UI-потоке: обновляется при перетаскивании без ререндера экрана */
   sharedValue?: SharedValue<number>;
+  orientation?: 'horizontal' | 'vertical';
+  /** Вертикальный ползунок внутри прокрутки: на время жеста её лучше отключить */
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
 
 function ratioFromValue(value: number, min: number, max: number): number {
@@ -33,10 +37,17 @@ function ratioFromValue(value: number, min: number, max: number): number {
   return Math.min(1, Math.max(0, (value - min) / (max - min)));
 }
 
-function readSlider(x: number, width: number, min: number, max: number) {
+function readSlider(
+  position: number,
+  span: number,
+  min: number,
+  max: number,
+  vertical: boolean,
+) {
   'worklet';
-  const usable = Math.max(1, width - TRACK_INSET * 2);
-  const ratio = Math.min(1, Math.max(0, (x - TRACK_INSET) / usable));
+  const usable = Math.max(1, span - TRACK_INSET * 2);
+  const raw = (position - TRACK_INSET) / usable;
+  const ratio = Math.min(1, Math.max(0, vertical ? 1 - raw : raw));
   const next = Math.round(min + ratio * (max - min));
   return { ratio, next };
 }
@@ -72,6 +83,9 @@ export function SettingsSlider({
   onCommit,
   formatValue = String,
   sharedValue,
+  orientation = 'horizontal',
+  onDragStart,
+  onDragEnd,
 }: SettingsSliderProps) {
   const theme = useAppTheme();
   const trackWidth = useSharedValue(0);
@@ -79,8 +93,13 @@ export function SettingsSlider({
   const liveValue = useSharedValue(value);
   const minValue = useSharedValue(min);
   const maxValue = useSharedValue(max);
+  const vertical = orientation === 'vertical';
   const onCommitRef = useRef(onCommit);
+  const onDragStartRef = useRef(onDragStart);
+  const onDragEndRef = useRef(onDragEnd);
   onCommitRef.current = onCommit;
+  onDragStartRef.current = onDragStart;
+  onDragEndRef.current = onDragEnd;
 
   useEffect(() => {
     minValue.value = min;
@@ -98,85 +117,115 @@ export function SettingsSlider({
   const notifyCommit = (next: number) => {
     onCommitRef.current?.(next);
   };
+  const notifyDragStart = () => {
+    onDragStartRef.current?.();
+  };
+  const notifyDragEnd = () => {
+    onDragEndRef.current?.();
+  };
 
-  const pan = useMemo(
-    () =>
-      Gesture.Pan()
-        .minDistance(0)
-        .failOffsetY([-24, 24])
-        .shouldCancelWhenOutside(false)
-        .onBegin((event) => {
-          if (trackWidth.value <= 0) {
-            return;
-          }
+  const pan = useMemo(() => {
+    const gesture = Gesture.Pan()
+      .minDistance(0)
+      .shouldCancelWhenOutside(false)
+      .onBegin((event) => {
+        if (trackWidth.value <= 0) {
+          return;
+        }
+        runOnJS(notifyDragStart)();
 
-          const { ratio, next } = readSlider(
-            event.x,
-            trackWidth.value,
-            minValue.value,
-            maxValue.value,
-          );
-          progress.value = ratio;
-          liveValue.value = next;
-          if (sharedValue) {
-            sharedValue.value = minValue.value + ratio * (maxValue.value - minValue.value);
-          }
-        })
-        .onUpdate((event) => {
-          if (trackWidth.value <= 0) {
-            return;
-          }
+        const { ratio, next } = readSlider(
+          vertical ? event.y : event.x,
+          trackWidth.value,
+          minValue.value,
+          maxValue.value,
+          vertical,
+        );
+        progress.value = ratio;
+        liveValue.value = next;
+        if (sharedValue) {
+          sharedValue.value = minValue.value + ratio * (maxValue.value - minValue.value);
+        }
+      })
+      .onUpdate((event) => {
+        if (trackWidth.value <= 0) {
+          return;
+        }
 
-          const { ratio, next } = readSlider(
-            event.x,
-            trackWidth.value,
-            minValue.value,
-            maxValue.value,
-          );
-          progress.value = ratio;
-          liveValue.value = next;
-          if (sharedValue) {
-            sharedValue.value = minValue.value + ratio * (maxValue.value - minValue.value);
-          }
-        })
-        .onFinalize(() => {
-          runOnJS(notifyCommit)(liveValue.value);
-        }),
-    [liveValue, maxValue, minValue, progress, sharedValue, trackWidth],
-  );
+        const { ratio, next } = readSlider(
+          vertical ? event.y : event.x,
+          trackWidth.value,
+          minValue.value,
+          maxValue.value,
+          vertical,
+        );
+        progress.value = ratio;
+        liveValue.value = next;
+        if (sharedValue) {
+          sharedValue.value = minValue.value + ratio * (maxValue.value - minValue.value);
+        }
+      })
+      .onFinalize(() => {
+        runOnJS(notifyDragEnd)();
+        runOnJS(notifyCommit)(liveValue.value);
+      });
 
-  const fillStyle = useAnimatedStyle(() => ({
-    width: Math.max(0, trackWidth.value - TRACK_INSET * 2) * progress.value,
-  }));
+    return vertical ? gesture.failOffsetX([-24, 24]) : gesture.failOffsetY([-24, 24]);
+  }, [liveValue, maxValue, minValue, progress, sharedValue, trackWidth, vertical]);
 
-  const thumbStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateX:
-          Math.max(0, trackWidth.value - TRACK_INSET * 2) * progress.value - THUMB_SIZE / 2,
-      },
-    ],
-  }));
+  const fillStyle = useAnimatedStyle(() => {
+    const usable = Math.max(0, trackWidth.value - TRACK_INSET * 2) * progress.value;
+    return vertical ? { height: usable } : { width: usable };
+  });
+
+  const thumbStyle = useAnimatedStyle(() => {
+    const usable = Math.max(0, trackWidth.value - TRACK_INSET * 2);
+    const offset = usable * progress.value - THUMB_SIZE / 2;
+    return vertical
+      ? { transform: [{ translateY: usable - THUMB_SIZE - offset }] }
+      : { transform: [{ translateX: offset }] };
+  });
 
   return (
-    <View style={styles.wrapper}>
-      <View style={styles.header}>
-        <Text style={[styles.label, { color: theme.text.secondary }]}>{label}</Text>
+    <View style={[styles.wrapper, vertical && styles.wrapperVertical]}>
+      <View style={[styles.header, vertical && styles.headerVertical]}>
+        <Text style={[styles.label, vertical && styles.labelVertical, { color: theme.text.secondary }]}>
+          {label}
+        </Text>
         <SliderReadout source={liveValue} formatValue={formatValue} />
       </View>
 
       <GestureDetector gesture={pan}>
         <Animated.View
-          style={styles.hitArea}
+          style={vertical ? styles.hitAreaVertical : styles.hitArea}
+          onTouchStart={() => {
+            if (vertical) {
+              onDragStartRef.current?.();
+            }
+          }}
           onLayout={(event) => {
-            trackWidth.value = event.nativeEvent.layout.width;
+            trackWidth.value = vertical
+              ? event.nativeEvent.layout.height
+              : event.nativeEvent.layout.width;
           }}
         >
-          <View style={[styles.track, { backgroundColor: theme.overlay.muted }]}>
-            <Animated.View style={[styles.fill, { backgroundColor: theme.text.accent }, fillStyle]} />
+          <View
+            style={[
+              vertical ? styles.trackVertical : styles.track,
+              { backgroundColor: theme.overlay.muted },
+            ]}
+          >
+            <Animated.View
+              style={[
+                vertical ? styles.fillVertical : styles.fill,
+                { backgroundColor: theme.text.accent },
+                fillStyle,
+              ]}
+            />
             <Animated.View
               style={[
                 styles.thumb,
+                vertical && styles.thumbVertical,
                 { backgroundColor: theme.text.inverse, borderColor: theme.text.accent },
                 thumbStyle,
               ]}
@@ -192,15 +241,29 @@ const styles = StyleSheet.create({
   wrapper: {
     marginTop: 14,
   },
+  wrapperVertical: {
+    flex: 1,
+    marginTop: 4,
+    minHeight: 0,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 10,
   },
+  headerVertical: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 2,
+  },
   label: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 14,
+  },
+  labelVertical: {
+    textAlign: 'center',
   },
   value: {
     fontFamily: typography.fontFamily.sans,
@@ -211,13 +274,31 @@ const styles = StyleSheet.create({
     height: 36,
     paddingHorizontal: TRACK_INSET,
   },
+  hitAreaVertical: {
+    flex: 1,
+    minHeight: 72,
+    alignItems: 'center',
+    paddingVertical: TRACK_INSET,
+  },
   track: {
     height: 6,
     borderRadius: 4,
     justifyContent: 'center',
   },
+  trackVertical: {
+    flex: 1,
+    width: 6,
+    borderRadius: 4,
+  },
   fill: {
     height: 6,
+    borderRadius: 4,
+  },
+  fillVertical: {
+    position: 'absolute',
+    left: 0,
+    bottom: 0,
+    width: 6,
     borderRadius: 4,
   },
   thumb: {
@@ -227,5 +308,9 @@ const styles = StyleSheet.create({
     height: THUMB_SIZE,
     borderRadius: THUMB_SIZE / 2,
     borderWidth: 2,
+  },
+  thumbVertical: {
+    left: (6 - THUMB_SIZE) / 2,
+    top: 0,
   },
 });

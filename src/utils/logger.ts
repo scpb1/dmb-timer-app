@@ -48,19 +48,25 @@ function log(level: LogLevel, message: string, error?: unknown): void {
     return;
   }
 
+  // В проде остаётся короткий текст. Стек и пути к файлам — только в разработке.
   if (level === 'error') {
-    rememberError(message, error);
+    rememberError(message, isDev() ? error : undefined);
   }
 
   const prefix = `[${APP_NAME}:${level.toUpperCase()}]`;
 
-  if (error !== undefined) {
+  if (isDev() && error !== undefined) {
     console[level === 'error' ? 'error' : 'warn'](prefix, message, error);
     return;
   }
 
   if (level === 'warn') {
     console.warn(prefix, message);
+    return;
+  }
+
+  if (level === 'error') {
+    console.error(prefix, message);
     return;
   }
 
