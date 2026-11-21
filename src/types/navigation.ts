@@ -6,6 +6,7 @@ export type RootStackParamList = {
 export type HomeStackParamList = {
   HomeMain: undefined;
   TimerSettings: undefined;
+  TimerPhoto: undefined;
   ColorThemes: undefined;
 };
 
@@ -15,6 +16,9 @@ export type MainTabParamList = {
   Home: undefined;
   Diary: undefined;
   Trackers: undefined;
+  Widgets: undefined;
+  Parcels: undefined;
+  Support: undefined;
 };
 
 export type DiaryStackParamList = {

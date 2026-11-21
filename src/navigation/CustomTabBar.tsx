@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FEATURES } from '@/constants/features';
-import { useAppTheme } from '@/theme';
+import { FEATURES } from '@/constants';
+import { useAppTheme, useColorTheme } from '@/theme';
+import { typography } from '@/theme/typography';
 import type { MainTabParamList } from '@/types/navigation';
 import {
   getTimerPhotoBackgroundActive,
@@ -21,44 +22,118 @@ const TAB_CONFIG: Record<TabName, { icon: keyof typeof Feather.glyphMap; label: 
   Home: { icon: 'clock', label: 'Главная' },
   Diary: { icon: 'book', label: 'Дневник' },
   Trackers: { icon: 'calendar', label: 'Трекеры' },
+  Widgets: { icon: 'smartphone', label: 'Виджеты' },
+  Parcels: { icon: 'package', label: 'Посылки' },
+  Support: { icon: 'heart', label: 'Опора' },
 };
+
+const MORE_ROUTES = new Set<TabName>(['Diary', 'Trackers', 'Widgets', 'Shop', 'Parcels', 'Support']);
+
+const MORE_ITEMS: { name: TabName; title: string; hint: string }[] = [
+  {
+    name: 'Parcels',
+    title: 'Посылки и передачки',
+    hint: 'Что ушло и что ещё собираешь',
+  },
+  {
+    name: 'Widgets',
+    title: 'Виджеты',
+    hint: 'Таймер на рабочем столе',
+  },
+  {
+    name: 'Trackers',
+    title: 'Трекеры',
+    hint: 'Звонки, встречи и календарь',
+  },
+  {
+    name: 'Diary',
+    title: 'Дневник',
+    hint: 'Своя страница и письмо ему',
+  },
+  {
+    name: 'Support',
+    title: 'Опора',
+    hint: 'Когда тяжело и неясно, что делать',
+  },
+];
 
 const HIDDEN_TAB_ROUTES = new Set([
   'PersonalDiary',
   'LetterTheme',
   'LetterEditor',
   'Settings',
+  'TimerSettings',
+  'TimerPhoto',
+  'ColorThemes',
 ]);
 
 const PHOTO_ICON = '#F2F0EC';
 const PHOTO_ICON_MUTED = 'rgba(242, 240, 236, 0.55)';
 
-function isMainTabVisible(tabName: TabName): boolean {
-  if (tabName === 'Shop' && !FEATURES.showShopTab) {
-    return false;
-  }
-  if (tabName === 'Trackers' && !FEATURES.showTrackersTab) {
-    return false;
-  }
-  return true;
-}
-
-/** Нижняя панель в стиле карточек: светлая полупрозрачная */
+/** Нижняя панель: события, главная и три полоски «Ещё». */
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const theme = useAppTheme();
+  const { theme: colorTheme } = useColorTheme();
   const insets = useSafeAreaInsets();
+  const sheetBackground =
+    colorTheme.scheme === 'light' ? 'rgba(255, 255, 255, 0.94)' : theme.overlay.fill;
   const currentRoute = state.routes[state.index];
   const nestedName = getFocusedRouteNameFromRoute(currentRoute) ?? currentRoute.name;
   const [hasPhotoBackground, setHasPhotoBackground] = useState(getTimerPhotoBackgroundActive);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => subscribeTimerPhotoBackground(setHasPhotoBackground), []);
 
   if (HIDDEN_TAB_ROUTES.has(nestedName)) {
-    return <View />;
+    return null;
   }
 
-  const isTimerScreen = currentRoute.name === 'Home' && nestedName !== 'TimerSettings';
+  const currentTab = currentRoute.name as TabName;
+  const isTimerScreen = currentRoute.name === 'Home' && !HIDDEN_TAB_ROUTES.has(nestedName);
   const photoStyle = isTimerScreen && hasPhotoBackground;
+  const moreActive = MORE_ROUTES.has(currentTab);
+
+  const barTabs: { name: 'Events' | 'Home'; routeKey: string }[] = [];
+  for (const route of state.routes) {
+    if (route.name === 'Events' || route.name === 'Home') {
+      barTabs.push({ name: route.name, routeKey: route.key });
+    }
+  }
+
+  const iconFor = (focused: boolean, isHome: boolean) => {
+    if (photoStyle) {
+      return focused ? PHOTO_ICON : PHOTO_ICON_MUTED;
+    }
+    if (!focused) {
+      return theme.text.secondary;
+    }
+    return isHome ? theme.text.accent : theme.text.primary;
+  };
+
+  const indicatorFor = (focused: boolean, isHome: boolean) => {
+    if (!focused) {
+      return 'transparent';
+    }
+    if (photoStyle) {
+      return PHOTO_ICON;
+    }
+    return isHome ? theme.text.accent : theme.text.primary;
+  };
+
+  const goToTab = (name: TabName) => {
+    const route = state.routes.find((item) => item.name === name);
+    if (!route) {
+      return;
+    }
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: route.key,
+      canPreventDefault: true,
+    });
+    if (state.routes[state.index].key !== route.key && !event.defaultPrevented) {
+      navigation.navigate(name as never);
+    }
+  };
 
   return (
     <View
@@ -75,60 +150,85 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           photoStyle && styles.barPhoto,
         ]}
       >
-        {state.routes.filter((route) => isMainTabVisible(route.name as TabName)).map((route) => {
-          const tabName = route.name as TabName;
-          const config = TAB_CONFIG[tabName];
-          const isFocused = state.routes[state.index].key === route.key;
-          const isHome = tabName === 'Home';
-
-          const iconColor = photoStyle
-            ? isFocused
-              ? PHOTO_ICON
-              : PHOTO_ICON_MUTED
-            : isFocused
-              ? isHome
-                ? theme.text.accent
-                : theme.text.primary
-              : theme.text.secondary;
-
-          const indicatorColor = photoStyle
-            ? PHOTO_ICON
-            : isHome
-              ? theme.text.accent
-              : theme.text.primary;
-
-          const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
-            }
-          };
-
+        {barTabs.map((tab) => {
+          const focused = currentTab === tab.name;
+          const isHome = tab.name === 'Home';
+          const color = iconFor(focused, isHome);
           return (
             <Pressable
-              key={route.key}
+              key={tab.routeKey}
               style={styles.tab}
-              onPress={onPress}
+              onPress={() => {
+                setMoreOpen(false);
+                goToTab(tab.name);
+              }}
               accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={config.label}
+              accessibilityState={{ selected: focused }}
+              accessibilityLabel={TAB_CONFIG[tab.name].label}
             >
-              <Feather name={config.icon} size={22} color={iconColor} />
-              <View
-                style={[
-                  styles.indicator,
-                  { backgroundColor: isFocused ? indicatorColor : 'transparent' },
-                ]}
-              />
+              <Feather name={TAB_CONFIG[tab.name].icon} size={22} color={color} />
+              <View style={[styles.indicator, { backgroundColor: indicatorFor(focused, isHome) }]} />
             </Pressable>
           );
         })}
+
+        <Pressable
+          style={styles.tab}
+          onPress={() => setMoreOpen((open) => !open)}
+          accessibilityRole="button"
+          accessibilityState={{ selected: moreActive, expanded: moreOpen }}
+          accessibilityLabel="Ещё"
+          accessibilityHint="Посылки, виджеты, трекеры, дневник и опора"
+        >
+          <Feather name="menu" size={22} color={iconFor(moreActive, false)} />
+          <View style={[styles.indicator, { backgroundColor: indicatorFor(moreActive, false) }]} />
+        </Pressable>
       </View>
+
+      <Modal visible={moreOpen} transparent animationType="fade" onRequestClose={() => setMoreOpen(false)}>
+        <View style={styles.sheetRoot}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setMoreOpen(false)} />
+          <View
+            style={[
+              styles.sheet,
+              {
+                backgroundColor: sheetBackground,
+                borderColor: theme.overlay.border,
+                marginBottom: Math.max(insets.bottom, 10) + 72,
+              },
+            ]}
+          >
+            {MORE_ITEMS.filter((item) => FEATURES.showTrackersTab || item.name !== 'Trackers').map((item, index, visibleItems) => (
+              <Pressable
+                key={item.name}
+                style={[
+                  styles.sheetRow,
+                  index < visibleItems.length - 1 && {
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: theme.overlay.border,
+                  },
+                ]}
+                onPress={() => {
+                  setMoreOpen(false);
+                  goToTab(item.name);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={item.title}
+              >
+                <Feather name={TAB_CONFIG[item.name].icon} size={20} color={theme.text.primary} />
+                <View style={styles.sheetRowText}>
+                  <Text style={[styles.sheetRowTitle, { color: theme.text.primary }]}>
+                    {item.title}
+                  </Text>
+                  <Text style={[styles.sheetRowHint, { color: theme.text.secondary }]}>
+                    {item.hint}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -166,5 +266,35 @@ const styles = StyleSheet.create({
     width: 26,
     height: 2,
     borderRadius: 1,
+  },
+  sheetRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.28)',
+  },
+  sheet: {
+    marginHorizontal: 16,
+    borderRadius: 4,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  sheetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  sheetRowText: {
+    flex: 1,
+  },
+  sheetRowTitle: {
+    fontFamily: typography.fontFamily.sansBold,
+    fontSize: 16,
+  },
+  sheetRowHint: {
+    fontFamily: typography.fontFamily.sans,
+    fontSize: 13,
+    marginTop: 2,
   },
 });

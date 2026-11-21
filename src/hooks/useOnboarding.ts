@@ -7,6 +7,7 @@ import type { OnboardingFormData, OnboardingStep, ThemeMode } from '@/types/onbo
 import { getConfig, setConfig } from '@/services/database';
 import { logger } from '@/utils/logger';
 import { applyAppNotificationsPreference } from '@/services/holidayNotifications';
+import { calculateServiceProgress } from '@/utils/timerCalculations';
 
 const REASONS = [
   'Рано или поздно это бы случилось, понимаешь?',
@@ -118,11 +119,13 @@ export function useOnboarding({
     const demobilization = startOfDay(data.demobilizationDate);
     const today = startOfDay(new Date());
 
-    const totalDays = differenceInCalendarDays(demobilization, enlistment);
     const daysPassed = Math.max(0, differenceInCalendarDays(today, enlistment));
     const daysLeft = Math.max(0, differenceInCalendarDays(demobilization, today));
-    const progressPercent =
-      totalDays > 0 ? Math.min(100, Math.round((daysPassed / totalDays) * 100)) : 0;
+    const progressPercent = calculateServiceProgress(
+      data.enlistmentDate,
+      data.demobilizationDate,
+      new Date(),
+    ).progressPercent;
 
     await setConfig(CONFIG_KEYS.USER_NAME, data.userName.trim());
     await setConfig(CONFIG_KEYS.PARTNER_NAME, data.partnerName.trim());
@@ -194,7 +197,7 @@ export function useOnboarding({
       [
         { text: 'Отмена', style: 'cancel' },
         {
-          text: 'Пропустить',
+          text: 'пропустить',
           style: 'destructive',
           onPress: () => {
             resetReasons();

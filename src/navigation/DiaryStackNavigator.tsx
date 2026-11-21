@@ -1,5 +1,6 @@
 import { createStackNavigator } from '@react-navigation/stack';
 
+import { TabErrorBoundary } from '@/navigation/TabErrorBoundary';
 import { DiaryHomeScreen } from '@/screens/diary/DiaryHomeScreen';
 import { LetterDiaryScreen } from '@/screens/diary/LetterDiaryScreen';
 import { LetterThemeScreen } from '@/screens/diary/LetterThemeScreen';
@@ -11,9 +12,14 @@ const Stack = createStackNavigator<DiaryStackParamList>();
 
 export function DiaryStackNavigator() {
   return (
+    <TabErrorBoundary>
     <Stack.Navigator
       initialRouteName="DiaryHome"
-      screenOptions={{ headerShown: false, animationEnabled: true }}
+      screenOptions={{
+        headerShown: false,
+        animationEnabled: true,
+        cardStyle: { backgroundColor: 'transparent' },
+      }}
     >
       <Stack.Screen name="DiaryHome" component={DiaryHomeScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
@@ -21,5 +27,6 @@ export function DiaryStackNavigator() {
       <Stack.Screen name="LetterTheme" component={LetterThemeScreen} />
       <Stack.Screen name="LetterEditor" component={LetterDiaryScreen} />
     </Stack.Navigator>
+    </TabErrorBoundary>
   );
 }

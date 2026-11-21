@@ -387,7 +387,7 @@ export function OnboardingScreen({ onComplete }: Props) {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {showSkip ? (
           <Pressable style={styles.skipButton} onPress={handleSkip} hitSlop={12}>
-            <PulsingHint style={[hintTextStyle, styles.skipHint]}>Пропустить</PulsingHint>
+            <PulsingHint style={[hintTextStyle, styles.skipHint]}>пропустить</PulsingHint>
           </Pressable>
         ) : null}
       </SafeAreaView>
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
   },
   bodyText: {
     width: '100%',
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
     fontSize: 22,
     lineHeight: 34,
     textAlign: 'center',
@@ -497,18 +497,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     fontSize: 14,
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
   },
   notificationsActions: {
     width: '100%',
     marginTop: 28,
+    flexDirection: 'row',
+    alignItems: 'stretch',
     gap: 12,
   },
   notificationsButton: {
+    flex: 1,
     marginTop: 0,
   },
   notificationsSecondaryButton: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 4,
     borderWidth: 1,
     paddingVertical: 13,

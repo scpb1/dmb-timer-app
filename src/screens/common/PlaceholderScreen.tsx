@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
-import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
@@ -19,7 +18,6 @@ export function PlaceholderScreen({ title, eyebrow, message }: PlaceholderScreen
 
   return (
     <View style={styles.root}>
-      <ScreenBackground />
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScreenHeader title={title} />
         {eyebrow || message ? (

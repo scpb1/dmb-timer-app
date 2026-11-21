@@ -38,9 +38,13 @@ export function useOnboardingAudio(step: OnboardingStep): {
   stopOnboardingAmbient: () => Promise<void>;
 } {
   const ambientRef = useRef<Audio.Sound | null>(null);
+  const startingRef = useRef<Promise<void> | null>(null);
+  const startTokenRef = useRef(0);
   const shouldPlayAmbient = AMBIENT_STEPS.has(step);
 
   const stopOnboardingAmbient = useCallback(async () => {
+    startTokenRef.current += 1;
+    startingRef.current = null;
     const sound = ambientRef.current;
     ambientRef.current = null;
     if (!sound) {
@@ -58,20 +62,41 @@ export function useOnboardingAudio(step: OnboardingStep): {
     if (ambientRef.current) {
       return;
     }
-    try {
-      await ensureAudioMode();
-      const { sound } = await Audio.Sound.createAsync(ONBOARDING_AMBIENT_SOURCE, {
-        isLooping: true,
-        volume: ONBOARDING_AMBIENT_VOLUME,
-        shouldPlay: true,
-      });
-      ambientRef.current = sound;
-    } catch (error) {
-      logger.warn(
-        'Не удалось запустить ambient онбординга (есть ли assets/audio/onboarding-ambient.mp3?)',
-        error,
-      );
+    if (startingRef.current) {
+      await startingRef.current;
+      return;
     }
+
+    const token = startTokenRef.current;
+    const pending = (async () => {
+      try {
+        await ensureAudioMode();
+        if (token !== startTokenRef.current || ambientRef.current) {
+          return;
+        }
+        const { sound } = await Audio.Sound.createAsync(ONBOARDING_AMBIENT_SOURCE, {
+          isLooping: true,
+          volume: ONBOARDING_AMBIENT_VOLUME,
+          shouldPlay: true,
+        });
+        if (token !== startTokenRef.current) {
+          await sound.unloadAsync().catch(() => undefined);
+          return;
+        }
+        ambientRef.current = sound;
+      } catch (error) {
+        logger.warn(
+          'Не удалось запустить ambient онбординга (есть ли assets/audio/onboarding-ambient.mp3?)',
+          error,
+        );
+      } finally {
+        if (token === startTokenRef.current) {
+          startingRef.current = null;
+        }
+      }
+    })();
+    startingRef.current = pending;
+    await pending;
   }, []);
 
   useEffect(() => {
