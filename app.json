@@ -9,11 +9,11 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0a0a0b"
+      "backgroundColor": "#FCF7DF"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.zhdi.app",
+      "bundleIdentifier": "com.zhdi.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,6 +23,7 @@
         "backgroundColor": "#FCF7DF"
       },
       "package": "com.zhdi.app",
+      "softwareKeyboardLayoutMode": "pan",
       "permissions": [
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT",
@@ -35,6 +36,7 @@
       "expo-dev-client",
       "expo-font",
       "expo-secure-store",
+      "./plugins/withLocalSqliteAmalgamation",
       [
         "expo-build-properties",
         {
@@ -84,7 +86,25 @@
             {
               "name": "TimerWidget",
               "label": "Счётчик ДДД",
-              "description": "Дни до дембеля, призыва или конца выбранного срока",
+              "description": "Таймер без ленты событий: круг, линия, рамка или сетка дней",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "HolidayWidget",
+              "label": "Праздник",
+              "description": "Ближайший или закреплённый праздник",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "StatsWidget",
+              "label": "Прошло и осталось",
+              "description": "Плашки прошедшего и оставшегося срока",
               "minWidth": "110dp",
               "minHeight": "110dp",
               "resizeMode": "horizontal|vertical",
