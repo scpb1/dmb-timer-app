@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   dateTitle: {
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
     fontSize: 20,
     color: colors.light.text.primary,
     textTransform: 'capitalize',

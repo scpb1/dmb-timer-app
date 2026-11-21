@@ -30,14 +30,14 @@ interface TrackerCalendarProps {
   allowFutureDays?: boolean;
 }
 
-function buildMonthGrid(monthDate: Date): Array<Date | null> {
+function buildMonthGrid(monthDate: Date): (Date | null)[] {
   const year = monthDate.getFullYear();
   const month = monthDate.getMonth();
   const firstDay = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startOffset = (firstDay.getDay() + 6) % 7;
 
-  const cells: Array<Date | null> = [];
+  const cells: (Date | null)[] = [];
 
   for (let index = 0; index < startOffset; index += 1) {
     cells.push(null);
@@ -54,8 +54,8 @@ function buildMonthGrid(monthDate: Date): Array<Date | null> {
   return cells;
 }
 
-function chunkRows(cells: Array<Date | null>): Array<Array<Date | null>> {
-  const rows: Array<Array<Date | null>> = [];
+function chunkRows(cells: (Date | null)[]): (Date | null)[][] {
+  const rows: (Date | null)[][] = [];
   for (let index = 0; index < cells.length; index += 7) {
     rows.push(cells.slice(index, index + 7));
   }

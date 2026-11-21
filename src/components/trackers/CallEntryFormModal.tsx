@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
     fontSize: 22,
     color: colors.light.text.primary,
   },

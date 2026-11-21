@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatISO } from 'date-fns';
 import * as Crypto from 'expo-crypto';
-import * as FileSystem from 'expo-file-system';
 
 import { CONFIG_KEYS } from '@/types/config';
 import {
   type CallEntry,
   type CallsStorage,
   DEFAULT_CALLS_STORAGE,
-  normalizeMoods,
   type TrackerMood,
 } from '@/types/trackers';
-import { getConfig, setConfig } from '@/services/database';
+import { createConfigJsonStore } from '@/services/configJsonStore';
+import { useUndoableDelete } from '@/hooks/useUndoableDelete';
 import { logger } from '@/utils/logger';
+import { deleteTrackerFile, saveCallAudio } from '@/utils/trackerMedia';
+import { parseCallsStorage, serializeCallsStorage } from '@/utils/trackerStorage';
 
 interface CallEntryInput {
   title?: string;
@@ -22,8 +23,6 @@ interface CallEntryInput {
   audioName?: string;
   impressions?: string;
 }
-
-const UNDO_TIMEOUT_MS = 5000;
 
 interface PendingDeletion {
   entry: CallEntry;
@@ -41,111 +40,58 @@ interface UseCallTrackerResult {
   undoDelete: () => Promise<void>;
 }
 
-type LegacyCallEntry = CallEntry & {
-  mood?: TrackerMood;
-  note?: string;
-};
-
-function migrateCallEntry(entry: LegacyCallEntry): CallEntry {
-  const { mood, note, ...rest } = entry;
-  return {
-    ...rest,
-    moods: normalizeMoods(rest.moods, mood),
-    impressions: rest.impressions ?? note,
-  };
-}
-
-function parseCallsStorage(raw: string | null): CallsStorage {
-  if (!raw) {
-    return DEFAULT_CALLS_STORAGE;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as CallsStorage;
-    if (!Array.isArray(parsed.entries)) {
-      return DEFAULT_CALLS_STORAGE;
-    }
-    return { entries: parsed.entries.map((entry) => migrateCallEntry(entry as LegacyCallEntry)) };
-  } catch {
-    return DEFAULT_CALLS_STORAGE;
-  }
-}
-
-async function persistCalls(storage: CallsStorage): Promise<void> {
-  await setConfig(CONFIG_KEYS.TRACKERS_CALLS_DATA, JSON.stringify(storage));
-}
-
-async function ensureCallsDirectory(): Promise<string> {
-  const dir = `${FileSystem.documentDirectory}tracker-calls/`;
-  const info = await FileSystem.getInfoAsync(dir);
-  if (!info.exists) {
-    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-  }
-  return dir;
-}
-
-async function saveAudioFile(sourceUri: string, entryId: string): Promise<string | null> {
-  try {
-    const dir = await ensureCallsDirectory();
-    const extension = sourceUri.split('.').pop()?.split('?')[0] ?? 'm4a';
-    const dest = `${dir}${entryId}.${extension}`;
-    await FileSystem.copyAsync({ from: sourceUri, to: dest });
-    return dest;
-  } catch (error) {
-    logger.error('Ошибка сохранения аудио', error);
-    return null;
-  }
-}
+const callsStore = createConfigJsonStore<CallsStorage>({
+  key: CONFIG_KEYS.TRACKERS_CALLS_DATA,
+  parse: parseCallsStorage,
+  remember: true,
+  serialize: serializeCallsStorage,
+});
 
 /** Загружает и управляет записями звонков */
-export function useCallTracker(): UseCallTrackerResult {
+export function useCallTracker(options?: { enabled?: boolean }): UseCallTrackerResult {
+  const enabled = options?.enabled !== false;
   const [isLoading, setIsLoading] = useState(true);
   const [entries, setEntries] = useState<CallEntry[]>([]);
-  const [pendingDeletion, setPendingDeletion] = useState<PendingDeletion | null>(null);
   const storageRef = useRef<CallsStorage>(DEFAULT_CALLS_STORAGE);
-  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingDeletionRef = useRef<PendingDeletion | null>(null);
-  pendingDeletionRef.current = pendingDeletion;
 
-  const clearUndoTimer = useCallback(() => {
-    if (undoTimerRef.current) {
-      clearTimeout(undoTimerRef.current);
-      undoTimerRef.current = null;
-    }
+  const applyStorage = useCallback((storage: CallsStorage) => {
+    storageRef.current = storage;
+    setEntries(storage.entries);
   }, []);
 
-  const commitPendingMedia = useCallback(async (pending: PendingDeletion) => {
-    if (!pending.entry.audioUri) {
-      return;
-    }
-
-    try {
-      const info = await FileSystem.getInfoAsync(pending.entry.audioUri);
-      if (info.exists) {
-        await FileSystem.deleteAsync(pending.entry.audioUri, { idempotent: true });
-      }
-    } catch (error) {
-      logger.error('Ошибка удаления аудио', error);
-    }
-  }, []);
+  const {
+    pending: pendingDeletion,
+    commitCurrent: commitPendingDelete,
+    schedule: scheduleUndo,
+    undo: undoDelete,
+  } = useUndoableDelete<PendingDeletion>({
+    onCommit: async (pending) => {
+      await deleteTrackerFile(pending.entry.audioUri);
+    },
+    onRestore: async (pending) => {
+      await callsStore.save(pending.storageSnapshot);
+      applyStorage(pending.storageSnapshot);
+    },
+  });
 
   const reload = useCallback(async () => {
     try {
-      const raw = await getConfig(CONFIG_KEYS.TRACKERS_CALLS_DATA);
-      const storage = parseCallsStorage(raw);
-      storageRef.current = storage;
-      setEntries(storage.entries);
+      const { stored } = await callsStore.load();
+      applyStorage(stored);
     } catch (error) {
       logger.error('Ошибка загрузки звонков', error);
       setEntries([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [applyStorage]);
 
   useEffect(() => {
-    reload();
-  }, [reload]);
+    if (!enabled) {
+      return;
+    }
+    void reload();
+  }, [enabled, reload]);
 
   const addEntry = useCallback(async (date: string, input: CallEntryInput): Promise<boolean> => {
     try {
@@ -153,7 +99,7 @@ export function useCallTracker(): UseCallTrackerResult {
       let audioUri = input.audioUri;
 
       if (audioUri) {
-        const saved = await saveAudioFile(audioUri, id);
+        const saved = await saveCallAudio(audioUri, id);
         audioUri = saved ?? undefined;
       }
 
@@ -172,16 +118,14 @@ export function useCallTracker(): UseCallTrackerResult {
       const nextStorage: CallsStorage = {
         entries: [...storageRef.current.entries, record],
       };
-
-      await persistCalls(nextStorage);
-      storageRef.current = nextStorage;
-      setEntries(nextStorage.entries);
+      await callsStore.save(nextStorage);
+      applyStorage(nextStorage);
       return true;
     } catch (error) {
       logger.error('Ошибка добавления звонка', error);
       return false;
     }
-  }, []);
+  }, [applyStorage]);
 
   const updateEntry = useCallback(async (id: string, date: string, input: CallEntryInput): Promise<boolean> => {
     try {
@@ -194,22 +138,14 @@ export function useCallTracker(): UseCallTrackerResult {
       let audioName = input.audioName;
 
       if (input.audioUri && input.audioUri !== existing.audioUri) {
-        const saved = await saveAudioFile(input.audioUri, id);
+        const saved = await saveCallAudio(input.audioUri, id);
         audioUri = saved ?? existing.audioUri;
         audioName = input.audioName;
         if (existing.audioUri && existing.audioUri !== audioUri) {
-          try {
-            await FileSystem.deleteAsync(existing.audioUri, { idempotent: true });
-          } catch (error) {
-            logger.error('Ошибка удаления старого аудио', error);
-          }
+          await deleteTrackerFile(existing.audioUri);
         }
       } else if (!input.audioUri && existing.audioUri) {
-        try {
-          await FileSystem.deleteAsync(existing.audioUri, { idempotent: true });
-        } catch (error) {
-          logger.error('Ошибка удаления аудио', error);
-        }
+        await deleteTrackerFile(existing.audioUri);
       }
 
       const nextStorage: CallsStorage = {
@@ -229,23 +165,18 @@ export function useCallTracker(): UseCallTrackerResult {
         ),
       };
 
-      await persistCalls(nextStorage);
-      storageRef.current = nextStorage;
-      setEntries(nextStorage.entries);
+      await callsStore.save(nextStorage);
+      applyStorage(nextStorage);
       return true;
     } catch (error) {
       logger.error('Ошибка обновления звонка', error);
       return false;
     }
-  }, []);
+  }, [applyStorage]);
 
   const deleteEntry = useCallback(async (id: string) => {
     try {
-      clearUndoTimer();
-      if (pendingDeletion) {
-        await commitPendingMedia(pendingDeletion);
-        setPendingDeletion(null);
-      }
+      await commitPendingDelete();
 
       const target = storageRef.current.entries.find((entry) => entry.id === id);
       if (!target) {
@@ -257,39 +188,13 @@ export function useCallTracker(): UseCallTrackerResult {
         entries: snapshot.entries.filter((entry) => entry.id !== id),
       };
 
-      await persistCalls(nextStorage);
-      storageRef.current = nextStorage;
-      setEntries(nextStorage.entries);
-      setPendingDeletion({ entry: target, storageSnapshot: snapshot });
-
-      undoTimerRef.current = setTimeout(() => {
-        void commitPendingMedia({ entry: target, storageSnapshot: snapshot });
-        setPendingDeletion(null);
-        undoTimerRef.current = null;
-      }, UNDO_TIMEOUT_MS);
+      await callsStore.save(nextStorage);
+      applyStorage(nextStorage);
+      await scheduleUndo({ entry: target, storageSnapshot: snapshot });
     } catch (error) {
       logger.error('Ошибка удаления звонка', error);
     }
-  }, [clearUndoTimer, commitPendingMedia, pendingDeletion]);
-
-  const undoDelete = useCallback(async () => {
-    if (!pendingDeletion) {
-      return;
-    }
-
-    clearUndoTimer();
-    await persistCalls(pendingDeletion.storageSnapshot);
-    storageRef.current = pendingDeletion.storageSnapshot;
-    setEntries(pendingDeletion.storageSnapshot.entries);
-    setPendingDeletion(null);
-  }, [clearUndoTimer, pendingDeletion]);
-
-  useEffect(() => () => {
-    clearUndoTimer();
-    if (pendingDeletionRef.current) {
-      void commitPendingMedia(pendingDeletionRef.current);
-    }
-  }, [clearUndoTimer, commitPendingMedia]);
+  }, [applyStorage, commitPendingDelete, scheduleUndo]);
 
   return {
     isLoading,

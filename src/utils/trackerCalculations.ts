@@ -108,7 +108,7 @@ export function getMeetingStats(
   ];
 }
 
-export function getEntryCountsByDate(entries: Array<{ date: string }>): Record<string, number> {
+export function getEntryCountsByDate(entries: { date: string }[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const entry of entries) {
     counts[entry.date] = (counts[entry.date] ?? 0) + 1;
@@ -116,7 +116,7 @@ export function getEntryCountsByDate(entries: Array<{ date: string }>): Record<s
   return counts;
 }
 
-export function getDatesWithEntries(entries: Array<{ date: string }>): Set<string> {
+export function getDatesWithEntries(entries: { date: string }[]): Set<string> {
   return new Set(entries.map((entry) => entry.date));
 }
 

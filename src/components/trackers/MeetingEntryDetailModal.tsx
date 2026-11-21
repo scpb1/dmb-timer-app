@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     marginRight: 12,
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.sans,
     fontSize: 22,
     color: colors.light.text.primary,
   },

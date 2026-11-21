@@ -16,9 +16,20 @@ export function AudioPlayer({ uri, fileName }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => () => {
-    soundRef.current?.unloadAsync().catch(() => undefined);
-  }, []);
+  useEffect(() => {
+    setIsPlaying(false);
+    const previous = soundRef.current;
+    soundRef.current = null;
+    if (previous) {
+      previous.unloadAsync().catch(() => undefined);
+    }
+
+    return () => {
+      const current = soundRef.current;
+      soundRef.current = null;
+      current?.unloadAsync().catch(() => undefined);
+    };
+  }, [uri]);
 
   const togglePlayback = async () => {
     try {

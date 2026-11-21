@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
@@ -12,7 +12,6 @@ import { MeetingEntryDetailModal } from '@/components/trackers/MeetingEntryDetai
 import { SegmentedControl } from '@/components/trackers/SegmentedControl';
 import { TrackerCalendar } from '@/components/trackers/TrackerCalendar';
 import { TrackerStatGrid } from '@/components/trackers/TrackerStatGrid';
-import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { useCallTracker } from '@/hooks/useCallTracker';
 import { useMeetingTracker } from '@/hooks/useMeetingTracker';
@@ -37,6 +36,14 @@ function todayKey(): string {
 export function TrackersScreen() {
   const activeTab = useTrackerStore((state) => state.activeTab);
   const setActiveTab = useTrackerStore((state) => state.setActiveTab);
+  const [seenTabs, setSeenTabs] = useState(() => ({
+    calls: activeTab === 'calls',
+    meetings: activeTab === 'meetings',
+  }));
+
+  useEffect(() => {
+    setSeenTabs((current) => (current[activeTab] ? current : { ...current, [activeTab]: true }));
+  }, [activeTab]);
 
   const {
     isLoading: callsLoading,
@@ -47,7 +54,7 @@ export function TrackersScreen() {
     updateEntry: updateCallEntry,
     deleteEntry: deleteCallEntry,
     undoDelete: undoCallDelete,
-  } = useCallTracker();
+  } = useCallTracker({ enabled: seenTabs.calls });
 
   const {
     isLoading: meetingsLoading,
@@ -58,7 +65,7 @@ export function TrackersScreen() {
     updateEntry: updateMeetingEntry,
     deleteEntry: deleteMeetingEntry,
     undoDelete: undoMeetingDelete,
-  } = useMeetingTracker();
+  } = useMeetingTracker({ enabled: seenTabs.meetings });
 
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [selectedCallEntry, setSelectedCallEntry] = useState<CallEntry | null>(null);
@@ -68,9 +75,12 @@ export function TrackersScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      reloadCalls();
-      reloadMeetings();
-    }, [reloadCalls, reloadMeetings]),
+      if (activeTab === 'calls') {
+        void reloadCalls();
+      } else {
+        void reloadMeetings();
+      }
+    }, [activeTab, reloadCalls, reloadMeetings]),
   );
 
   const handleTabChange = (tab: typeof activeTab) => {
@@ -148,8 +158,6 @@ export function TrackersScreen() {
 
   return (
     <View style={styles.root}>
-      <ScreenBackground />
-
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScreenHeader title="Трекеры" />
 

@@ -94,12 +94,6 @@ export const TRACKER_MOODS = [
 
 export type TrackerMood = (typeof TRACKER_MOODS)[number]['id'];
 
-/** @deprecated используй TRACKER_MOODS */
-export const CALL_MOODS = TRACKER_MOODS;
-
-/** @deprecated используй TrackerMood */
-export type CallMood = TrackerMood;
-
 export interface MeetingMediaItem {
   uri: string;
   type: 'photo' | 'video';
@@ -134,16 +128,26 @@ export interface MeetingEntry {
   createdAt: string;
 }
 
+export const TRACKER_STORAGE_VERSION = 1;
+
 export interface CallsStorage {
+  version?: number;
   entries: CallEntry[];
 }
 
 export interface MeetingsStorage {
+  version?: number;
   entries: MeetingEntry[];
 }
 
-export const DEFAULT_CALLS_STORAGE: CallsStorage = { entries: [] };
-export const DEFAULT_MEETINGS_STORAGE: MeetingsStorage = { entries: [] };
+export const DEFAULT_CALLS_STORAGE: CallsStorage = {
+  version: TRACKER_STORAGE_VERSION,
+  entries: [],
+};
+export const DEFAULT_MEETINGS_STORAGE: MeetingsStorage = {
+  version: TRACKER_STORAGE_VERSION,
+  entries: [],
+};
 
 export function getMoodMeta(moodId: TrackerMood) {
   return TRACKER_MOODS.find((item) => item.id === moodId);
