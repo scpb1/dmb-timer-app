@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ТГК — обложки (HTML)</title>
+  <link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+  <a class="back" href="../">← blog</a>
+  <h1>Обложки 16:9 · HTML</h1>
+  <p class="lead">
+    Сначала утверждаем макет в браузере, потом — <code>npm run generate:tgk-covers</code>.
+    Шрифт: <code>assets/fonts/dmb-timer-sans-Bold.ttf</code>.
+  </p>
+  <p class="note">
+    Правило: подписи и фразы — <strong>одна строка</strong> (<code>white-space: nowrap</code>), без переносов предложений.
+  </p>
+  <div class="grid">
+    <article class="card">
+      <h2><a href="release.html">новая версия</a></h2>
+      <p class="hint">Утверждён макет B</p>
+    </article>
+    <article class="card">
+      <h2><a href="timer.html">таймеры</a></h2>
+      <p class="hint">A скрин · B вопрос · C а/в</p>
+    </article>
+    <article class="card">
+      <h2><a href="feedback.html">фидбек</a></h2>
+      <p class="hint">A–E + F1–F5 чипы (зашло·бесит·баг·идея)</p>
+    </article>
+    <article class="card">
+      <h2><a href="poll.html">опрос</a></h2>
+      <p class="hint">Утверждён вариант C</p>
+    </article>
+  </div>
+</body>
+</html>

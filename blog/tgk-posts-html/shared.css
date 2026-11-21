@@ -1,0 +1,393 @@
+@font-face {
+  font-family: "dmb-timer-sans-Bold";
+  src: url("../../assets/fonts/dmb-timer-sans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+:root {
+  --cream: #fcf7df;
+  --brown: #3e3630;
+  --accent: #e53935;
+  --muted: #a79a8a;
+  --border: rgba(167, 154, 138, 0.35);
+  --card: rgba(255, 255, 255, 0.55);
+  --track: -0.04em;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: linear-gradient(165deg, var(--cream) 0%, #ede8d5 45%, #c7d3db 100%);
+  min-height: 100vh;
+  color: var(--brown);
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+a.back {
+  display: inline-flex;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.88rem;
+  margin-bottom: 0.75rem;
+}
+
+a.back:hover {
+  color: var(--brown);
+}
+
+h1 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.02em;
+}
+
+.lead {
+  margin: 0 0 1.25rem;
+  max-width: 44rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.lead code {
+  font-size: 0.86em;
+}
+
+.note {
+  margin: 0 0 1.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 0.88rem;
+  color: var(--brown);
+  max-width: 44rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1.35rem;
+  max-width: 1040px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.card h2 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.card .hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* Экспортный холст 16:9 — в браузере масштаб 50% */
+.cover-slot {
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 12px 36px rgba(62, 54, 48, 0.14);
+}
+
+.cover {
+  --w: 1920;
+  --h: 1080;
+  width: 100%;
+  height: 100%;
+  background: var(--cream);
+  color: var(--brown);
+  font-family: "dmb-timer-sans-Bold", system-ui, sans-serif;
+  position: relative;
+  container-type: inline-size;
+}
+
+.cover__inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4% 6%;
+  text-align: center;
+}
+
+.cover__line {
+  display: block;
+  white-space: nowrap;
+  letter-spacing: var(--track);
+  line-height: 1;
+}
+
+.cover__title {
+  font-size: clamp(2.4rem, 9.5cqi, 5.6rem);
+}
+
+.cover__title--sm {
+  font-size: clamp(2rem, 8cqi, 4.8rem);
+}
+
+.cover__sub {
+  margin-top: 2.4cqi;
+  font-size: clamp(0.95rem, 3.2cqi, 1.65rem);
+  color: var(--brown);
+  opacity: 0.92;
+}
+
+.cover__bar {
+  display: block;
+  height: clamp(6px, 1.1cqi, 14px);
+  border-radius: 999px;
+  background: var(--accent);
+  margin-top: 2.2cqi;
+}
+
+.cover__bar--title {
+  width: clamp(7rem, 28cqi, 18rem);
+}
+
+.cover__bar--short {
+  width: clamp(3rem, 12cqi, 8rem);
+}
+
+.cover__mark {
+  position: absolute;
+  right: 5.5%;
+  bottom: 6%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35cqi;
+  font-size: clamp(0.75rem, 2.4cqi, 1.35rem);
+  letter-spacing: var(--track);
+}
+
+.cover__mark .cover__bar {
+  margin-top: 0.2cqi;
+  width: clamp(2rem, 8cqi, 4.5rem);
+  height: clamp(3px, 0.55cqi, 8px);
+}
+
+/* Подпись как на иконке: тот же SVG wordmark, только масштаб */
+.cover__mark--icon {
+  width: clamp(3.35rem, 13.2cqi, 6.75rem);
+  height: auto;
+  align-items: stretch;
+  gap: 0;
+}
+
+.cover__mark--icon svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ——— детали ——— */
+.cover--a .cover__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cover--b .cover__kicker {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(0.7rem, 2.2cqi, 1.15rem);
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.cover--b .cover__pill {
+  margin-top: 1.8cqi;
+  padding: 0.55cqi 1.8cqi;
+  border-radius: 999px;
+  border: 2px solid rgba(62, 54, 48, 0.14);
+  font-size: clamp(0.85rem, 2.8cqi, 1.45rem);
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* B+ · тёплый крем + зерно бумаги */
+.cover--paper {
+  background:
+    linear-gradient(152deg, rgba(255, 255, 255, 0.42) 0%, transparent 38%, rgba(62, 54, 48, 0.035) 100%),
+    radial-gradient(ellipse 85% 55% at 18% 12%, rgba(255, 255, 255, 0.55), transparent 58%),
+    radial-gradient(ellipse 65% 45% at 92% 88%, rgba(167, 154, 138, 0.14), transparent 52%),
+    var(--cream);
+}
+
+.cover--paper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.085;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  mix-blend-mode: multiply;
+}
+
+.cover--paper > :not(.cover__wash) {
+  z-index: 1;
+}
+
+.cover__wash {
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  font-size: clamp(8rem, 38cqi, 22rem);
+  line-height: 1;
+  letter-spacing: var(--track);
+  color: var(--brown);
+  opacity: 0.052;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+.cover--b-plus .cover__inner {
+  justify-content: center;
+}
+
+.cover--b-plus .cover__chips {
+  margin-top: 1.35cqi;
+}
+
+.cover__chips {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: clamp(0.35rem, 1.4cqi, 1rem);
+  margin-top: 2.6cqi;
+  max-width: 92%;
+}
+
+.cover__chip,
+.chip {
+  padding: 0.5cqi 1.4cqi;
+  border-radius: 999px;
+  font-size: clamp(0.65rem, 2.2cqi, 1.2rem);
+  white-space: nowrap;
+  border: 2px solid rgba(62, 54, 48, 0.12);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.cover__chip--hot,
+.chip--hot {
+  border-color: rgba(229, 57, 53, 0.45);
+  background: rgba(229, 57, 53, 0.08);
+}
+
+.cover--d .cover__stamp {
+  position: absolute;
+  top: 9%;
+  right: 7%;
+  width: clamp(3.5rem, 14cqi, 7.5rem);
+  height: clamp(3.5rem, 14cqi, 7.5rem);
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  transform: rotate(-12deg);
+  font-size: clamp(0.55rem, 1.8cqi, 0.95rem);
+  color: var(--accent);
+  white-space: nowrap;
+  letter-spacing: 0.06em;
+  opacity: 0.92;
+}
+
+.cover--d .cover__version {
+  margin-top: 1.6cqi;
+  font-size: clamp(1.8rem, 7cqi, 4.2rem);
+  letter-spacing: -0.02em;
+}
+
+.cover--e .cover__ticks {
+  position: absolute;
+  left: 7%;
+  bottom: 14%;
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(3px, 0.5cqi, 8px);
+  opacity: 0.35;
+}
+
+.cover--e .tick {
+  width: clamp(4px, 0.9cqi, 10px);
+  background: var(--brown);
+  border-radius: 2px;
+}
+
+.cover--e .tick:nth-child(1) {
+  height: clamp(12px, 3cqi, 28px);
+}
+.cover--e .tick:nth-child(2) {
+  height: clamp(20px, 5cqi, 44px);
+}
+.cover--e .tick:nth-child(3) {
+  height: clamp(28px, 7cqi, 60px);
+  background: var(--accent);
+  opacity: 1;
+}
+.cover--e .tick:nth-child(4) {
+  height: clamp(18px, 4.5cqi, 38px);
+}
+.cover--e .tick:nth-child(5) {
+  height: clamp(10px, 2.5cqi, 22px);
+}
+
+.cover--e .cover__rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 22%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 8%,
+    rgba(62, 54, 48, 0.08) 20%,
+    rgba(62, 54, 48, 0.08) 80%,
+    transparent 92%
+  );
+  pointer-events: none;
+}
+
+.cover--f .cover__icon {
+  width: clamp(2.8rem, 11cqi, 5.5rem);
+  height: clamp(2.8rem, 11cqi, 5.5rem);
+  border-radius: 22.37%;
+  overflow: hidden;
+  margin-bottom: 1.8cqi;
+  box-shadow: 0 8px 24px rgba(62, 54, 48, 0.12);
+}
+
+.cover--f .cover__icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

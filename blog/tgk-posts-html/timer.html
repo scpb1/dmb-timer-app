@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ТГК — таймеры</title>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    .cover--timer-c .cover__choices {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: center;
+      align-items: flex-end;
+      gap: clamp(2.5rem, 11cqi, 7rem);
+      margin-top: 2.4cqi;
+    }
+    .cover--timer-c .choice {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5cqi;
+    }
+    .cover--timer-c .choice__letter {
+      font-size: clamp(3.5rem, 14cqi, 7rem);
+      line-height: 1;
+    }
+    .cover--timer-c .choice__bar {
+      width: clamp(2.5rem, 9cqi, 5rem);
+      height: clamp(4px, 0.55cqi, 8px);
+      border-radius: 999px;
+      background: var(--accent);
+    }
+    .cover--timer-c .choice__cap {
+      font-size: clamp(0.7rem, 2.4cqi, 1.2rem);
+      white-space: nowrap;
+      opacity: 0.92;
+    }
+    .cover--timer-b .cover__title--fit {
+      font-size: clamp(1.35rem, 5.4cqi, 3.1rem);
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все макеты</a>
+  <h1>таймеры</h1>
+  <p class="lead">Макет B как у релиза. Вариант C — ответ в комментарии буквой <strong>а</strong> или <strong>в</strong>.</p>
+
+  <div class="grid">
+    <article class="card">
+      <h2>A · скрин</h2>
+      <p class="hint">Просьба кинуть скрин таймера.</p>
+      <div class="cover-slot">
+        <div class="cover cover--b" data-export="timer-a">
+          <span class="cover__kicker">таймеры</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">твой таймер</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <span class="cover__line cover__sub">скинь скрин в комментарии</span>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>B · вопрос ддд</h2>
+      <p class="hint">Один заголовок-вопрос, без второй строки.</p>
+      <div class="cover-slot">
+        <div class="cover cover--b cover--timer-b" data-export="timer-b">
+          <span class="cover__kicker">таймеры</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--fit">сколько ддд осталось вам?</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>C · а или в</h2>
+      <p class="hint">Скрин или цифра — пишут букву в комментарии.</p>
+      <div class="cover-slot">
+        <div class="cover cover--b cover--timer-c" data-export="timer-c">
+          <span class="cover__kicker">таймеры</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">в комментарии</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <div class="cover__choices">
+              <div class="choice">
+                <span class="cover__line choice__letter">а</span>
+                <span class="choice__bar" aria-hidden="true"></span>
+                <span class="cover__line choice__cap">скрин</span>
+              </div>
+              <div class="choice">
+                <span class="cover__line choice__letter">в</span>
+                <span class="choice__bar" aria-hidden="true"></span>
+                <span class="cover__line choice__cap">цифра ддд</span>
+              </div>
+            </div>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <script src="wordmark.js"></script>
+  <script>
+    mountAllWordmarks();
+  </script>
+</body>
+</html>

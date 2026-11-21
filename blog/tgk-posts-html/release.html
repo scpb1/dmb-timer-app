@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ТГК — новая версия</title>
+  <link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+  <a class="back" href="index.html">← Все макеты</a>
+  <h1>новая версия</h1>
+  <p class="lead">
+    Выбери вариант или скажи, что смешать. Текст в посте — в подписи; на картинке только короткие строки.
+  </p>
+
+  <div class="grid">
+    <!-- A: база, как PNG, но одна строка под полоской -->
+    <article class="card">
+      <h2>A · база</h2>
+      <p class="hint">Две строки заголовка + полоска + одна короткая подпись.</p>
+      <div class="cover-slot">
+        <div class="cover cover--a" data-export="release-a">
+          <div class="cover__inner cover__stack">
+            <span class="cover__line cover__title">новая</span>
+            <span class="cover__line cover__title">версия</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <span class="cover__line cover__sub">список ниже</span>
+          </div>
+          <div class="cover__mark">
+            <span class="cover__line">ддд</span>
+            <span class="cover__bar" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- B: рубрика + pill с номером (утверждён) -->
+    <article class="card">
+      <h2>B · апдейт + версия · утверждён</h2>
+      <p class="hint">Сверху рубрика, по центру заголовок, pill с номером (подставляешь перед постом).</p>
+      <div class="cover-slot">
+        <div class="cover cover--b" data-export="release-b">
+          <span class="cover__kicker">апдейт приложения</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">новая версия</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <span class="cover__pill cover__line">v 1.0.4</span>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- B+ · B + бумага + водяной знак + чипы -->
+    <article class="card">
+      <h2>B+ · апдейт + текстура + чипы</h2>
+      <p class="hint">Тот же B: перед постом меняешь версию и слова в чипах (одна строка).</p>
+      <div class="cover-slot">
+        <div class="cover cover--b cover--b-plus cover--paper" data-export="release-b-plus">
+          <span class="cover__wash cover__line" aria-hidden="true">ддд</span>
+          <span class="cover__kicker">апдейт приложения</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">новая версия</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <span class="cover__pill cover__line">v 1.0.4</span>
+            <div class="cover__chips" aria-label="темы релиза">
+              <span class="chip chip--hot">таймер</span>
+              <span class="chip">дневник</span>
+              <span class="chip">фикс</span>
+            </div>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- C: чипы «что внутри» -->
+    <article class="card">
+      <h2>C · три чипа</h2>
+      <p class="hint">Одна строка тем в чипах — без абзацев.</p>
+      <div class="cover-slot">
+        <div class="cover cover--c" data-export="release-c">
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">новая версия</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <div class="cover__chips" aria-label="темы релиза">
+              <span class="chip chip--hot">таймер</span>
+              <span class="chip">дневник</span>
+              <span class="chip">виджет</span>
+            </div>
+          </div>
+          <div class="cover__mark">
+            <span class="cover__line">ддд</span>
+            <span class="cover__bar" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- D: штамп «вышло» + крупный номер -->
+    <article class="card">
+      <h2>D · штамп + номер</h2>
+      <p class="hint">Более «событийный» пост, акцент на версии.</p>
+      <div class="cover-slot">
+        <div class="cover cover--d" data-export="release-d">
+          <span class="cover__stamp" aria-hidden="true">вышло</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">новая версия</span>
+            <span class="cover__bar cover__bar--short" aria-hidden="true"></span>
+            <span class="cover__line cover__version">1.0.4</span>
+          </div>
+          <div class="cover__mark">
+            <span class="cover__line">ддд</span>
+            <span class="cover__bar" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- E: декор «счёт / отметки» -->
+    <article class="card">
+      <h2>E · отметки на линии</h2>
+      <p class="hint">Намёк на таймер без цифр ддд — тихий декор слева.</p>
+      <div class="cover-slot">
+        <div class="cover cover--e" data-export="release-e">
+          <span class="cover__rule" aria-hidden="true"></span>
+          <div class="cover__ticks" aria-hidden="true">
+            <span class="tick"></span>
+            <span class="tick"></span>
+            <span class="tick"></span>
+            <span class="tick"></span>
+            <span class="tick"></span>
+          </div>
+          <div class="cover__inner">
+            <span class="cover__line cover__title">новая</span>
+            <span class="cover__line cover__title">версия</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <span class="cover__line cover__sub">обнови когда удобно</span>
+          </div>
+          <div class="cover__mark">
+            <span class="cover__line">ддд</span>
+            <span class="cover__bar" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- F: иконка приложения -->
+    <article class="card">
+      <h2>F · иконка</h2>
+      <p class="hint">Связь со стором: мини-иконка wordmark, как на телефоне.</p>
+      <div class="cover-slot">
+        <div class="cover cover--f" data-export="release-f">
+          <div class="cover__inner">
+            <div class="cover__icon" id="app-icon-mini" aria-hidden="true"></div>
+            <span class="cover__line cover__title cover__title--sm">новая версия</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <span class="cover__line cover__sub">скачай · открой · проверь</span>
+          </div>
+          <div class="cover__mark">
+            <span class="cover__line">ддд</span>
+            <span class="cover__bar" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <script src="wordmark.js"></script>
+  <script>
+    mountAllWordmarks();
+
+    const LAYOUT = {
+      word: "ддд",
+      fontSize: 300,
+      textY: 580,
+      letterSpacing: "-0.04em",
+      stripe: { x: 328, y: 650, w: 368, h: 18, rx: 9 },
+    };
+
+    function iconSvg({ bg = "#FCF7DF", text = "#3E3630", accent = "#e53935" } = {}) {
+      const { word, fontSize, textY, letterSpacing, stripe } = LAYOUT;
+      return `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="1024" height="1024" fill="${bg}"/>
+        <text x="512" y="${textY}" text-anchor="middle" font-size="${fontSize}" font-weight="800" fill="${text}"
+          font-family="dmb-timer-sans-Bold, system-ui, sans-serif" letter-spacing="${letterSpacing}">${word}</text>
+        <rect x="${stripe.x}" y="${stripe.y}" width="${stripe.w}" height="${stripe.h}" rx="${stripe.rx}" fill="${accent}"/>
+      </svg>`;
+    }
+
+    const slot = document.getElementById("app-icon-mini");
+    if (slot) slot.innerHTML = iconSvg();
+  </script>
+</body>
+</html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ТГК — фидбек</title>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    .cover--feedback-a .cover__cols {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: center;
+      align-items: flex-start;
+      gap: clamp(1.5rem, 10cqi, 6.5rem);
+      margin-top: 2.2cqi;
+      max-width: 94%;
+    }
+    .cover--feedback-a .col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.45cqi;
+    }
+    .cover--feedback-a .col__word {
+      font-size: clamp(1.35rem, 5.2cqi, 3rem);
+      white-space: nowrap;
+    }
+    .cover--feedback-a .col__bar {
+      width: clamp(2.2rem, 8cqi, 4.5rem);
+      height: clamp(4px, 0.5cqi, 8px);
+      border-radius: 999px;
+      background: var(--accent);
+    }
+    .cover--feedback-a .col__cap {
+      font-size: clamp(0.65rem, 2.1cqi, 1.05rem);
+      white-space: nowrap;
+      color: var(--brown);
+      opacity: 0.9;
+    }
+    .cover--feedback-letters .cover__choices {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: center;
+      align-items: flex-end;
+      gap: clamp(1.25rem, 7cqi, 5rem);
+      margin-top: 2.2cqi;
+      max-width: 96%;
+    }
+    .cover--feedback-letters .choice {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.45cqi;
+    }
+    .cover--feedback-letters .choice__letter {
+      font-size: clamp(2.8rem, 11cqi, 6.5rem);
+      line-height: 1;
+    }
+    .cover--feedback-letters .choice__bar {
+      width: clamp(2rem, 8cqi, 4.2rem);
+      height: clamp(4px, 0.5cqi, 8px);
+      border-radius: 999px;
+      background: var(--accent);
+    }
+    .cover--feedback-letters .choice__cap {
+      font-size: clamp(0.62rem, 2cqi, 1rem);
+      white-space: nowrap;
+    }
+    .cover--feedback-letters.cover--letters-4 .cover__choices {
+      gap: clamp(0.85rem, 5cqi, 3.5rem);
+    }
+    .cover--feedback-letters.cover--letters-4 .choice__letter {
+      font-size: clamp(2.4rem, 9.5cqi, 5.5rem);
+    }
+    .cover--feedback-b .cover__chips {
+      margin-top: 1.6cqi;
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Все макеты</a>
+  <h1>фидбек</h1>
+  <p class="lead">Плюсы, минусы, баги, идеи — короткие строки, без абзацев на картинке.</p>
+
+  <div class="grid">
+    <article class="card">
+      <h2>A · три слова</h2>
+      <p class="hint">Классика: плюс / минус / баг и подпись снизу.</p>
+      <div class="cover-slot">
+        <div class="cover cover--feedback-a" data-export="feedback-a">
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">напиши мне</span>
+            <span class="cover__bar cover__bar--short" aria-hidden="true"></span>
+            <div class="cover__cols" aria-label="типы отзыва">
+              <div class="col">
+                <span class="cover__line col__word">плюс</span>
+                <span class="col__bar" aria-hidden="true"></span>
+                <span class="cover__line col__cap">зашло</span>
+              </div>
+              <div class="col">
+                <span class="cover__line col__word">минус</span>
+                <span class="col__bar" aria-hidden="true"></span>
+                <span class="cover__line col__cap">мешает</span>
+              </div>
+              <div class="col">
+                <span class="cover__line col__word">баг</span>
+                <span class="col__bar" aria-hidden="true"></span>
+                <span class="cover__line col__cap">сломалось</span>
+              </div>
+            </div>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>B · рубрика B</h2>
+      <p class="hint">Как релиз: рубрика, заголовок, одна строка тем.</p>
+      <div class="cover-slot">
+        <div class="cover cover--b cover--feedback-b" data-export="feedback-b">
+          <span class="cover__kicker">обратная связь</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">фидбек</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <span class="cover__line cover__sub">плюс · минус · баг</span>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>C · а б в</h2>
+      <p class="hint">В комментарии — буква и коротко, о чём пишешь.</p>
+      <div class="cover-slot">
+        <div class="cover cover--b cover--feedback-letters" data-export="feedback-c">
+          <span class="cover__kicker">обратная связь</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">в комментарии</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <div class="cover__choices">
+              <div class="choice">
+                <span class="cover__line choice__letter">а</span>
+                <span class="choice__bar" aria-hidden="true"></span>
+                <span class="cover__line choice__cap">плюс</span>
+              </div>
+              <div class="choice">
+                <span class="cover__line choice__letter">б</span>
+                <span class="choice__bar" aria-hidden="true"></span>
+                <span class="cover__line choice__cap">минус</span>
+              </div>
+              <div class="choice">
+                <span class="cover__line choice__letter">в</span>
+                <span class="choice__bar" aria-hidden="true"></span>
+                <span class="cover__line choice__cap">баг</span>
+              </div>
+            </div>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>D · а б в г</h2>
+      <p class="hint">Четыре типа ответа, включая идею.</p>
+      <div class="cover-slot">
+        <div class="cover cover--b cover--feedback-letters cover--letters-4" data-export="feedback-d">
+          <span class="cover__kicker">обратная связь</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">в комментарии</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <div class="cover__choices">
+              <div class="choice">
+                <span class="cover__line choice__letter">а</span>
+                <span class="choice__bar" aria-hidden="true"></span>
+                <span class="cover__line choice__cap">плюс</span>
+              </div>
+              <div class="choice">
+                <span class="cover__line choice__letter">б</span>
+                <span class="choice__bar" aria-hidden="true"></span>
+                <span class="cover__line choice__cap">минус</span>
+              </div>
+              <div class="choice">
+                <span class="cover__line choice__letter">в</span>
+                <span class="choice__bar" aria-hidden="true"></span>
+                <span class="cover__line choice__cap">баг</span>
+              </div>
+              <div class="choice">
+                <span class="cover__line choice__letter">г</span>
+                <span class="choice__bar" aria-hidden="true"></span>
+                <span class="cover__line choice__cap">идея</span>
+              </div>
+            </div>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>E · багрепорт</h2>
+      <p class="hint">Узкий пост: только поломки, просим скрин.</p>
+      <div class="cover-slot">
+        <div class="cover cover--b" data-export="feedback-e">
+          <span class="cover__kicker">обратная связь</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">багрепорт</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <span class="cover__line cover__sub">скрин в комментарии</span>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>F1 · чипы · все равные</h2>
+      <p class="hint">зашло · бесит · баг · идея — без акцента.</p>
+      <div class="cover-slot">
+        <div class="cover cover--b cover--feedback-b" data-export="feedback-f1">
+          <span class="cover__kicker">обратная связь</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">твой отзыв</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <div class="cover__chips" aria-label="темы">
+              <span class="chip">зашло</span>
+              <span class="chip">бесит</span>
+              <span class="chip">баг</span>
+              <span class="chip">идея</span>
+            </div>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>F2 · акцент «зашло»</h2>
+      <p class="hint">Пост про то, что зашло.</p>
+      <div class="cover-slot">
+        <div class="cover cover--b cover--feedback-b" data-export="feedback-f2">
+          <span class="cover__kicker">обратная связь</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">твой отзыв</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <div class="cover__chips" aria-label="темы">
+              <span class="chip chip--hot">зашло</span>
+              <span class="chip">бесит</span>
+              <span class="chip">баг</span>
+              <span class="chip">идея</span>
+            </div>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>F3 · акцент «бесит»</h2>
+      <p class="hint">Пост про то, что мешает.</p>
+      <div class="cover-slot">
+        <div class="cover cover--b cover--feedback-b" data-export="feedback-f3">
+          <span class="cover__kicker">обратная связь</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">твой отзыв</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <div class="cover__chips" aria-label="темы">
+              <span class="chip">зашло</span>
+              <span class="chip chip--hot">бесит</span>
+              <span class="chip">баг</span>
+              <span class="chip">идея</span>
+            </div>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>F4 · акцент «баг»</h2>
+      <p class="hint">Пост про поломки.</p>
+      <div class="cover-slot">
+        <div class="cover cover--b cover--feedback-b" data-export="feedback-f4">
+          <span class="cover__kicker">обратная связь</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">твой отзыв</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <div class="cover__chips" aria-label="темы">
+              <span class="chip">зашло</span>
+              <span class="chip">бесит</span>
+              <span class="chip chip--hot">баг</span>
+              <span class="chip">идея</span>
+            </div>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>F5 · акцент «идея»</h2>
+      <p class="hint">Пост про пожелания.</p>
+      <div class="cover-slot">
+        <div class="cover cover--b cover--feedback-b" data-export="feedback-f5">
+          <span class="cover__kicker">обратная связь</span>
+          <div class="cover__inner">
+            <span class="cover__line cover__title cover__title--sm">твой отзыв</span>
+            <span class="cover__bar cover__bar--title" aria-hidden="true"></span>
+            <div class="cover__chips" aria-label="темы">
+              <span class="chip">зашло</span>
+              <span class="chip">бесит</span>
+              <span class="chip">баг</span>
+              <span class="chip chip--hot">идея</span>
+            </div>
+          </div>
+          <div class="cover__mark cover__mark--icon" data-wordmark aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <script src="wordmark.js"></script>
+  <script>
+    mountAllWordmarks();
+  </script>
+</body>
+</html>
