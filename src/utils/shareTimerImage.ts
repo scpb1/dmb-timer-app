@@ -1,15 +1,44 @@
 import type { RefObject } from 'react';
 import { Alert, Dimensions, PixelRatio, View } from 'react-native';
+import { format } from 'date-fns';
+import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
 import { isMediaLibraryAvailable, isViewShotAvailable } from '@/utils/nativeAvailability';
 import { logger } from '@/utils/logger';
 
+function galleryPhotoName(date: Date = new Date()): string {
+  return `girly-ddd-${format(date, 'dd.MM.yyyy-HH-mm-ss')}.png`;
+}
+
+async function withGalleryFileName(fileUri: string): Promise<string> {
+  const cacheDir = FileSystem.cacheDirectory;
+  if (!cacheDir) {
+    return fileUri;
+  }
+
+  const dest = `${cacheDir}${galleryPhotoName()}`;
+  try {
+    const info = await FileSystem.getInfoAsync(dest);
+    if (info.exists) {
+      await FileSystem.deleteAsync(dest, { idempotent: true });
+    }
+    await FileSystem.copyAsync({ from: fileUri, to: dest });
+    return dest;
+  } catch (error) {
+    logger.error('Не удалось задать имя фото', error);
+    return fileUri;
+  }
+}
+
 function toFileUri(uri: string): string {
   return uri.startsWith('file://') ? uri : `file://${uri}`;
 }
 
-async function captureTimerImage(target: RefObject<View | null>): Promise<string | null> {
+async function captureTimerImage(
+  target: RefObject<View | null>,
+  captureSize?: { width: number; height: number },
+): Promise<string | null> {
   if (!isViewShotAvailable()) {
     Alert.alert('Ошибка', 'Не удалось подготовить картинку');
     return null;
@@ -20,8 +49,14 @@ async function captureTimerImage(target: RefObject<View | null>): Promise<string
     return null;
   }
 
-  const { width, height } = Dimensions.get('window');
+  const windowSize = Dimensions.get('window');
   const pixelRatio = PixelRatio.get();
+  const width = captureSize?.width ?? windowSize.width;
+  const height = captureSize?.height ?? windowSize.height;
+  if (width < 1 || height < 1) {
+    Alert.alert('Ошибка', 'Не удалось подготовить картинку');
+    return null;
+  }
   const { captureRef } = require('react-native-view-shot') as typeof import('react-native-view-shot');
   const uri = await captureRef(target, {
     format: 'png',
@@ -71,6 +106,8 @@ export interface ShareTimerImageOptions {
   alertTitle?: string;
   alertMessage?: string;
   shareDialogTitle?: string;
+  /** Размер снятого блока в поинтах. Без него снимается весь экран. */
+  captureSize?: { width: number; height: number };
 }
 
 export async function shareTimerImage(
@@ -81,10 +118,12 @@ export async function shareTimerImage(
   const alertMessage = options.alertMessage ?? 'Сохранить в галерею или отправить';
   const shareDialogTitle = options.shareDialogTitle ?? 'Таймер';
   try {
-    const fileUri = await captureTimerImage(target);
-    if (!fileUri) {
+    const capturedUri = await captureTimerImage(target, options.captureSize);
+    if (!capturedUri) {
       return;
     }
+
+    const fileUri = await withGalleryFileName(capturedUri);
 
     const buttons: {
       text: string;

@@ -67,20 +67,33 @@ export function useServiceSummaryAutoOpen(
 
     void tryOpen();
 
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const armMidnight = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      const next = new Date();
+      next.setHours(24, 0, 0, 0);
+      timeoutId = setTimeout(() => {
+        void tryOpen();
+        armMidnight();
+      }, Math.max(1000, next.getTime() - Date.now()));
+    };
+    armMidnight();
+
     const onAppStateChange = (status: AppStateStatus) => {
       if (status === 'active') {
         void tryOpen();
+        armMidnight();
       }
     };
     const appStateSub = AppState.addEventListener('change', onAppStateChange);
 
-    const intervalId = setInterval(() => {
-      void tryOpen();
-    }, 1000);
-
     return () => {
       appStateSub.remove();
-      clearInterval(intervalId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [demobTime]);
 }

@@ -1,29 +1,40 @@
-import { useCallback, useEffect, useState } from 'react';
-import { parseISO, startOfDay } from 'date-fns';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert } from 'react-native';
 import * as Crypto from 'expo-crypto';
 
 import { CONFIG_KEYS } from '@/types/config';
 import {
-  DEFAULT_CUSTOM_TIMERS_STORAGE,
   DEFAULT_TIMER_SETTINGS,
   SERVICE_TIMER_ID,
   normalizeProgressBarMode,
   type ActiveTimer,
   type CustomTimerRecord,
-  type CustomTimersStorage,
-  type ProgressBarMode,
-  type StatCardMode,
-  type TimerCenterDisplay,
   type TimerSettings,
-  type TimerType,
-  type TimerUpcomingPreviewMode,
 } from '@/types/timer';
-import { getConfig, setConfig } from '@/services/database';
+import { getConfigs, setConfig } from '@/services/database';
+import { registerMemoryCacheReset } from '@/services/memoryCaches';
 import {
-  clampBackgroundDim,
-  DEFAULT_BACKGROUND_DIM,
-  setTimerPhotoBackgroundActive,
-} from '@/utils/timerBackground';
+  isTimerSnapshotFresh,
+  markTimerSnapshotFresh,
+  TIMER_SNAPSHOT_KEYS,
+  timerSnapshotEpoch,
+} from '@/services/timerSnapshot';
+import {
+  customTimerRecordFromInput,
+  persistCustomTimers,
+  type CustomTimerInput,
+} from '@/services/customTimersRepository';
+import {
+  clearTimerSettingsCache,
+  getCachedTimerSettings,
+  persistTimerSettingsDiff,
+  rememberTimerSettings,
+  timerSettingsFromConfig,
+} from '@/services/timerSettingsRepository';
+import { parseStoredDate } from '@/utils/storedDate';
+import { rescheduleAppNotifications } from '@/services/holidayNotifications';
+import { clampBackgroundFocus } from '@/utils/coverImageFrame';
+import { clampBackgroundDim, setTimerPhotoBackgroundActive } from '@/utils/timerBackground';
 import {
   calculateServiceProgress,
   getCenterDisplayLabels,
@@ -33,13 +44,17 @@ import {
   type ServiceProgress,
   type TimeBreakdown,
 } from '@/utils/timerCalculations';
+import {
+  parseCustomTimersStorage,
+  pruneNotificationDisabledIds,
+  resolveActiveTimer,
+  withTimerNotificationEnabled,
+} from '@/utils/timerRecords';
 import { logger } from '@/utils/logger';
 import { updateTimerWidgets } from '@/utils/timerWidget';
 
-function serviceTimerNameFrom(partnerName: string): string {
-  const trimmed = partnerName.trim();
-  return trimmed || 'Служба';
-}
+export { clearTimerSettingsCache };
+export type { CustomTimerInput };
 
 interface ServiceTimerState {
   isLoading: boolean;
@@ -47,6 +62,7 @@ interface ServiceTimerState {
   enlistmentDate: Date | null;
   demobilizationDate: Date | null;
   customTimers: CustomTimerRecord[];
+  notificationDisabledIds: string[];
   activeTimer: ActiveTimer | null;
   settings: TimerSettings;
   progress: ServiceProgress | null;
@@ -55,226 +71,14 @@ interface ServiceTimerState {
   remainingBreakdown: TimeBreakdown | null;
 }
 
-export interface CustomTimerInput {
-  name: string;
-  startDate: Date;
-  endDate: Date;
-}
-
 interface UseServiceTimerResult extends ServiceTimerState {
   updateSettings: (partial: Partial<TimerSettings>) => Promise<void>;
   setActiveTimerId: (id: string) => Promise<void>;
+  setTimerNotificationsEnabled: (id: string, enabled: boolean) => Promise<void>;
   addCustomTimer: (input: CustomTimerInput) => Promise<boolean>;
   updateCustomTimer: (id: string, input: CustomTimerInput) => Promise<boolean>;
   deleteCustomTimer: (id: string) => Promise<void>;
   reload: () => Promise<void>;
-}
-
-function parseBoolConfig(value: string | null, defaultValue: boolean): boolean {
-  if (value == null || value === '') {
-    return defaultValue;
-  }
-  if (value === '0' || value === 'false') {
-    return false;
-  }
-  if (value === '1' || value === 'true') {
-    return true;
-  }
-  return defaultValue;
-}
-
-function parseTimerSettings(
-  timerType: string | null,
-  progressBarMode: string | null,
-  decimalPlaces: string | null,
-  centerDisplay: string | null,
-  statCardMode: string | null,
-  backgroundImageUri: string | null,
-  backgroundDim: string | null,
-  timerUpcomingPreview: string | null,
-  timerUpcomingPinnedRef: string | null,
-  photoStatCardBorder: string | null,
-  photoUpcomingCardBorder: string | null,
-  dotGridCellShape: string | null,
-  milestonesLayout: string | null,
-): TimerSettings {
-  const validModes: ProgressBarMode[] = ['percent', 'days', 'weeks', 'months'];
-  const validStatCardModes: StatCardMode[] = ['days', 'weeks', 'months'];
-  const validTypes: TimerType[] = ['circular', 'linear', 'frame', 'dotGrid', 'milestones'];
-  const validDotGridShapes = ['circle', 'heart'] as const;
-  const validMilestonesLayouts = ['spine', 'chips', 'checklist'] as const;
-  const validCenterDisplays: TimerCenterDisplay[] = ['remaining', 'elapsed'];
-  const validUpcomingModes: TimerUpcomingPreviewMode[] = ['off', 'nearest', 'pinned'];
-  const mode =
-    progressBarMode && validModes.includes(progressBarMode as ProgressBarMode)
-      ? (progressBarMode as ProgressBarMode)
-      : DEFAULT_TIMER_SETTINGS.progressBarMode;
-
-  const cardMode =
-    statCardMode && validStatCardModes.includes(statCardMode as StatCardMode)
-      ? (statCardMode as StatCardMode)
-      : DEFAULT_TIMER_SETTINGS.statCardMode;
-
-  const type =
-    timerType && validTypes.includes(timerType as TimerType)
-      ? (timerType as TimerType)
-      : DEFAULT_TIMER_SETTINGS.timerType;
-
-  const normalizedMode = normalizeProgressBarMode(type, mode);
-
-  const parsedDecimals =
-    decimalPlaces == null || decimalPlaces === '' ? NaN : Number(decimalPlaces);
-  const percentDecimalPlaces =
-    Number.isFinite(parsedDecimals) && parsedDecimals >= 0 && parsedDecimals <= 6
-      ? parsedDecimals
-      : DEFAULT_TIMER_SETTINGS.percentDecimalPlaces;
-
-  const display =
-    centerDisplay && validCenterDisplays.includes(centerDisplay as TimerCenterDisplay)
-      ? (centerDisplay as TimerCenterDisplay)
-      : DEFAULT_TIMER_SETTINGS.centerDisplay;
-
-  const upcomingPreview =
-    timerUpcomingPreview &&
-    validUpcomingModes.includes(timerUpcomingPreview as TimerUpcomingPreviewMode)
-      ? (timerUpcomingPreview as TimerUpcomingPreviewMode)
-      : DEFAULT_TIMER_SETTINGS.timerUpcomingPreview;
-
-  const pinnedRef = timerUpcomingPinnedRef?.trim() || null;
-
-  return {
-    timerType: type,
-    progressBarMode: normalizedMode,
-    percentDecimalPlaces,
-    centerDisplay: display,
-    statCardMode: cardMode,
-    backgroundImageUri: backgroundImageUri || null,
-    backgroundDim:
-      backgroundDim == null || backgroundDim === ''
-        ? DEFAULT_BACKGROUND_DIM
-        : clampBackgroundDim(Number(backgroundDim)),
-    timerUpcomingPreview: upcomingPreview,
-    timerUpcomingPinnedRef: pinnedRef,
-    photoStatCardBorder: parseBoolConfig(
-      photoStatCardBorder,
-      DEFAULT_TIMER_SETTINGS.photoStatCardBorder,
-    ),
-    photoUpcomingCardBorder: parseBoolConfig(
-      photoUpcomingCardBorder,
-      DEFAULT_TIMER_SETTINGS.photoUpcomingCardBorder,
-    ),
-    dotGridCellShape:
-      dotGridCellShape &&
-      validDotGridShapes.includes(dotGridCellShape as (typeof validDotGridShapes)[number])
-        ? (dotGridCellShape as TimerSettings['dotGridCellShape'])
-        : DEFAULT_TIMER_SETTINGS.dotGridCellShape,
-    milestonesLayout:
-      milestonesLayout &&
-      validMilestonesLayouts.includes(milestonesLayout as (typeof validMilestonesLayouts)[number])
-        ? (milestonesLayout as TimerSettings['milestonesLayout'])
-        : DEFAULT_TIMER_SETTINGS.milestonesLayout,
-  };
-}
-
-function parseCustomTimers(raw: string | null): CustomTimerRecord[] {
-  if (!raw) {
-    return DEFAULT_CUSTOM_TIMERS_STORAGE.timers;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as CustomTimersStorage;
-    if (!Array.isArray(parsed?.timers)) {
-      return [];
-    }
-
-    return parsed.timers.filter(
-      (timer): timer is CustomTimerRecord =>
-        Boolean(timer?.id && timer.name && timer.startDate && timer.endDate),
-    );
-  } catch {
-    return [];
-  }
-}
-
-function toActiveTimer(
-  id: string | null,
-  enlistmentDate: Date | null,
-  demobilizationDate: Date | null,
-  customTimers: CustomTimerRecord[],
-  partnerName: string,
-): ActiveTimer | null {
-  if (id && id !== SERVICE_TIMER_ID) {
-    const custom = customTimers.find((timer) => timer.id === id);
-    if (custom) {
-      return {
-        id: custom.id,
-        name: custom.name,
-        startDate: parseISO(custom.startDate),
-        endDate: parseISO(custom.endDate),
-        kind: 'custom',
-      };
-    }
-  }
-
-  if (enlistmentDate && demobilizationDate) {
-    return {
-      id: SERVICE_TIMER_ID,
-      name: serviceTimerNameFrom(partnerName),
-      startDate: enlistmentDate,
-      endDate: demobilizationDate,
-      kind: 'service',
-    };
-  }
-
-  return null;
-}
-
-async function loadTimerSettings(): Promise<TimerSettings> {
-  const [
-    timerType,
-    progressBarMode,
-    decimalPlaces,
-    centerDisplay,
-    statCardMode,
-    backgroundImageUri,
-    backgroundDim,
-    timerUpcomingPreview,
-    timerUpcomingPinnedRef,
-    photoStatCardBorder,
-    photoUpcomingCardBorder,
-    dotGridCellShape,
-    milestonesLayout,
-  ] = await Promise.all([
-    getConfig(CONFIG_KEYS.TIMER_TYPE),
-    getConfig(CONFIG_KEYS.PROGRESS_BAR_MODE),
-    getConfig(CONFIG_KEYS.PERCENT_DECIMAL_PLACES),
-    getConfig(CONFIG_KEYS.TIMER_CENTER_DISPLAY),
-    getConfig(CONFIG_KEYS.STAT_CARD_MODE),
-    getConfig(CONFIG_KEYS.TIMER_BACKGROUND_IMAGE),
-    getConfig(CONFIG_KEYS.TIMER_BACKGROUND_DIM),
-    getConfig(CONFIG_KEYS.TIMER_UPCOMING_PREVIEW),
-    getConfig(CONFIG_KEYS.TIMER_UPCOMING_PINNED_REF),
-    getConfig(CONFIG_KEYS.TIMER_PHOTO_STAT_BORDER),
-    getConfig(CONFIG_KEYS.TIMER_PHOTO_UPCOMING_BORDER),
-    getConfig(CONFIG_KEYS.DOT_GRID_CELL_SHAPE),
-    getConfig(CONFIG_KEYS.MILESTONES_LAYOUT),
-  ]);
-
-  return parseTimerSettings(
-    timerType,
-    progressBarMode,
-    decimalPlaces,
-    centerDisplay,
-    statCardMode,
-    backgroundImageUri,
-    backgroundDim,
-    timerUpcomingPreview,
-    timerUpcomingPinnedRef,
-    photoStatCardBorder,
-    photoUpcomingCardBorder,
-    dotGridCellShape,
-    milestonesLayout,
-  );
 }
 
 function computeTimerState(
@@ -312,40 +116,214 @@ function persistWidget(activeTimer: ActiveTimer | null, progress: ServiceProgres
   void updateTimerWidgets(activeTimer, progress);
 }
 
+export interface PublishedTimerView {
+  activeTimerId: string;
+  at: number;
+  progress: ServiceProgress;
+  centerDisplay: CenterDisplayValues;
+  passedBreakdown: TimeBreakdown;
+  remainingBreakdown: TimeBreakdown;
+}
+
+let publishedTimerView: PublishedTimerView | null = null;
+
+export function readPublishedTimerView(): PublishedTimerView | null {
+  return publishedTimerView;
+}
+
+export function computeActiveTimerView(
+  activeTimer: ActiveTimer,
+  settings: TimerSettings,
+  now: Date,
+): ReturnType<typeof computeTimerState> {
+  return computeTimerState(activeTimer, settings, now);
+}
+
+function publishTimerView(
+  activeTimerId: string,
+  computed: ReturnType<typeof computeTimerState>,
+): void {
+  if (
+    !computed.progress ||
+    !computed.centerDisplay ||
+    !computed.passedBreakdown ||
+    !computed.remainingBreakdown
+  ) {
+    return;
+  }
+  publishedTimerView = {
+    activeTimerId,
+    at: Date.now(),
+    progress: computed.progress,
+    centerDisplay: computed.centerDisplay,
+    passedBreakdown: computed.passedBreakdown,
+    remainingBreakdown: computed.remainingBreakdown,
+  };
+}
+
+/** Подписи и календарные числа. Секунды в разбивке сюда не входят: их рисует отдельная плашка. */
+function timerViewSignature(
+  settings: TimerSettings,
+  computed: ReturnType<typeof computeTimerState>,
+): string {
+  const mode = settings.progressBarMode;
+  const progress = computed.progress;
+  const center = computed.centerDisplay;
+  const passed = computed.passedBreakdown;
+  const remaining = computed.remainingBreakdown;
+  if (!progress || !center || !passed || !remaining) {
+    return '';
+  }
+  return [
+    settings.timerType,
+    mode,
+    settings.centerDisplay,
+    settings.percentDecimalPlaces,
+    settings.statCardMode,
+    progress.phase,
+    progress.totalDays,
+    progress.daysPassed,
+    progress.daysLeft,
+    progress.daysUntilStart,
+    progress.daysAfterEnd,
+    progress.filledSegments[mode],
+    progress.segmentCounts[mode],
+    progress.weeksPassed,
+    progress.weeksLeft,
+    progress.monthsPassed,
+    progress.monthsLeft,
+    progress.monthDaysPassed,
+    progress.monthDaysLeft,
+    center.primaryValue,
+    center.secondaryValue ?? '',
+    center.unitLabel,
+    passed.days,
+    passed.hours,
+    passed.minutes,
+    remaining.days,
+    remaining.hours,
+    remaining.minutes,
+  ].join('|');
+}
+
+interface StoredTimerSnapshot {
+  id: number;
+  enlistmentRaw: string | null;
+  demobilizationRaw: string | null;
+  customRaw: string | null;
+  activeId: string | null;
+  partnerName: string | null;
+  settings: TimerSettings;
+}
+
+let storedTimerSnapshot: StoredTimerSnapshot | null = null;
+let storedTimerRead: Promise<StoredTimerSnapshot> | null = null;
+let storedTimerSerial = 0;
+
+registerMemoryCacheReset(() => {
+  storedTimerSnapshot = null;
+  publishedTimerView = null;
+});
+
+async function readStoredTimerSnapshot(): Promise<StoredTimerSnapshot> {
+  if (storedTimerSnapshot && isTimerSnapshotFresh()) {
+    return storedTimerSnapshot;
+  }
+  if (storedTimerRead) {
+    return storedTimerRead;
+  }
+
+  const epoch = timerSnapshotEpoch();
+  storedTimerRead = (async () => {
+    const values = await getConfigs(TIMER_SNAPSHOT_KEYS);
+    const snapshot: StoredTimerSnapshot = {
+      id: storedTimerSerial + 1,
+      enlistmentRaw: values[CONFIG_KEYS.ENLISTMENT_DATE] ?? null,
+      demobilizationRaw: values[CONFIG_KEYS.DEMOBILIZATION_DATE] ?? null,
+      customRaw: values[CONFIG_KEYS.CUSTOM_TIMERS_DATA] ?? null,
+      activeId: values[CONFIG_KEYS.ACTIVE_TIMER_ID] ?? null,
+      partnerName: values[CONFIG_KEYS.PARTNER_NAME] ?? null,
+      settings: timerSettingsFromConfig(values),
+    };
+    storedTimerSerial = snapshot.id;
+    if (epoch === timerSnapshotEpoch()) {
+      storedTimerSnapshot = snapshot;
+      rememberTimerSettings(snapshot.settings);
+      markTimerSnapshotFresh();
+    }
+    return snapshot;
+  })().finally(() => {
+    storedTimerRead = null;
+  });
+
+  return storedTimerRead;
+}
+
+interface UseServiceTimerOptions {
+  /** Пересчёт прогресса каждую секунду. На экране настроек не нужен. */
+  tick?: boolean;
+}
+
 /** Загружает даты, доп. таймеры и пересчитывает прогресс каждую секунду */
-export function useServiceTimer(): UseServiceTimerResult {
+export function useServiceTimer(options?: UseServiceTimerOptions): UseServiceTimerResult {
   const [state, setState] = useState<ServiceTimerState>({
-    isLoading: true,
+    isLoading: getCachedTimerSettings() === null,
     partnerName: '',
     enlistmentDate: null,
     demobilizationDate: null,
     customTimers: [],
+    notificationDisabledIds: [],
     activeTimer: null,
-    settings: DEFAULT_TIMER_SETTINGS,
+    settings: getCachedTimerSettings() ?? DEFAULT_TIMER_SETTINGS,
     progress: null,
     centerDisplay: null,
     passedBreakdown: null,
     remainingBreakdown: null,
   });
+  const settingsRef = useRef(state.settings);
+  settingsRef.current = state.settings;
+  const recordsRef = useRef({
+    customTimers: state.customTimers,
+    notificationDisabledIds: state.notificationDisabledIds,
+    enlistmentDate: state.enlistmentDate,
+    demobilizationDate: state.demobilizationDate,
+    partnerName: state.partnerName,
+    activeTimer: state.activeTimer,
+  });
+  recordsRef.current = {
+    customTimers: state.customTimers,
+    notificationDisabledIds: state.notificationDisabledIds,
+    enlistmentDate: state.enlistmentDate,
+    demobilizationDate: state.demobilizationDate,
+    partnerName: state.partnerName,
+    activeTimer: state.activeTimer,
+  };
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const appliedSnapshotId = useRef<number | null>(null);
+  const viewSignatureRef = useRef('');
 
   const reload = useCallback(async () => {
     try {
-      const [enlistmentRaw, demobilizationRaw, customRaw, activeId, partnerName, settings] =
-        await Promise.all([
-        getConfig(CONFIG_KEYS.ENLISTMENT_DATE),
-        getConfig(CONFIG_KEYS.DEMOBILIZATION_DATE),
-        getConfig(CONFIG_KEYS.CUSTOM_TIMERS_DATA),
-        getConfig(CONFIG_KEYS.ACTIVE_TIMER_ID),
-        getConfig(CONFIG_KEYS.PARTNER_NAME),
-        loadTimerSettings(),
-      ]);
+      const snapshot = await readStoredTimerSnapshot();
+      if (appliedSnapshotId.current === snapshot.id) {
+        setState((prev) => (prev.isLoading ? { ...prev, isLoading: false } : prev));
+        return;
+      }
+      appliedSnapshotId.current = snapshot.id;
 
-      const enlistmentDate = enlistmentRaw ? parseISO(enlistmentRaw) : null;
-      const demobilizationDate = demobilizationRaw ? parseISO(demobilizationRaw) : null;
-      const customTimers = parseCustomTimers(customRaw);
-      const resolvedPartnerName = partnerName ?? '';
-      const activeTimer = toActiveTimer(
-        activeId,
+      const enlistmentDate = parseStoredDate(snapshot.enlistmentRaw);
+      const demobilizationDate = parseStoredDate(snapshot.demobilizationRaw);
+      const customStorage = parseCustomTimersStorage(snapshot.customRaw);
+      const customTimers = customStorage.timers;
+      const notificationDisabledIds = pruneNotificationDisabledIds(
+        customStorage.notificationDisabledIds,
+        [SERVICE_TIMER_ID, ...customTimers.map((timer) => timer.id)],
+      );
+      const resolvedPartnerName = snapshot.partnerName ?? '';
+      const { settings } = snapshot;
+      const activeTimer = resolveActiveTimer(
+        snapshot.activeId,
         enlistmentDate,
         demobilizationDate,
         customTimers,
@@ -353,6 +331,8 @@ export function useServiceTimer(): UseServiceTimerResult {
       );
 
       if (!activeTimer) {
+        viewSignatureRef.current = '';
+        publishedTimerView = null;
         setTimerPhotoBackgroundActive(Boolean(settings.backgroundImageUri));
         setState((prev) => ({
           ...prev,
@@ -361,6 +341,7 @@ export function useServiceTimer(): UseServiceTimerResult {
           enlistmentDate,
           demobilizationDate,
           customTimers,
+          notificationDisabledIds,
           activeTimer: null,
           settings,
           progress: null,
@@ -372,9 +353,9 @@ export function useServiceTimer(): UseServiceTimerResult {
         return;
       }
 
-      const now = new Date();
-      const computed = computeTimerState(activeTimer, settings, now);
-
+      const computed = computeTimerState(activeTimer, settings, new Date());
+      viewSignatureRef.current = timerViewSignature(settings, computed);
+      publishTimerView(activeTimer.id, computed);
       setTimerPhotoBackgroundActive(Boolean(settings.backgroundImageUri));
       setState({
         isLoading: false,
@@ -382,6 +363,7 @@ export function useServiceTimer(): UseServiceTimerResult {
         enlistmentDate,
         demobilizationDate,
         customTimers,
+        notificationDisabledIds,
         activeTimer,
         settings,
         ...computed,
@@ -398,99 +380,162 @@ export function useServiceTimer(): UseServiceTimerResult {
   }, [reload]);
 
   useEffect(() => {
+    if (options?.tick === false) {
+      return;
+    }
     const intervalId = setInterval(() => {
-      setState((prev) => {
-        if (!prev.activeTimer) {
-          return prev;
-        }
+      const prev = stateRef.current;
+      if (!prev.activeTimer) {
+        return;
+      }
 
-        const computed = computeTimerState(prev.activeTimer, prev.settings, new Date());
-        persistWidget(prev.activeTimer, computed.progress);
-        return {
-          ...prev,
-          ...computed,
-        };
+      const computed = computeTimerState(prev.activeTimer, prev.settings, new Date());
+      publishTimerView(prev.activeTimer.id, computed);
+      const signature = timerViewSignature(prev.settings, computed);
+      if (signature === viewSignatureRef.current) {
+        return;
+      }
+
+      viewSignatureRef.current = signature;
+      persistWidget(prev.activeTimer, computed.progress);
+      setState((current) => {
+        if (!current.activeTimer) {
+          return current;
+        }
+        return { ...current, ...computed };
       });
     }, 1000);
 
     return () => clearInterval(intervalId);
+  }, [options?.tick]);
+
+  const updateSettings = useCallback(async (partial: Partial<TimerSettings>) => {
+    const prevSettings = settingsRef.current;
+    const merged: TimerSettings = {
+      ...DEFAULT_TIMER_SETTINGS,
+      ...prevSettings,
+      ...partial,
+    };
+    const nextSettings: TimerSettings = {
+      ...merged,
+      progressBarMode: normalizeProgressBarMode(merged.timerType, merged.progressBarMode),
+      backgroundDim: clampBackgroundDim(merged.backgroundDim),
+      backgroundFocusX: clampBackgroundFocus(merged.backgroundFocusX),
+      backgroundFocusY: clampBackgroundFocus(merged.backgroundFocusY),
+    };
+    settingsRef.current = nextSettings;
+    rememberTimerSettings(nextSettings);
+    setTimerPhotoBackgroundActive(Boolean(nextSettings.backgroundImageUri));
+
+    setState((prev) => {
+      if (!prev.activeTimer) {
+        viewSignatureRef.current = '';
+        return { ...prev, settings: nextSettings };
+      }
+
+      const computed = computeTimerState(prev.activeTimer, nextSettings, new Date());
+      viewSignatureRef.current = timerViewSignature(nextSettings, computed);
+      publishTimerView(prev.activeTimer.id, computed);
+      persistWidget(prev.activeTimer, computed.progress);
+      return {
+        ...prev,
+        settings: nextSettings,
+        ...computed,
+      };
+    });
+
+    try {
+      await persistTimerSettingsDiff(prevSettings, nextSettings);
+    } catch (error) {
+      logger.error('Ошибка сохранения настроек таймера', error);
+    }
   }, []);
 
-  const updateSettings = useCallback(
-    async (partial: Partial<TimerSettings>) => {
-      const merged: TimerSettings = {
-        ...DEFAULT_TIMER_SETTINGS,
-        ...state.settings,
-        ...partial,
-      };
+  const persistCustomStorage = useCallback(
+    (timers: CustomTimerRecord[], notificationDisabledIds: string[]) =>
+      persistCustomTimers(timers, notificationDisabledIds),
+    [],
+  );
 
-      const nextSettings: TimerSettings = {
-        ...merged,
-        progressBarMode: normalizeProgressBarMode(merged.timerType, merged.progressBarMode),
-        backgroundDim: clampBackgroundDim(merged.backgroundDim),
-      };
+  const reportTimerSaveError = useCallback(
+    async (error: unknown) => {
+      logger.error('Не удалось сохранить таймер', error);
+      Alert.alert('Не удалось сохранить', 'Попробуйте ещё раз');
+      await reload();
+    },
+    [reload],
+  );
 
-      await Promise.all([
-        setConfig(CONFIG_KEYS.TIMER_TYPE, nextSettings.timerType),
-        setConfig(CONFIG_KEYS.PROGRESS_BAR_MODE, nextSettings.progressBarMode),
-        setConfig(CONFIG_KEYS.PERCENT_DECIMAL_PLACES, String(nextSettings.percentDecimalPlaces)),
-        setConfig(CONFIG_KEYS.TIMER_CENTER_DISPLAY, nextSettings.centerDisplay),
-        setConfig(CONFIG_KEYS.STAT_CARD_MODE, nextSettings.statCardMode),
-        setConfig(CONFIG_KEYS.TIMER_BACKGROUND_DIM, String(nextSettings.backgroundDim)),
-        setConfig(CONFIG_KEYS.TIMER_UPCOMING_PREVIEW, nextSettings.timerUpcomingPreview),
-        setConfig(
-          CONFIG_KEYS.TIMER_UPCOMING_PINNED_REF,
-          nextSettings.timerUpcomingPinnedRef ?? '',
-        ),
-        setConfig(
-          CONFIG_KEYS.TIMER_PHOTO_STAT_BORDER,
-          nextSettings.photoStatCardBorder ? '1' : '0',
-        ),
-        setConfig(
-          CONFIG_KEYS.TIMER_PHOTO_UPCOMING_BORDER,
-          nextSettings.photoUpcomingCardBorder ? '1' : '0',
-        ),
-        setConfig(CONFIG_KEYS.DOT_GRID_CELL_SHAPE, nextSettings.dotGridCellShape),
-        setConfig(CONFIG_KEYS.MILESTONES_LAYOUT, nextSettings.milestonesLayout),
-      ]);
-      await setConfig(
-        CONFIG_KEYS.TIMER_BACKGROUND_IMAGE,
-        nextSettings.backgroundImageUri ?? '',
+  const publishTimerLists = useCallback(
+    (timers: CustomTimerRecord[], notificationDisabledIds: string[], activeId: string) => {
+      const current = recordsRef.current;
+      const activeTimer = resolveActiveTimer(
+        activeId,
+        current.enlistmentDate,
+        current.demobilizationDate,
+        timers,
+        current.partnerName,
       );
-      setTimerPhotoBackgroundActive(Boolean(nextSettings.backgroundImageUri));
-
+      recordsRef.current = {
+        ...current,
+        customTimers: timers,
+        notificationDisabledIds,
+        activeTimer,
+      };
       setState((prev) => {
-        if (!prev.activeTimer) {
-          return { ...prev, settings: nextSettings };
+        const resolved = resolveActiveTimer(
+          activeId,
+          prev.enlistmentDate,
+          prev.demobilizationDate,
+          timers,
+          prev.partnerName,
+        );
+        if (!resolved) {
+          persistWidget(null, null);
+          return {
+            ...prev,
+            customTimers: timers,
+            notificationDisabledIds,
+            activeTimer: null,
+            progress: null,
+            centerDisplay: null,
+            passedBreakdown: null,
+            remainingBreakdown: null,
+          };
         }
-
-        const computed = computeTimerState(prev.activeTimer, nextSettings, new Date());
-        persistWidget(prev.activeTimer, computed.progress);
-
+        const computed = computeTimerState(resolved, prev.settings, new Date());
+        persistWidget(resolved, computed.progress);
         return {
           ...prev,
-          settings: nextSettings,
+          customTimers: timers,
+          notificationDisabledIds,
+          activeTimer: resolved,
           ...computed,
         };
       });
     },
-    [state.settings],
+    [],
   );
 
-  const persistCustomTimers = useCallback(async (timers: CustomTimerRecord[]) => {
-    await setConfig(CONFIG_KEYS.CUSTOM_TIMERS_DATA, JSON.stringify({ timers }));
-  }, []);
-
   const setActiveTimerId = useCallback(async (id: string) => {
+    const current = recordsRef.current;
+    const activeTimer = resolveActiveTimer(
+      id,
+      current.enlistmentDate,
+      current.demobilizationDate,
+      current.customTimers,
+      current.partnerName,
+    );
+    recordsRef.current = { ...current, activeTimer };
     setState((prev) => {
-      const activeTimer = toActiveTimer(
+      const resolved = resolveActiveTimer(
         id,
         prev.enlistmentDate,
         prev.demobilizationDate,
         prev.customTimers,
         prev.partnerName,
       );
-      if (!activeTimer) {
+      if (!resolved) {
         persistWidget(null, null);
         return {
           ...prev,
@@ -501,134 +546,126 @@ export function useServiceTimer(): UseServiceTimerResult {
           remainingBreakdown: null,
         };
       }
-      const computed = computeTimerState(activeTimer, prev.settings, new Date());
-      persistWidget(activeTimer, computed.progress);
-      return { ...prev, activeTimer, ...computed };
+      const computed = computeTimerState(resolved, prev.settings, new Date());
+      persistWidget(resolved, computed.progress);
+      return { ...prev, activeTimer: resolved, ...computed };
     });
-    await setConfig(CONFIG_KEYS.ACTIVE_TIMER_ID, id);
-  }, []);
+    try {
+      await setConfig(CONFIG_KEYS.ACTIVE_TIMER_ID, id);
+    } catch (error) {
+      recordsRef.current = current;
+      await reportTimerSaveError(error);
+    }
+  }, [reportTimerSaveError]);
+
+  const setTimerNotificationsEnabled = useCallback(
+    async (id: string, enabled: boolean) => {
+      const current = recordsRef.current;
+      const nextDisabled = withTimerNotificationEnabled(current.notificationDisabledIds, id, enabled);
+      const pruned = pruneNotificationDisabledIds(nextDisabled, [
+        SERVICE_TIMER_ID,
+        ...current.customTimers.map((timer) => timer.id),
+      ]);
+      recordsRef.current = { ...current, notificationDisabledIds: pruned };
+      setState((prev) => ({ ...prev, notificationDisabledIds: pruned }));
+      try {
+        await persistCustomStorage(current.customTimers, pruned);
+        void rescheduleAppNotifications();
+      } catch (error) {
+        recordsRef.current = current;
+        await reportTimerSaveError(error);
+      }
+    },
+    [persistCustomStorage, reportTimerSaveError],
+  );
 
   const addCustomTimer = useCallback(
     async (input: CustomTimerInput): Promise<boolean> => {
-      const name = input.name.trim();
-      if (!name || startOfDay(input.endDate) <= startOfDay(input.startDate)) {
+      const record = customTimerRecordFromInput(input, Crypto.randomUUID());
+      if (!record) {
         return false;
       }
 
-      const record: CustomTimerRecord = {
-        id: Crypto.randomUUID(),
-        name,
-        startDate: startOfDay(input.startDate).toISOString(),
-        endDate: startOfDay(input.endDate).toISOString(),
-      };
+      const current = recordsRef.current;
+      const nextTimers = [...current.customTimers, record];
+      const pruned = pruneNotificationDisabledIds(current.notificationDisabledIds, [
+        SERVICE_TIMER_ID,
+        ...nextTimers.map((timer) => timer.id),
+      ]);
+      publishTimerLists(nextTimers, pruned, record.id);
 
-      const nextTimers = [...state.customTimers, record];
-      await persistCustomTimers(nextTimers);
-      await setConfig(CONFIG_KEYS.ACTIVE_TIMER_ID, record.id);
-
-      setState((prev) => {
-        const activeTimer = toActiveTimer(
-          record.id,
-          prev.enlistmentDate,
-          prev.demobilizationDate,
-          nextTimers,
-          prev.partnerName,
-        );
-        if (!activeTimer) {
-          return { ...prev, customTimers: nextTimers };
-        }
-        const computed = computeTimerState(activeTimer, prev.settings, new Date());
-        persistWidget(activeTimer, computed.progress);
-        return { ...prev, customTimers: nextTimers, activeTimer, ...computed };
-      });
-
-      return true;
+      try {
+        await persistCustomStorage(nextTimers, pruned);
+        await setConfig(CONFIG_KEYS.ACTIVE_TIMER_ID, record.id);
+        void rescheduleAppNotifications();
+        return true;
+      } catch (error) {
+        recordsRef.current = current;
+        await reportTimerSaveError(error);
+        return false;
+      }
     },
-    [persistCustomTimers, state.customTimers],
+    [persistCustomStorage, publishTimerLists, reportTimerSaveError],
   );
 
   const updateCustomTimer = useCallback(
     async (id: string, input: CustomTimerInput): Promise<boolean> => {
-      const name = input.name.trim();
-      if (!name || startOfDay(input.endDate) <= startOfDay(input.startDate)) {
+      const record = customTimerRecordFromInput(input, id);
+      if (!record) {
         return false;
       }
 
-      const nextTimers = state.customTimers.map((timer) =>
-        timer.id === id
-          ? {
-              ...timer,
-              name,
-              startDate: startOfDay(input.startDate).toISOString(),
-              endDate: startOfDay(input.endDate).toISOString(),
-            }
-          : timer,
-      );
+      const current = recordsRef.current;
+      const nextTimers = current.customTimers.map((timer) => (timer.id === id ? record : timer));
+      const pruned = pruneNotificationDisabledIds(current.notificationDisabledIds, [
+        SERVICE_TIMER_ID,
+        ...nextTimers.map((timer) => timer.id),
+      ]);
+      const activeId = current.activeTimer?.id ?? SERVICE_TIMER_ID;
+      publishTimerLists(nextTimers, pruned, activeId);
 
-      await persistCustomTimers(nextTimers);
-      setState((prev) => {
-        const activeId = prev.activeTimer?.id ?? SERVICE_TIMER_ID;
-        const activeTimer = toActiveTimer(
-          activeId,
-          prev.enlistmentDate,
-          prev.demobilizationDate,
-          nextTimers,
-          prev.partnerName,
-        );
-        if (!activeTimer) {
-          return { ...prev, customTimers: nextTimers };
-        }
-        const computed = computeTimerState(activeTimer, prev.settings, new Date());
-        persistWidget(activeTimer, computed.progress);
-        return { ...prev, customTimers: nextTimers, activeTimer, ...computed };
-      });
-
-      return true;
+      try {
+        await persistCustomStorage(nextTimers, pruned);
+        void rescheduleAppNotifications();
+        return true;
+      } catch (error) {
+        recordsRef.current = current;
+        await reportTimerSaveError(error);
+        return false;
+      }
     },
-    [persistCustomTimers, state.customTimers],
+    [persistCustomStorage, publishTimerLists, reportTimerSaveError],
   );
 
   const deleteCustomTimer = useCallback(
     async (id: string) => {
-      const nextTimers = state.customTimers.filter((timer) => timer.id !== id);
-      await persistCustomTimers(nextTimers);
+      const current = recordsRef.current;
+      const nextTimers = current.customTimers.filter((timer) => timer.id !== id);
+      const pruned = pruneNotificationDisabledIds(current.notificationDisabledIds, [
+        SERVICE_TIMER_ID,
+        ...nextTimers.map((timer) => timer.id),
+      ]);
+      const nextActiveId =
+        current.activeTimer?.id === id ? SERVICE_TIMER_ID : (current.activeTimer?.id ?? SERVICE_TIMER_ID);
+      publishTimerLists(nextTimers, pruned, nextActiveId);
 
-      setState((prev) => {
-        const nextActiveId = prev.activeTimer?.id === id ? SERVICE_TIMER_ID : prev.activeTimer?.id;
-        if (nextActiveId) {
-          void setConfig(CONFIG_KEYS.ACTIVE_TIMER_ID, nextActiveId);
-        }
-        const activeTimer = toActiveTimer(
-          nextActiveId ?? SERVICE_TIMER_ID,
-          prev.enlistmentDate,
-          prev.demobilizationDate,
-          nextTimers,
-          prev.partnerName,
-        );
-        if (!activeTimer) {
-          persistWidget(null, null);
-          return {
-            ...prev,
-            customTimers: nextTimers,
-            activeTimer: null,
-            progress: null,
-            centerDisplay: null,
-            passedBreakdown: null,
-            remainingBreakdown: null,
-          };
-        }
-        const computed = computeTimerState(activeTimer, prev.settings, new Date());
-        persistWidget(activeTimer, computed.progress);
-        return { ...prev, customTimers: nextTimers, activeTimer, ...computed };
-      });
+      try {
+        await persistCustomStorage(nextTimers, pruned);
+        await setConfig(CONFIG_KEYS.ACTIVE_TIMER_ID, nextActiveId);
+        void rescheduleAppNotifications();
+      } catch (error) {
+        recordsRef.current = current;
+        await reportTimerSaveError(error);
+      }
     },
-    [persistCustomTimers, state.customTimers],
+    [persistCustomStorage, publishTimerLists, reportTimerSaveError],
   );
 
   return {
     ...state,
     updateSettings,
     setActiveTimerId,
+    setTimerNotificationsEnabled,
     addCustomTimer,
     updateCustomTimer,
     deleteCustomTimer,

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FEATURES } from '@/constants';
@@ -6,7 +6,7 @@ import { MilestonesChecklistList } from '@/components/timer/milestones/Milestone
 import { MilestonesChipsList } from '@/components/timer/milestones/MilestonesChipsList';
 import { MilestonesSpineList } from '@/components/timer/milestones/MilestonesSpineList';
 import { TimerVizSummaryCard } from '@/components/timer/TimerVizSummaryCard';
-import type { MilestonesLayout } from '@/types/timer';
+import type { MilestonesLayout, TimerCenterDisplay } from '@/types/timer';
 import type { DisplayEvent } from '@/types/events';
 import type { DisplayHoliday } from '@/types/holidays';
 import type { ServiceProgress } from '@/utils/timerCalculations';
@@ -31,7 +31,56 @@ interface TimerMilestonesTimelineDisplayProps {
   layout: MilestonesLayout;
   onDownloadArmyChecklist?: () => void;
   isDownloadingArmyChecklist?: boolean;
+  centerDisplay?: TimerCenterDisplay;
+  onCenterDisplayChange?: (display: TimerCenterDisplay) => void;
 }
+
+const MilestonesFeed = memo(function MilestonesFeed({
+  startDate,
+  endDate,
+  events,
+  holidays,
+  defaultListEventIds,
+  layout,
+  photoBackground,
+}: {
+  startDate: Date;
+  endDate: Date;
+  events: DisplayEvent[];
+  holidays: DisplayHoliday[];
+  defaultListEventIds: string[];
+  layout: 'spine' | 'checklist' | 'chips';
+  photoBackground: boolean;
+}) {
+  const range = useMemo(() => ({ start: startDate, end: endDate }), [endDate, startDate]);
+  const spineItems = useMemo(
+    () => buildEventsTimelineItems(events, holidays, range),
+    [events, holidays, range],
+  );
+  const checklistItems = useMemo(
+    () => buildDefaultEventsChecklistItems(events, defaultListEventIds, range),
+    [defaultListEventIds, events, range],
+  );
+  const theme = useAppTheme();
+  const items = layout === 'checklist' ? checklistItems : spineItems;
+  if (items.length === 0) {
+    const muted = photoBackground ? 'rgba(242, 240, 236, 0.78)' : theme.text.secondary;
+    return (
+      <Text style={[styles.empty, { color: muted }]}>
+        {layout === 'checklist'
+          ? 'Нет армейских событий в выбранном периоде'
+          : 'Нет событий и праздников в выбранном периоде'}
+      </Text>
+    );
+  }
+  if (layout === 'chips') {
+    return <MilestonesChipsList items={items} photoBackground={photoBackground} />;
+  }
+  if (layout === 'checklist') {
+    return <MilestonesChecklistList items={items} photoBackground={photoBackground} />;
+  }
+  return <MilestonesSpineList items={items} photoBackground={photoBackground} />;
+});
 
 function resolveMilestonesLayout(layout: MilestonesLayout): 'spine' | 'checklist' | 'chips' {
   if (layout === 'chips' && !FEATURES.milestonesChipsLayout) {
@@ -54,36 +103,22 @@ export function TimerMilestonesTimelineDisplay({
   layout: milestonesLayout,
   onDownloadArmyChecklist,
   isDownloadingArmyChecklist = false,
+  centerDisplay = 'remaining',
+  onCenterDisplayChange,
 }: TimerMilestonesTimelineDisplayProps) {
   const theme = useAppTheme();
   const effectiveLayout = resolveMilestonesLayout(milestonesLayout);
-  const range = useMemo(
-    () => ({ start: startDate, end: endDate }),
-    [startDate, endDate],
+  const list = (
+    <MilestonesFeed
+      startDate={startDate}
+      endDate={endDate}
+      events={events}
+      holidays={holidays}
+      defaultListEventIds={defaultListEventIds}
+      layout={effectiveLayout}
+      photoBackground={photoBackground}
+    />
   );
-
-  const spineItems = useMemo(
-    () => buildEventsTimelineItems(events, holidays, range),
-    [events, holidays, range],
-  );
-
-  const checklistItems = useMemo(
-    () => buildDefaultEventsChecklistItems(events, defaultListEventIds, range),
-    [events, defaultListEventIds, range],
-  );
-
-  const items = effectiveLayout === 'checklist' ? checklistItems : spineItems;
-
-  const muted = photoBackground ? 'rgba(242, 240, 236, 0.78)' : theme.text.secondary;
-
-  const list =
-    items.length === 0 ? null : effectiveLayout === 'chips' ? (
-      <MilestonesChipsList items={items} photoBackground={photoBackground} />
-    ) : effectiveLayout === 'checklist' ? (
-      <MilestonesChecklistList items={items} photoBackground={photoBackground} />
-    ) : (
-      <MilestonesSpineList items={items} photoBackground={photoBackground} />
-    );
 
   return (
     <View style={styles.wrapper}>
@@ -95,17 +130,11 @@ export function TimerMilestonesTimelineDisplay({
         photoBackground={photoBackground}
         dotGridUnitMode="days"
         upcomingHeadline={upcomingHeadline}
+        centerDisplay={centerDisplay}
+        onCenterDisplayChange={onCenterDisplayChange}
       />
 
-      {items.length === 0 ? (
-        <Text style={[styles.empty, { color: muted }]}>
-          {effectiveLayout === 'checklist'
-            ? 'Нет армейских событий в выбранном периоде'
-            : 'Нет событий и праздников в выбранном периоде'}
-        </Text>
-      ) : (
-        list
-      )}
+      {list}
 
       {effectiveLayout === 'checklist' && onDownloadArmyChecklist ? (
         <Pressable

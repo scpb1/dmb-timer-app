@@ -1,6 +1,8 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
+import { useSharedValue } from 'react-native-reanimated';
 
+import { ScrollRail } from '@/components/common/ScrollRail';
 import { TIMER_TYPE_LABELS, type TimerType } from '@/types/timer';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
@@ -49,6 +51,7 @@ function CircularTimerPreview({ trackColor, fillColor }: { trackColor: string; f
 interface TimerTypeTilePickerProps {
   value: TimerType;
   onChange: (value: TimerType) => void;
+  types?: TimerType[];
 }
 
 function TimerTypePreview({
@@ -129,10 +132,17 @@ function TimerTypePreview({
   }
 }
 
-export function TimerTypeTilePicker({ value, onChange }: TimerTypeTilePickerProps) {
+export function TimerTypeTilePicker({
+  value,
+  onChange,
+  types = TIMER_TYPES,
+}: TimerTypeTilePickerProps) {
   const theme = useAppTheme();
   const trackColor = theme.overlay.border;
   const fillColor = theme.text.primary;
+  const scrollX = useSharedValue(0);
+  const contentWidth = useSharedValue(0);
+  const viewportWidth = useSharedValue(0);
 
   return (
     <View style={styles.wrapper}>
@@ -141,8 +151,18 @@ export function TimerTypeTilePicker({ value, onChange }: TimerTypeTilePickerProp
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        scrollEventThrottle={16}
+        onScroll={(event) => {
+          scrollX.value = event.nativeEvent.contentOffset.x;
+        }}
+        onContentSizeChange={(width) => {
+          contentWidth.value = width;
+        }}
+        onLayout={(event) => {
+          viewportWidth.value = event.nativeEvent.layout.width;
+        }}
       >
-        {TIMER_TYPES.map((type) => {
+        {types.map((type) => {
           const isSelected = type === value;
           const title = TIMER_TYPE_LABELS[type];
           return (
@@ -179,6 +199,15 @@ export function TimerTypeTilePicker({ value, onChange }: TimerTypeTilePickerProp
           );
         })}
       </ScrollView>
+      <ScrollRail
+        axis="horizontal"
+        scrollOffset={scrollX}
+        contentLength={contentWidth}
+        viewportLength={viewportWidth}
+        trackColor={theme.overlay.border}
+        thumbColor={theme.text.secondary}
+        style={styles.hScrollRail}
+      />
     </View>
   );
 }
@@ -195,6 +224,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     gap: 10,
     paddingRight: 4,
+  },
+  hScrollRail: {
+    marginTop: 10,
   },
   tile: {
     width: 118,

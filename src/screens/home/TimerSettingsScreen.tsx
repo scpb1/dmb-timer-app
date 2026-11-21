@@ -1,40 +1,31 @@
 import {
   ActivityIndicator,
   Alert,
-  Image,
-  Platform,
-  StyleSheet,
-  Switch,
+  Dimensions,
   Text,
   View,
   Pressable,
 } from 'react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
-import * as ImagePicker from 'expo-image-picker';
 import { ScrollView } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
-import { addDays, startOfDay } from 'date-fns';
+import { useSharedValue } from 'react-native-reanimated';
 import { useFocusEffect } from '@react-navigation/native';
 
-import { APP_NAME, FEATURES } from '@/constants';
+import { FEATURES } from '@/constants';
 import { reloadAppSession } from '@/appSession';
 import { resetAllData } from '@/services/database';
 import {
   applyAppNotificationsPreference,
+  peekNotificationsEnabled,
   readNotificationsEnabled,
   rescheduleAppNotifications,
 } from '@/services/holidayNotifications';
-import { SettingsDropdown } from '@/components/common/SettingsDropdown';
-import { SettingsSegmented } from '@/components/common/SettingsSegmented';
-import { SettingsSlider } from '@/components/common/SettingsSlider';
-import { SettingsField } from '@/components/common/SettingsField';
-import { TimerTypeTilePicker } from '@/components/timer/TimerTypeTilePicker';
-import { DatePicker } from '@/components/common/DatePicker';
-import { ServiceDurationPresets } from '@/components/common/ServiceDurationPresets';
 import { ScreenBackground } from '@/components/common/ScreenBackground';
+import { ScrollRail } from '@/components/common/ScrollRail';
+import { TimerStickerSheet } from '@/components/timer/TimerStickerSheet';
 import type { HomeStackParamList } from '@/types/navigation';
 import {
   DEFAULT_TIMER_SETTINGS,
@@ -43,22 +34,29 @@ import {
   getProgressBarModeOptions,
   MILESTONES_LAYOUT_LABELS,
   normalizeProgressBarMode,
-  timerTypeUsesProgressBarModes,
   type DotGridCellShape,
   type MilestonesLayout,
   type StatCardMode,
   type TimerType,
   type TimerUpcomingPreviewMode,
 } from '@/types/timer';
-import { useServiceTimer } from '@/hooks/useServiceTimer';
+import { clearTimerSettingsCache, useServiceTimer } from '@/hooks/useServiceTimer';
 import { useTimerUpcoming } from '@/hooks/useTimerUpcoming';
 import type { TimerUpcomingRef } from '@/utils/timerUpcoming';
 import { useAppTheme } from '@/theme';
-import { typography } from '@/theme/typography';
-import { persistTimerBackground, removeTimerBackground } from '@/utils/timerBackground';
+import { timerSettingsStyles as styles } from '@/screens/home/timerSettingsStyles';
+import {
+  TimerSettingsActionsSection,
+  TimerSettingsDatesSection,
+  TimerSettingsDisplaySection,
+  TimerSettingsNamesSection,
+} from '@/screens/home/TimerSettingsSections';
 import { logger } from '@/utils/logger';
-import { useProfile } from '@/hooks/useProfile';
-import { isAndroidWidgetAvailable } from '@/utils/nativeAvailability';
+import { clearProfileSnapshot, useProfile } from '@/hooks/useProfile';
+import { isViewShotAvailable } from '@/utils/nativeAvailability';
+import { shareTimerImage } from '@/utils/shareTimerImage';
+import { getEventGlyph, getHolidayGlyph } from '@/utils/eventGlyphs';
+import { shouldOmitDemobilizationCountdown } from '@/utils/timerUpcoming';
 
 type Props = StackScreenProps<HomeStackParamList, 'TimerSettings'>;
 
@@ -113,26 +111,45 @@ function waitForOverlayPaint(): Promise<void> {
 }
 
 export function TimerSettingsScreen({ navigation }: Props) {
-  const { settings, updateSettings } = useServiceTimer();
+  const {
+    settings,
+    updateSettings,
+    activeTimer,
+    progress,
+    passedBreakdown,
+    remainingBreakdown,
+  } = useServiceTimer({ tick: false });
   const timerUpcoming = useTimerUpcoming(settings);
+  const reloadUpcoming = timerUpcoming.reload;
   const profile = useProfile();
-  const [isPickingBackground, setIsPickingBackground] = useState(false);
+  const reloadProfile = profile.reload;
   const [isSavingDates, setIsSavingDates] = useState(false);
-  const [userName, setUserName] = useState('');
-  const [partnerName, setPartnerName] = useState('');
-  const [enlistmentDate, setEnlistmentDate] = useState<Date | null>(null);
-  const [demobilizationDate, setDemobilizationDate] = useState<Date | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [userName, setUserName] = useState(profile.userName);
+  const [partnerName, setPartnerName] = useState(profile.partnerName);
+  const [enlistmentDate, setEnlistmentDate] = useState<Date | null>(profile.enlistmentDate);
+  const [demobilizationDate, setDemobilizationDate] = useState<Date | null>(
+    profile.demobilizationDate,
+  );
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(
+    peekNotificationsEnabled,
+  );
   const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
-  const dimShared = useSharedValue(settings.backgroundDim);
+  const [stickerExport, setStickerExport] = useState<'card' | 'withEvent' | null>(null);
+  const stickerRef = useRef<View>(null);
+  const stickerSizeRef = useRef({ width: 0, height: 0 });
+  const windowSize = Dimensions.get('window');
+  const stickerWidth = windowSize.width - 48;
   const theme = useAppTheme();
+  const settingsScrollY = useSharedValue(0);
+  const settingsContentHeight = useSharedValue(0);
+  const settingsViewportHeight = useSharedValue(0);
 
   useFocusEffect(
     useCallback(() => {
-      void profile.reload();
-      void timerUpcoming.reload();
+      void reloadProfile();
+      void reloadUpcoming();
       void readNotificationsEnabled().then(setNotificationsEnabled);
-    }, [profile.reload, timerUpcoming.reload]),
+    }, [reloadProfile, reloadUpcoming]),
   );
 
   useEffect(() => {
@@ -141,14 +158,6 @@ export function TimerSettingsScreen({ navigation }: Props) {
     setEnlistmentDate(profile.enlistmentDate);
     setDemobilizationDate(profile.demobilizationDate);
   }, [profile.userName, profile.partnerName, profile.enlistmentDate, profile.demobilizationDate]);
-
-  useEffect(() => {
-    dimShared.value = settings.backgroundDim;
-  }, [dimShared, settings.backgroundDim]);
-
-  const previewScrimStyle = useAnimatedStyle(() => ({
-    opacity: dimShared.value / 100,
-  }));
 
   const statCardMode = settings.statCardMode ?? DEFAULT_TIMER_SETTINGS.statCardMode;
   const isFrameTimer = settings.timerType === 'frame';
@@ -162,10 +171,9 @@ export function TimerSettingsScreen({ navigation }: Props) {
     settings.timerType,
     settings.progressBarMode,
   );
-  const pinnedRef =
-    settings.timerUpcomingPinnedRef ??
+  const pinnedRef = (settings.timerUpcomingPinnedRef ??
     timerUpcoming.pinOptions[0]?.value ??
-    ('event:predefined-enlistment' as TimerUpcomingRef);
+    'event:predefined-enlistment') as TimerUpcomingRef;
 
   const handleTimerTypeChange = (timerType: TimerType) => {
     updateSettings({
@@ -233,53 +241,67 @@ export function TimerSettingsScreen({ navigation }: Props) {
     }
   };
 
-  const handlePickBackground = async () => {
-    try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Нет доступа', 'Разрешите доступ к галерее, чтобы выбрать фон');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: false,
-        quality: 0.85,
-      });
-
-      const sourceUri = !result.canceled ? result.assets[0]?.uri : null;
-      if (!sourceUri) {
-        return;
-      }
-
-      setIsPickingBackground(true);
-      const savedUri = await persistTimerBackground(sourceUri);
-
-      try {
-        await updateSettings({ backgroundImageUri: savedUri });
-      } catch (error) {
-        await removeTimerBackground(savedUri);
-        throw error;
-      }
-
-      try {
-        await removeTimerBackground(settings.backgroundImageUri);
-      } catch (error) {
-        // Новый фон уже сохранён — ошибка уборки старого файла не должна его откатывать.
-        logger.error('Не удалось удалить предыдущий фон таймера', error);
-      }
-    } catch (error) {
-      logger.error('Ошибка выбора фона таймера', error);
-      Alert.alert('Не удалось установить фото', 'Попробуйте выбрать другое изображение');
-    } finally {
-      setIsPickingBackground(false);
+  const exportSticker = async (includeEvent: boolean) => {
+    if (!isViewShotAvailable()) {
+      Alert.alert('Ошибка', 'Не удалось подготовить картинку');
+      return;
     }
+
+    if (!activeTimer || !progress || !passedBreakdown || !remainingBreakdown) {
+      Alert.alert('Подождите', 'Таймер ещё не готов');
+      return;
+    }
+
+    if (includeEvent && !timerUpcoming.item) {
+      Alert.alert(
+        'Нет события',
+        'Включите «Событие на таймере» — ближайшее или закреплённое. Тогда его можно выгрузить вместе с плашкой.',
+      );
+      return;
+    }
+
+    stickerSizeRef.current = { width: 0, height: 0 };
+    setStickerExport(includeEvent ? 'withEvent' : 'card');
+    try {
+      let size: { width: number; height: number } | null = null;
+      for (let attempt = 0; attempt < 10 && !size; attempt += 1) {
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, attempt === 0 ? 80 : 40);
+        });
+        const measured = stickerSizeRef.current;
+        if (measured.width > 1 && measured.height > 1) {
+          size = { width: measured.width, height: measured.height };
+        }
+      }
+
+      if (!size) {
+        Alert.alert('Ошибка', 'Не удалось подготовить картинку');
+        return;
+      }
+
+      await shareTimerImage(stickerRef, {
+        captureSize: size,
+        alertTitle: includeEvent ? 'Плашка и событие' : 'Плашка',
+        alertMessage: 'Сохранить в галерею или отправить',
+        shareDialogTitle: includeEvent ? 'Плашка и событие' : 'Плашка',
+      });
+    } finally {
+      setStickerExport(null);
+    }
+  };
+
+  const handleExportSticker = () => {
+    Alert.alert('Выгрузить плашку', 'Что положить в картинку?', [
+      { text: 'Только плашку', onPress: () => void exportSticker(false) },
+      { text: 'Плашку и событие', onPress: () => void exportSticker(true) },
+      { text: 'Отмена', style: 'cancel' },
+    ]);
   };
 
   const handleDeleteAllData = () => {
     Alert.alert(
       'Удалить все данные?',
-      'Сотрутся таймер, события, праздники, настройки и фото на фоне. Приложение вернётся к первому запуску. Это нельзя отменить',
+      'Сотрутся таймер, дневник, звонки, встречи, фото, аудио и код дневника. Приложение вернётся к первому запуску. Это нельзя отменить',
       [
         { text: 'Отмена', style: 'cancel' },
         {
@@ -288,6 +310,8 @@ export function TimerSettingsScreen({ navigation }: Props) {
           onPress: () => {
             void (async () => {
               try {
+                clearProfileSnapshot();
+                clearTimerSettingsCache();
                 await resetAllData();
                 await rescheduleAppNotifications();
                 await reloadAppSession();
@@ -302,31 +326,10 @@ export function TimerSettingsScreen({ navigation }: Props) {
     );
   };
 
-  const handleRemoveBackground = () => {
-    Alert.alert('Убрать фото?', 'Вернуть обычный фон таймера?', [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Убрать',
-        style: 'destructive',
-        onPress: async () => {
-          const currentUri = settings.backgroundImageUri;
-          try {
-            await updateSettings({ backgroundImageUri: null });
-            await removeTimerBackground(currentUri);
-          } catch (error) {
-            logger.error('Ошибка удаления фона таймера', error);
-            Alert.alert('Ошибка', 'Не удалось убрать фото');
-          }
-        },
-      },
-    ]);
-  };
-
   return (
     <View style={styles.root}>
       <ScreenBackground />
-
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
@@ -343,383 +346,126 @@ export function TimerSettingsScreen({ navigation }: Props) {
           <View style={styles.headerSpacer} />
         </View>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <SettingsField label="Ваше имя" value={userName} onChangeText={setUserName} />
-          <View style={styles.fieldGap} />
-          <SettingsField
-            label="Имя любимого"
-            value={partnerName}
-            onChangeText={setPartnerName}
-          />
-          <Pressable
-            style={[styles.saveButton, { backgroundColor: theme.text.primary }]}
-            onPress={() => void handleSaveNames()}
-          >
-            <Text style={[styles.saveButtonText, { color: theme.text.inverse }]}>
-              Сохранить имена
-            </Text>
-          </Pressable>
-
-          <Text style={[styles.sectionLabel, styles.sectionSpacer, { color: theme.text.secondary }]}>
-            Даты службы
-          </Text>
-          <DatePicker
-            label="Дата призыва"
-            value={enlistmentDate}
-            onChange={setEnlistmentDate}
-          />
-          <View style={styles.fieldGap} />
-          <DatePicker
-            label="Дата дембеля"
-            value={demobilizationDate}
-            onChange={setDemobilizationDate}
-            minimumDate={enlistmentDate ?? undefined}
-          />
-          <ServiceDurationPresets
-            onSelect={(days) => {
-              if (!enlistmentDate) {
-                Alert.alert('Сначала дата призыва');
-                return;
-              }
-              setDemobilizationDate(addDays(startOfDay(enlistmentDate), days));
+        <View style={styles.scrollWrap}>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={(event) => {
+              settingsScrollY.value = event.nativeEvent.contentOffset.y;
             }}
-          />
-          <Pressable
-            style={[
-              styles.saveButton,
-              { backgroundColor: theme.text.primary },
-              FEATURES.timerSettingsSaveDatesOverlay &&
-                isSavingDates &&
-                styles.saveButtonDisabled,
-            ]}
-            onPress={() => void handleSaveDates()}
-            disabled={FEATURES.timerSettingsSaveDatesOverlay && isSavingDates}
-          >
-            <Text style={[styles.saveButtonText, { color: theme.text.inverse }]}>
-              Сохранить даты
-            </Text>
-          </Pressable>
-
-          <View style={[styles.switchRow, styles.sectionSpacer]}>
-            <View style={styles.notificationsLabelWrap}>
-              <Text style={[styles.switchLabel, { color: theme.text.primary }]}>
-                Уведомления о праздниках и событиях
-              </Text>
-              <Text style={[styles.notificationsHint, { color: theme.text.secondary }]}>
-                Напоминание в полночь в день события
-              </Text>
-            </View>
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={(value) => void handleNotificationsToggle(value)}
-              disabled={isUpdatingNotifications}
-              trackColor={{
-                false: 'rgba(167, 154, 138, 0.35)',
-                true: theme.text.accent,
-              }}
-              thumbColor="#FFFFFF"
-              accessibilityLabel="Уведомления о праздниках и событиях"
-            />
-          </View>
-
-          <Pressable
-            style={[
-              styles.themeLink,
-              styles.sectionSpacer,
-              {
-                backgroundColor: theme.overlay.fill,
-                borderColor: theme.overlay.border,
-              },
-            ]}
-            onPress={() => navigation.navigate('ColorThemes')}
-            accessibilityRole="button"
-            accessibilityLabel="Сменить тему приложения"
-          >
-            <View style={styles.themeLinkText}>
-              <Text style={[styles.themeLinkTitle, { color: theme.text.primary }]}>
-                Сменить тему
-              </Text>
-              <Text style={[styles.themeLinkHint, { color: theme.text.secondary }]}>
-                Фон, плашки и текст
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={22} color={theme.text.secondary} />
-          </Pressable>
-
-          <View style={styles.backgroundSection}>
-            <Text style={[styles.sectionLabel, { color: theme.text.secondary }]}>Фото на фоне</Text>
-
-            <View
-              style={[
-                styles.backgroundPreview,
-                {
-                  backgroundColor: theme.overlay.fill,
-                  borderColor: theme.overlay.border,
-                },
-              ]}
-            >
-              {settings.backgroundImageUri ? (
-                <>
-                  <Image
-                    source={{ uri: settings.backgroundImageUri }}
-                    style={styles.backgroundImage}
-                    resizeMode="cover"
-                  />
-                  <Animated.View style={[styles.previewScrim, previewScrimStyle]} />
-                </>
-              ) : (
-                <View style={styles.backgroundPlaceholder}>
-                  <Feather name="image" size={30} color={theme.text.secondary} />
-                  <Text style={[styles.placeholderText, { color: theme.text.secondary }]}>
-                    Обычный фон
-                  </Text>
-                </View>
-              )}
-
-              {isPickingBackground ? (
-                <View style={styles.previewLoader}>
-                  <ActivityIndicator color="#F2F0EC" />
-                </View>
-              ) : null}
-            </View>
-
-            <View style={styles.backgroundActions}>
-              <Pressable
-                style={[
-                  styles.photoButton,
-                  {
-                    backgroundColor: theme.overlay.fill,
-                    borderColor: theme.overlay.border,
-                  },
-                ]}
-                onPress={() => void handlePickBackground()}
-                disabled={isPickingBackground}
-              >
-                <Feather name="image" size={18} color={theme.text.primary} />
-                <Text style={[styles.photoButtonText, { color: theme.text.primary }]}>
-                  {settings.backgroundImageUri ? 'Заменить фото' : 'Выбрать фото'}
-                </Text>
-              </Pressable>
-
-              {settings.backgroundImageUri ? (
-                <Pressable
-                  style={[
-                    styles.removePhotoButton,
-                    {
-                      borderColor: theme.overlay.border,
-                      backgroundColor: theme.overlay.fill,
-                    },
-                  ]}
-                  onPress={handleRemoveBackground}
-                  disabled={isPickingBackground}
-                  accessibilityRole="button"
-                  accessibilityLabel="Убрать фото с фона"
-                >
-                  <Feather name="trash-2" size={19} color={theme.text.secondary} />
-                </Pressable>
-              ) : null}
-            </View>
-
-            {settings.backgroundImageUri ? (
-              <>
-                <SettingsSlider
-                  label="Затемнение"
-                  value={settings.backgroundDim}
-                  min={0}
-                  max={80}
-                  sharedValue={dimShared}
-                  onCommit={(backgroundDim) => {
-                    if (backgroundDim !== settings.backgroundDim) {
-                      void updateSettings({ backgroundDim });
-                    }
-                  }}
-                  formatValue={(value) => `${value}%`}
-                />
-
-                {FEATURES.showPhotoElementBorderSwitches ? (
-                  <>
-                    <View style={styles.switchRow}>
-                      <Text style={[styles.switchLabel, { color: theme.text.primary }]}>
-                        Окантовка элемента «Событие»
-                      </Text>
-                      <Switch
-                        value={settings.photoUpcomingCardBorder}
-                        onValueChange={(photoUpcomingCardBorder) =>
-                          void updateSettings({ photoUpcomingCardBorder })
-                        }
-                        trackColor={{
-                          false: 'rgba(167, 154, 138, 0.35)',
-                          true: theme.text.accent,
-                        }}
-                        thumbColor="#FFFFFF"
-                      />
-                    </View>
-
-                    <View style={styles.switchRow}>
-                      <Text style={[styles.switchLabel, { color: theme.text.primary }]}>
-                        Окантовка элемента «Таймер»
-                      </Text>
-                      <Switch
-                        value={settings.photoStatCardBorder}
-                        onValueChange={(photoStatCardBorder) =>
-                          void updateSettings({ photoStatCardBorder })
-                        }
-                        trackColor={{
-                          false: 'rgba(167, 154, 138, 0.35)',
-                          true: theme.text.accent,
-                        }}
-                        thumbColor="#FFFFFF"
-                      />
-                    </View>
-                  </>
-                ) : null}
-              </>
-            ) : null}
-
-            <Text style={[styles.backgroundHint, { color: theme.text.secondary }]}>
-              {settings.backgroundImageUri
-                ? 'Затемнение можно подкрутить, чтобы текст читался'
-                : 'Затемнение можно будет настроить после выбора'}
-            </Text>
-          </View>
-
-          <TimerTypeTilePicker value={settings.timerType} onChange={handleTimerTypeChange} />
-
-          {!isFrameTimer && timerTypeUsesProgressBarModes(settings.timerType) ? (
-            <>
-              <SettingsSegmented
-                label={isDotGridTimer ? 'Тип сетки' : 'Режим прогресс-бара'}
-                value={safeProgressBarMode}
-                options={progressModeOptions}
-                onChange={(progressBarMode) => updateSettings({ progressBarMode })}
-                equalWidth
-              />
-
-              {safeProgressBarMode === 'percent' ||
-              safeProgressBarMode === 'days' ||
-              isDotGridTimer ? (
-                <SettingsSegmented
-                  label="Знаков после запятой"
-                  value={settings.percentDecimalPlaces}
-                  options={DECIMAL_OPTIONS}
-                  onChange={(percentDecimalPlaces) => updateSettings({ percentDecimalPlaces })}
-                  equalWidth
-                  compact
-                />
-              ) : null}
-            </>
-          ) : null}
-
-          {isDotGridTimer ? (
-            <SettingsSegmented
-              label="Форма элементов сетки"
-              value={settings.dotGridCellShape}
-              options={DOT_GRID_CELL_SHAPE_OPTIONS}
-              onChange={(dotGridCellShape) => updateSettings({ dotGridCellShape })}
-              equalWidth
-            />
-          ) : null}
-
-          {isMilestonesTimer ? (
-            <SettingsSegmented
-              label="Вид ленты событий"
-              value={
-                settings.milestonesLayout === 'chips' && !FEATURES.milestonesChipsLayout
-                  ? 'spine'
-                  : settings.milestonesLayout
-              }
-              options={MILESTONES_LAYOUT_OPTIONS}
-              onChange={(milestonesLayout) => updateSettings({ milestonesLayout })}
-              equalWidth
-              hint={
-                MILESTONES_LAYOUT_HINTS[
-                  settings.milestonesLayout === 'chips' && !FEATURES.milestonesChipsLayout
-                    ? 'spine'
-                    : settings.milestonesLayout
-                ]
-              }
-            />
-          ) : null}
-
-          {!isFrameTimer && !isDotGridTimer ? (
-            <SettingsSegmented
-              label="Режим плашек"
-              value={statCardMode}
-              options={STAT_CARD_MODE_OPTIONS}
-              onChange={(statCardMode) => updateSettings({ statCardMode })}
-              equalWidth
-            />
-          ) : null}
-
-          <SettingsSegmented
-            label="Событие на таймере"
-            value={settings.timerUpcomingPreview}
-            options={UPCOMING_PREVIEW_OPTIONS}
-            onChange={(timerUpcomingPreview) => {
-              if (timerUpcomingPreview === 'pinned' && !settings.timerUpcomingPinnedRef) {
-                const first = timerUpcoming.pinOptions[0]?.value;
-                void updateSettings({
-                  timerUpcomingPreview,
-                  timerUpcomingPinnedRef: first ?? null,
-                });
-                return;
-              }
-              void updateSettings({ timerUpcomingPreview });
+            onContentSizeChange={(_width, height) => {
+              settingsContentHeight.value = height;
             }}
-            equalWidth
+            onLayout={(event) => {
+              settingsViewportHeight.value = event.nativeEvent.layout.height;
+            }}
+            keyboardShouldPersistTaps="handled"
+          >
+          <TimerSettingsNamesSection
+            theme={theme}
+            userName={userName}
+            partnerName={partnerName}
+            onChangeUserName={setUserName}
+            onChangePartnerName={setPartnerName}
+            onSave={() => void handleSaveNames()}
+          />
+          <TimerSettingsDatesSection
+            theme={theme}
+            enlistmentDate={enlistmentDate}
+            demobilizationDate={demobilizationDate}
+            isSaving={isSavingDates}
+            onChangeEnlistment={setEnlistmentDate}
+            onChangeDemobilization={setDemobilizationDate}
+            onSave={() => void handleSaveDates()}
+          />
+          <TimerSettingsDisplaySection
+            theme={theme}
+            settings={settings}
+            notificationsEnabled={notificationsEnabled}
+            isUpdatingNotifications={isUpdatingNotifications}
+            isDotGridTimer={isDotGridTimer}
+            isFrameTimer={isFrameTimer}
+            isMilestonesTimer={isMilestonesTimer}
+            safeProgressBarMode={safeProgressBarMode}
+            progressModeOptions={progressModeOptions}
+            statCardMode={statCardMode}
+            pinnedRef={pinnedRef}
+            pinOptions={timerUpcoming.pinOptions}
+            cellShapeOptions={DOT_GRID_CELL_SHAPE_OPTIONS}
+            milestonesOptions={MILESTONES_LAYOUT_OPTIONS}
+            milestonesHints={MILESTONES_LAYOUT_HINTS}
+            upcomingOptions={UPCOMING_PREVIEW_OPTIONS}
+            statCardOptions={STAT_CARD_MODE_OPTIONS}
+            decimalOptions={DECIMAL_OPTIONS}
+            onToggleNotifications={(value) => void handleNotificationsToggle(value)}
+            onOpenThemes={() => navigation.navigate('ColorThemes')}
+            onOpenPhoto={() => navigation.navigate('TimerPhoto')}
+            onTimerTypeChange={handleTimerTypeChange}
+            onUpdateSettings={updateSettings}
+          />
+          <TimerSettingsActionsSection
+            theme={theme}
+            exportDisabled={stickerExport != null}
+            onExport={handleExportSticker}
+            onDeleteAll={handleDeleteAllData}
           />
 
-          {settings.timerUpcomingPreview === 'pinned' && timerUpcoming.pinOptions.length > 0 ? (
-            <SettingsDropdown
-              label="Закрепить"
-              value={pinnedRef}
-              options={timerUpcoming.pinOptions}
-              onChange={(timerUpcomingPinnedRef) =>
-                void updateSettings({ timerUpcomingPinnedRef })
-              }
-            />
-          ) : null}
-
-          {FEATURES.widgets ? (
-            <View style={styles.widgetCard}>
-              <Text style={[styles.sectionLabel, { color: theme.text.secondary }]}>
-                Виджет на рабочий стол
-              </Text>
-              {Platform.OS === 'android' && isAndroidWidgetAvailable() ? (
-                <Text style={[styles.widgetText, { color: theme.text.primary }]}>
-                  {`Долгое нажатие на пустое место рабочего стола → «Виджеты» → найдите «${APP_NAME}» → перетащите на экран. Он показывает дни до дембеля, призыва или конца выбранного срока`}
-                </Text>
-              ) : Platform.OS === 'android' ? (
-                <Text style={[styles.widgetText, { color: theme.text.primary }]}>
-                  {`Виджет появится после сборки приложения с нативным модулем. Добавляется так: долгое нажатие на рабочий стол → «Виджеты» → «${APP_NAME}»`}
-                </Text>
-              ) : (
-                <Text style={[styles.widgetText, { color: theme.text.primary }]}>
-                  {`Виджет для iPhone пока недоступен. На Android: долгое нажатие на рабочий стол → «Виджеты» → «${APP_NAME}»`}
-                </Text>
-              )}
-            </View>
-          ) : null}
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.deleteAllLinkWrap,
-              styles.sectionSpacer,
-              pressed && styles.deleteAllLinkPressed,
-            ]}
-            onPress={handleDeleteAllData}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Удалить все данные"
-          >
-            <Text style={styles.deleteAllLinkText}>Удалить все данные</Text>
-          </Pressable>
-        </ScrollView>
+          </ScrollView>
+          <ScrollRail
+            axis="vertical"
+            scrollOffset={settingsScrollY}
+            contentLength={settingsContentHeight}
+            viewportLength={settingsViewportHeight}
+            trackColor={theme.overlay.border}
+            thumbColor={theme.text.secondary}
+            style={styles.vScrollRail}
+          />
+        </View>
       </SafeAreaView>
+
+      {stickerExport && activeTimer && progress && passedBreakdown && remainingBreakdown ? (
+        <View pointerEvents="none" style={styles.stickerHost} collapsable={false}>
+          <View
+            ref={stickerRef}
+            collapsable={false}
+            style={{ width: stickerWidth, backgroundColor: 'transparent' }}
+            onLayout={(event) => {
+              const { width, height } = event.nativeEvent.layout;
+              stickerSizeRef.current = { width, height };
+            }}
+          >
+            <TimerStickerSheet
+              includeEvent={stickerExport === 'withEvent'}
+              item={timerUpcoming.item}
+              glyph={
+                timerUpcoming.item
+                  ? timerUpcoming.item.kind === 'event'
+                    ? getEventGlyph(timerUpcoming.item.event)
+                    : getHolidayGlyph(timerUpcoming.item.holiday)
+                  : null
+              }
+              omitDemobilizationCountdown={shouldOmitDemobilizationCountdown(
+                settings.timerType,
+                settings.progressBarMode,
+                statCardMode,
+              )}
+              phase={progress.phase}
+              statCardMode={statCardMode}
+              kind={activeTimer.kind}
+              daysPassed={progress.daysPassed}
+              daysLeft={progress.daysLeft}
+              monthsPassed={progress.monthsPassed}
+              monthDaysPassed={progress.monthDaysPassed}
+              monthsLeft={progress.monthsLeft}
+              monthDaysLeft={progress.monthDaysLeft}
+              passed={passedBreakdown}
+              remaining={remainingBreakdown}
+            />
+          </View>
+        </View>
+      ) : null}
 
       {FEATURES.timerSettingsSaveDatesOverlay && isSavingDates ? (
         <View
@@ -741,231 +487,7 @@ export function TimerSettingsScreen({ navigation }: Props) {
           </View>
         </View>
       ) : null}
+
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    paddingBottom: 96,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 20,
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 44,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 8,
-    paddingBottom: 24,
-  },
-  backgroundSection: {
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  sectionLabel: {
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  backgroundPreview: {
-    width: '100%',
-    height: 180,
-    borderRadius: 4,
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-  backgroundImage: {
-    width: '100%',
-    height: '100%',
-  },
-  previewScrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(8, 8, 10, 1)',
-  },
-  backgroundPlaceholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  placeholderText: {
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 15,
-  },
-  previewLoader: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
-  },
-  backgroundActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 10,
-  },
-  photoButton: {
-    minHeight: 48,
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: 4,
-    borderWidth: 1,
-  },
-  photoButtonText: {
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 16,
-  },
-  removePhotoButton: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 4,
-    borderWidth: 1,
-  },
-  backgroundHint: {
-    marginTop: 8,
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginTop: 14,
-  },
-  switchLabel: {
-    flex: 1,
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  notificationsLabelWrap: {
-    flex: 1,
-    paddingRight: 8,
-  },
-  notificationsHint: {
-    marginTop: 4,
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  fieldGap: {
-    height: 10,
-  },
-  themeLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderRadius: 4,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 4,
-  },
-  themeLinkText: {
-    flex: 1,
-    paddingRight: 8,
-  },
-  themeLinkTitle: {
-    fontFamily: typography.fontFamily.sansBold,
-    fontSize: 16,
-  },
-  themeLinkHint: {
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 13,
-    marginTop: 2,
-  },
-  sectionSpacer: {
-    marginTop: 22,
-  },
-  saveButton: {
-    alignItems: 'center',
-    marginTop: 12,
-    marginBottom: 8,
-    borderRadius: 4,
-    paddingVertical: 13,
-  },
-  saveButtonDisabled: {
-    opacity: 0.55,
-  },
-  savingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 40,
-  },
-  savingCard: {
-    minWidth: 200,
-    alignItems: 'center',
-    gap: 14,
-    borderWidth: 1,
-    borderRadius: 4,
-    paddingVertical: 28,
-    paddingHorizontal: 32,
-  },
-  savingLabel: {
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 16,
-  },
-  saveButtonText: {
-    fontFamily: typography.fontFamily.sansBold,
-    fontSize: 15,
-  },
-  widgetCard: {
-    marginTop: 24,
-    padding: 16,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderWidth: 1,
-    borderColor: 'rgba(167, 154, 138, 0.25)',
-  },
-  widgetText: {
-    fontFamily: typography.fontFamily.sans,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  deleteAllLinkWrap: {
-    alignSelf: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-  },
-  deleteAllLinkPressed: {
-    opacity: 0.65,
-  },
-  deleteAllLinkText: {
-    fontFamily: typography.fontFamily.sansBold,
-    fontSize: 15,
-    color: '#bb322e',
-    textDecorationLine: 'underline',
-    textAlign: 'center',
-  },
-});

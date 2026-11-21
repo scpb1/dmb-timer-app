@@ -1,11 +1,9 @@
 import * as FileSystem from 'expo-file-system';
+import { SaveFormat, manipulateAsync } from 'expo-image-manipulator';
+import { Dimensions, PixelRatio } from 'react-native';
 
-const TIMER_BACKGROUND_DIRECTORY = 'timer-background/';
-
-function getImageExtension(uri: string): string {
-  const extension = uri.split('.').pop()?.split('?')[0]?.toLowerCase();
-  return extension && /^[a-z0-9]{2,5}$/.test(extension) ? extension : 'jpg';
-}
+import { TIMER_BACKGROUND_DIRECTORY } from '@/constants/mediaDirectories';
+import { imageExtension } from '@/utils/mediaExtension';
 
 function getBackgroundDirectory(): string {
   if (!FileSystem.documentDirectory) {
@@ -26,9 +24,21 @@ export async function persistTimerBackground(
     await FileSystem.makeDirectoryAsync(directory, { intermediates: true });
   }
 
-  const destination = `${directory}background-${Date.now()}.${getImageExtension(sourceUri)}`;
-  await FileSystem.copyAsync({ from: sourceUri, to: destination });
-  return destination;
+  const destination = `${directory}background-${Date.now()}.jpg`;
+  const width = Math.max(1, Math.round(Dimensions.get('window').width * PixelRatio.get()));
+
+  try {
+    const resized = await manipulateAsync(sourceUri, [{ resize: { width } }], {
+      compress: 0.85,
+      format: SaveFormat.JPEG,
+    });
+    await FileSystem.copyAsync({ from: resized.uri, to: destination });
+    return destination;
+  } catch {
+    const fallback = `${directory}background-${Date.now()}.${imageExtension(sourceUri)}`;
+    await FileSystem.copyAsync({ from: sourceUri, to: fallback });
+    return fallback;
+  }
 }
 
 export const DEFAULT_BACKGROUND_DIM = 32;

@@ -1,4 +1,5 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { DotGridCellShape } from '@/types/timer';
@@ -6,6 +7,18 @@ import type { DotGridCellShape } from '@/types/timer';
 export type DotGridLegendMarkKind = 'filled' | 'empty' | 'final';
 
 const LEGEND_SIZE = 11;
+
+function HeartMark({
+  filled,
+  color,
+  size,
+}: {
+  filled: boolean;
+  color: string;
+  size: number;
+}) {
+  return <FontAwesome name={filled ? 'heart' : 'heart-o'} size={size} color={color} />;
+}
 
 /** Мини-иконка для легенды сетки — та же форма, что у ячеек */
 export function DotGridLegendMark({
@@ -24,17 +37,9 @@ export function DotGridLegendMark({
   const filled = kind === 'filled';
   const isFinal = kind === 'final';
   const outline = isFinal ? accent : emptyBorder;
-  const fillColor = filled ? accent : 'transparent';
-  const stroke = filled ? accent : outline;
 
   if (shape === 'heart') {
-    return (
-      <MaterialCommunityIcons
-        name={filled ? 'heart' : 'heart-outline'}
-        size={size}
-        color={filled ? accent : stroke}
-      />
-    );
+    return <HeartMark filled={filled} color={filled ? accent : outline} size={size} />;
   }
 
   return (
@@ -43,9 +48,9 @@ export function DotGridLegendMark({
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: fillColor,
+        backgroundColor: filled ? accent : 'transparent',
         borderWidth: 1,
-        borderColor: stroke,
+        borderColor: filled ? accent : outline,
       }}
     />
   );
@@ -60,7 +65,7 @@ interface DotGridCellProps {
   cellSize: number;
 }
 
-export function DotGridCell({
+export const DotGridCell = memo(function DotGridCell({
   shape,
   filled,
   isFinal,
@@ -69,17 +74,11 @@ export function DotGridCell({
   cellSize,
 }: DotGridCellProps) {
   const outline = isFinal && !filled ? accent : emptyBorder;
-  const fillColor = filled ? accent : 'transparent';
-  const stroke = filled ? accent : outline;
 
   if (shape === 'heart') {
     return (
       <View style={[styles.heartWrap, { width: cellSize, height: cellSize }]}>
-        <MaterialCommunityIcons
-          name={filled ? 'heart' : 'heart-outline'}
-          size={cellSize}
-          color={filled ? accent : stroke}
-        />
+        <HeartMark filled={filled} color={filled ? accent : outline} size={cellSize} />
       </View>
     );
   }
@@ -92,19 +91,19 @@ export function DotGridCell({
           {
             width: cellSize,
             height: cellSize,
-            borderColor: stroke,
-            backgroundColor: fillColor,
+            borderColor: filled ? accent : outline,
+            backgroundColor: filled ? accent : 'transparent',
             borderWidth: 1,
           },
         ]}
       />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   circleWrap: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'center',
   },
   circle: {

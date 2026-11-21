@@ -1,10 +1,10 @@
+import { getConfig, setConfig } from '@/services/database';
+import { getTimerVisitCount, incrementTimerVisitCount } from '@/utils/timerVisitCount';
+
 jest.mock('@/services/database', () => ({
   getConfig: jest.fn(),
   setConfig: jest.fn(),
 }));
-
-import { getConfig, setConfig } from '@/services/database';
-import { getTimerVisitCount, incrementTimerVisitCount } from '@/utils/timerVisitCount';
 
 const getConfigMock = getConfig as jest.Mock;
 const setConfigMock = setConfig as jest.Mock;

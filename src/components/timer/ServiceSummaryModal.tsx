@@ -15,11 +15,9 @@ import { DembelCongratulationsBody } from '@/components/timer/DembelCongratulati
 import { TrackerStatGrid } from '@/components/trackers/TrackerStatGrid';
 import type { ServiceSummary } from '@/utils/serviceSummary';
 import { loadServiceSummarySafe, serviceSummaryHeroCaption } from '@/utils/serviceSummary';
+import { FEATURES } from '@/constants';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
-
-/** Пока показываем только поздравление; блоки звонков/встреч/дневника вернём позже */
-const SHOW_LEGACY_SUMMARY_STATS = false;
 
 interface ServiceSummaryModalProps {
   visible: boolean;
@@ -94,7 +92,7 @@ export function ServiceSummaryModal({
                   timerVisitCount={summary.timerVisitCount}
                 />
 
-                {SHOW_LEGACY_SUMMARY_STATS ? (
+                {FEATURES.legacySummaryStats ? (
                   <>
                     <View
                       style={[

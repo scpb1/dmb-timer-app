@@ -17,7 +17,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { SettingsField } from '@/components/common/SettingsField';
 import type { CustomTimerInput } from '@/hooks/useServiceTimer';
 import type { CustomTimerRecord } from '@/types/timer';
-import { colors } from '@/theme/colors';
+import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 interface ExtraTimerFormModalProps {
@@ -39,6 +39,7 @@ export function ExtraTimerFormModal({
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const theme = useAppTheme();
 
   useEffect(() => {
     if (!visible) {
@@ -90,24 +91,27 @@ export function ExtraTimerFormModal({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable style={styles.backdrop} onPress={onClose} />
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { backgroundColor: theme.background.start }]}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <View style={styles.header}>
-              <Text style={styles.title}>{timer ? 'Таймер' : 'Новый таймер'}</Text>
+              <Text style={[styles.title, { color: theme.text.primary }]}>
+                {timer ? 'Таймер' : 'Новый таймер'}
+              </Text>
               <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Закрыть">
-                <Feather name="x" size={22} color={colors.light.text.primary} />
+                <Feather name="x" size={22} color={theme.text.primary} />
               </Pressable>
             </View>
 
-            <SettingsField
-              label="Название"
-              value={name}
-              onChangeText={setName}
-              placeholder="Учебка, командировка…"
-            />
+            <SettingsField label="Название" value={name} onChangeText={setName} />
 
-            <DatePicker label="Начало" value={startDate} onChange={setStartDate} />
             <DatePicker
+              appearance="settings"
+              label="Начало"
+              value={startDate}
+              onChange={setStartDate}
+            />
+            <DatePicker
+              appearance="settings"
               label="Окончание"
               value={endDate}
               onChange={setEndDate}
@@ -115,16 +119,22 @@ export function ExtraTimerFormModal({
             />
 
             <Pressable
-              style={[styles.saveButton, isSaving && styles.disabled]}
+              style={[
+                styles.saveButton,
+                { backgroundColor: theme.text.primary },
+                isSaving && styles.disabled,
+              ]}
               onPress={() => void handleSave()}
               disabled={isSaving}
             >
-              <Text style={styles.saveButtonText}>{isSaving ? 'Сохранение…' : 'Сохранить'}</Text>
+              <Text style={[styles.saveButtonText, { color: theme.text.inverse }]}>
+                {isSaving ? 'Сохранение…' : 'Сохранить'}
+              </Text>
             </Pressable>
 
             {onDelete ? (
               <Pressable style={styles.deleteButton} onPress={handleDelete}>
-                <Text style={styles.deleteText}>Удалить таймер</Text>
+                <Text style={[styles.deleteText, { color: theme.text.accent }]}>Удалить таймер</Text>
               </Pressable>
             ) : null}
           </ScrollView>
@@ -145,7 +155,6 @@ const styles = StyleSheet.create({
   },
   sheet: {
     maxHeight: '88%',
-    backgroundColor: colors.light.background.start,
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
   },
@@ -163,18 +172,15 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 22,
-    color: colors.light.text.primary,
   },
   saveButton: {
     alignItems: 'center',
-    backgroundColor: colors.light.text.primary,
     borderRadius: 4,
     paddingVertical: 14,
   },
   saveButtonText: {
     fontFamily: typography.fontFamily.sansBold,
     fontSize: 16,
-    color: colors.light.background.start,
   },
   disabled: {
     opacity: 0.6,
@@ -186,6 +192,5 @@ const styles = StyleSheet.create({
   deleteText: {
     fontFamily: typography.fontFamily.sans,
     fontSize: 15,
-    color: colors.light.text.accent,
   },
 });

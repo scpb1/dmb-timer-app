@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,6 +13,7 @@ import type { ServiceProgress } from '@/utils/timerCalculations';
 import { getDotGridMetrics } from '@/utils/timerCalculations';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
+import { withAlpha } from '@/utils/color';
 
 export const TIMER_VIZ_GRID_H_PADDING = 2;
 
@@ -95,7 +96,7 @@ interface TimerDotGridProgressSectionProps {
   photoBackground?: boolean;
 }
 
-export function TimerDotGridProgressSection({
+export const TimerDotGridProgressSection = memo(function TimerDotGridProgressSection({
   mode,
   progress,
   cellShape,
@@ -103,14 +104,25 @@ export function TimerDotGridProgressSection({
 }: TimerDotGridProgressSectionProps) {
   const theme = useAppTheme();
   const { width: windowWidth } = useWindowDimensions();
-  const metrics = useMemo(() => getDotGridMetrics(mode, progress), [mode, progress]);
+  const gridProgress = useMemo(
+    () => ({
+      phase: progress.phase,
+      totalDays: progress.totalDays,
+      daysPassed: progress.daysPassed,
+      progressPercent: progress.progressPercent,
+    }),
+    [progress.daysPassed, progress.phase, progress.progressPercent, progress.totalDays],
+  );
+  const metrics = useMemo(() => getDotGridMetrics(mode, gridProgress), [gridProgress, mode]);
   const estimatedSectionWidth = Math.max(0, windowWidth - DOT_GRID_SCROLL_H_PADDING);
   const [measuredSectionWidth, setMeasuredSectionWidth] = useState(0);
   const sectionWidth =
     measuredSectionWidth > 0 ? measuredSectionWidth : estimatedSectionWidth;
 
   const accent = photoBackground ? '#F2F0EC' : theme.text.accent;
-  const emptyBorder = photoBackground ? 'rgba(242, 240, 236, 0.45)' : 'rgba(167, 154, 138, 0.45)';
+  const emptyBorder = photoBackground
+    ? 'rgba(242, 240, 236, 0.45)'
+    : withAlpha(theme.text.secondary, 0.45);
   const muted = photoBackground ? 'rgba(242, 240, 236, 0.78)' : theme.text.secondary;
 
   const innerWidth = Math.max(0, sectionWidth - TIMER_VIZ_GRID_H_PADDING * 2);
@@ -152,15 +164,22 @@ export function TimerDotGridProgressSection({
                 const filled = index < metrics.passed;
                 const isFinal = index === metrics.total - 1;
                 return (
-                  <DotGridCell
+                  <View
                     key={index}
-                    shape={cellShape}
-                    filled={filled}
-                    isFinal={isFinal}
-                    accent={accent}
-                    emptyBorder={emptyBorder}
-                    cellSize={cellSize}
-                  />
+                    style={[
+                      styles.cellSlot,
+                      { width: cellSize, height: cellSize },
+                    ]}
+                  >
+                    <DotGridCell
+                      shape={cellShape}
+                      filled={filled}
+                      isFinal={isFinal}
+                      accent={accent}
+                      emptyBorder={emptyBorder}
+                      cellSize={cellSize}
+                    />
+                  </View>
                 );
               })}
             </View>
@@ -168,7 +187,12 @@ export function TimerDotGridProgressSection({
         })}
       </View>
 
-      <View style={styles.legend}>
+      <View
+        style={[
+          styles.legend,
+          innerWidth > 0 ? { width: innerWidth, alignSelf: 'center' } : null,
+        ]}
+      >
         <LegendEntry
           shape={cellShape}
           markKind="filled"
@@ -196,7 +220,7 @@ export function TimerDotGridProgressSection({
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   dotSection: {
@@ -211,17 +235,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-start',
   },
+  cellSlot: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
   legend: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 12,
-    marginTop: 12,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    alignSelf: 'stretch',
+    maxWidth: '100%',
+    gap: 8,
+    marginTop: 14,
+    paddingHorizontal: 4,
   },
   legendEntry: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 5,
+    minWidth: 0,
   },
   legendItem: {
     fontFamily: typography.fontFamily.sans,

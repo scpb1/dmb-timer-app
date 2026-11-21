@@ -5,8 +5,9 @@ import { CenterDisplayToggle } from '@/components/timer/CenterDisplayToggle';
 import type { ProgressBarMode, TimerCenterDisplay } from '@/types/timer';
 import type { LinearDisplayValues } from '@/utils/timerCalculations';
 import { timerPhotoTextStyles } from '@/components/timer/timerPhotoStyles';
-import { colors, useAppTheme } from '@/theme';
+import { colors, useColorTheme } from '@/theme';
 import { typography } from '@/theme/typography';
+import { progressEmptyColor, progressFillColor } from '@/components/timer/progressSegmentColors';
 
 interface SegmentedLinearProgressProps {
   mode: ProgressBarMode;
@@ -51,7 +52,14 @@ export function SegmentedLinearProgress({
   const filled = Math.min(count, Math.max(0, filledCount));
   const [trackWidth, setTrackWidth] = useState(0);
   const gap = resolveSegmentGap(count, trackWidth);
-  const theme = useAppTheme();
+  const { theme: appTheme, colors: theme } = useColorTheme();
+  const fillColor = progressFillColor(theme.text.accent, photoBackground);
+  const emptyColor = progressEmptyColor(
+    theme.overlay.muted,
+    theme.text.secondary,
+    appTheme.scheme,
+    photoBackground,
+  );
 
   return (
     <View style={styles.wrapper}>
@@ -80,15 +88,7 @@ export function SegmentedLinearProgress({
                 key={`${index}-${isFilled ? 'on' : 'off'}`}
                 style={[
                   styles.segment,
-                  {
-                    backgroundColor: photoBackground
-                      ? isFilled
-                        ? '#F2F0EC'
-                        : 'rgba(242, 240, 236, 0.30)'
-                      : isFilled
-                        ? theme.text.accent
-                        : theme.overlay.muted,
-                  },
+                  { backgroundColor: isFilled ? fillColor : emptyColor },
                 ]}
               />
             );

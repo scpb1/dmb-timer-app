@@ -1,14 +1,14 @@
-jest.mock('@/services/database', () => ({
-  getConfig: jest.fn(),
-  setConfig: jest.fn(),
-  countDiaryEntriesByKind: jest.fn(),
-}));
-
 import {
   isDemobilizationDay,
   shouldAutoOpenServiceSummary,
   toDateKey,
 } from '@/utils/serviceSummary';
+
+jest.mock('@/services/database', () => ({
+  getConfig: jest.fn(),
+  setConfig: jest.fn(),
+  countDiaryEntriesByKind: jest.fn(),
+}));
 
 describe('serviceSummary', () => {
   it('ключ даты без времени', () => {

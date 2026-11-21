@@ -1,17 +1,12 @@
 import { StyleSheet, View } from 'react-native';
 
-import {
-  TIMER_VIZ_GRID_H_PADDING,
-  TimerDotGridProgressSection,
-} from '@/components/timer/TimerDotGridProgressSection';
+import { TimerDotGridProgressSection } from '@/components/timer/TimerDotGridProgressSection';
 import { TimerVizSummaryCard } from '@/components/timer/TimerVizSummaryCard';
-import type { DotGridCellShape, ProgressBarMode } from '@/types/timer';
+import type { DotGridCellShape, ProgressBarMode, TimerCenterDisplay } from '@/types/timer';
 import type { ServiceProgress } from '@/utils/timerCalculations';
 
 /** Горизонтальный padding плашки */
 export const TIMER_VIZ_CARD_H_PADDING = 14;
-/** @deprecated используй TIMER_VIZ_GRID_H_PADDING из TimerDotGridProgressSection */
-export { TIMER_VIZ_GRID_H_PADDING };
 
 interface TimerDotGridDisplayProps {
   mode: ProgressBarMode;
@@ -22,6 +17,8 @@ interface TimerDotGridDisplayProps {
   cellShape: DotGridCellShape;
   photoBackground?: boolean;
   upcomingHeadline?: string | null;
+  centerDisplay?: TimerCenterDisplay;
+  onCenterDisplayChange?: (display: TimerCenterDisplay) => void;
 }
 
 export function TimerDotGridDisplay({
@@ -33,6 +30,8 @@ export function TimerDotGridDisplay({
   cellShape,
   photoBackground = false,
   upcomingHeadline = null,
+  centerDisplay = 'remaining',
+  onCenterDisplayChange,
 }: TimerDotGridDisplayProps) {
   return (
     <View style={styles.wrapper}>
@@ -44,6 +43,8 @@ export function TimerDotGridDisplay({
         photoBackground={photoBackground}
         dotGridUnitMode={mode}
         upcomingHeadline={upcomingHeadline}
+        centerDisplay={centerDisplay}
+        onCenterDisplayChange={onCenterDisplayChange}
       />
 
       <TimerDotGridProgressSection

@@ -38,7 +38,7 @@ export function MilestonesChecklistList({
             key={item.id}
             style={[
               styles.row,
-              index > 0 && styles.rowBorder,
+              index > 0 && [styles.rowBorder, { borderTopColor: colors.unpassedBorder }],
               isHere && { backgroundColor: colors.hereBg, borderTopColor: 'transparent' },
             ]}
           >
@@ -91,7 +91,6 @@ const styles = StyleSheet.create({
   },
   rowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(167, 154, 138, 0.35)',
   },
   body: {
     flex: 1,

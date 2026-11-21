@@ -2,16 +2,13 @@ import { StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-na
 import { format, startOfDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
-import type { ProgressBarMode } from '@/types/timer';
+import { CenterDisplayToggle } from '@/components/timer/CenterDisplayToggle';
+import type { ProgressBarMode, TimerCenterDisplay } from '@/types/timer';
 import type { ServiceProgress } from '@/utils/timerCalculations';
-import {
-  formatProgressPercent,
-  getDotGridUnitsLeft,
-  getPhaseUnitLabel,
-} from '@/utils/timerCalculations';
-import { inflect } from '@/utils/inflection';
+import { getTimerVizSummaryCopy } from '@/utils/timerCalculations';
+import { timerVizUnpassedColor } from '@/components/timer/progressSegmentColors';
 import { timerPhotoTextStyles } from '@/components/timer/timerPhotoStyles';
-import { layout, useAppTheme } from '@/theme';
+import { layout, useAppTheme, useColorTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 
 interface TimerVizSummaryCardProps {
@@ -22,6 +19,8 @@ interface TimerVizSummaryCardProps {
   photoBackground?: boolean;
   dotGridUnitMode?: ProgressBarMode;
   upcomingHeadline?: string | null;
+  centerDisplay?: TimerCenterDisplay;
+  onCenterDisplayChange?: (display: TimerCenterDisplay) => void;
 }
 
 export function TimerVizUpcomingLabel({
@@ -91,46 +90,22 @@ export function TimerVizSummaryCard({
   photoBackground = false,
   dotGridUnitMode,
   upcomingHeadline = null,
+  centerDisplay = 'remaining',
+  onCenterDisplayChange,
 }: TimerVizSummaryCardProps) {
   const theme = useAppTheme();
+  const { theme: appTheme } = useColorTheme();
   const unitMode = dotGridUnitMode;
-  const useDotGridCounts = unitMode === 'weeks' || unitMode === 'months';
+  const copy = getTimerVizSummaryCopy(
+    progress,
+    unitMode,
+    decimalPlaces,
+    centerDisplay,
+    timerKind,
+  );
 
-  const weeksHero = useDotGridCounts
-    ? getDotGridUnitsLeft('weeks', progress)
-    : progress.phase === 'before'
-      ? Math.ceil(progress.daysUntilStart / 7)
-      : progress.phase === 'after'
-        ? 0
-        : progress.weeksLeft;
-
-  const monthsHero = useDotGridCounts
-    ? getDotGridUnitsLeft('months', progress)
-    : progress.phase === 'before'
-      ? Math.ceil(progress.daysUntilStart / 30)
-      : progress.phase === 'after'
-        ? 0
-        : progress.monthsLeft;
-
-  const daysHero =
-    progress.phase === 'before'
-      ? progress.daysUntilStart
-      : progress.phase === 'after'
-        ? progress.daysAfterEnd
-        : progress.daysLeft;
-
-  const remainingPercent =
-    progress.phase === 'before'
-      ? 100
-      : progress.phase === 'after'
-        ? 0
-        : (1 - progress.progressRatio) * 100;
-
-  const progressPercentLabel = `${formatProgressPercent(progress.progressPercent, decimalPlaces)}%`;
-  const remainingPercentValue = formatProgressPercent(remainingPercent, decimalPlaces);
   const endLabel = format(startOfDay(endDate), 'd MMM yyyy', { locale: ru });
   const barWidth = `${Math.min(100, Math.max(0, progress.progressRatio * 100))}%`;
-
   const isPercentPlaque = unitMode === 'percent';
 
   const cardStyle = [
@@ -143,132 +118,77 @@ export function TimerVizSummaryCard({
   const muted = photoBackground ? styles.photoMuted : { color: theme.text.secondary };
   const strong = photoBackground ? styles.photoText : { color: theme.text.primary };
   const barFillColor = photoBackground ? '#F2F0EC' : theme.text.accent;
-
-  const weeksSuffix =
-    progress.phase === 'before'
-      ? ` ${getPhaseUnitLabel(weeksHero, 'week', 'before', timerKind)}`
-      : progress.phase === 'after'
-        ? ` ${getPhaseUnitLabel(weeksHero, 'week', 'after', timerKind)}`
-        : ` ${inflect(weeksHero, 'week')} осталось`;
-
-  const monthsSuffix =
-    progress.phase === 'before'
-      ? ` ${getPhaseUnitLabel(monthsHero, 'month', 'before', timerKind)}`
-      : progress.phase === 'after'
-        ? ` ${getPhaseUnitLabel(monthsHero, 'month', 'after', timerKind)}`
-        : ` ${inflect(monthsHero, 'month')} осталось`;
-
-  const daysSuffix =
-    progress.phase === 'before'
-      ? ` ${getPhaseUnitLabel(daysHero, 'day', 'before', timerKind)}`
-      : progress.phase === 'after'
-        ? ` ${getPhaseUnitLabel(daysHero, 'day', 'after', timerKind)}`
-        : ' ддд';
-
-  const renderLeftCol = () => {
-    if (isPercentPlaque) {
-      return (
-        <HeroStatInline
-          value={remainingPercentValue}
-          suffix=" осталось"
-          strong={strong}
-          muted={muted}
-          photoBackground={photoBackground}
-          valueIncludesPercent
-        />
-      );
-    }
-    if (unitMode === 'days') {
-      return (
-        <HeroStatInline
-          value={String(daysHero)}
-          suffix={daysSuffix}
-          strong={strong}
-          muted={muted}
-          photoBackground={photoBackground}
-        />
-      );
-    }
-    if (unitMode === 'months') {
-      return (
-        <HeroStatInline
-          value={String(monthsHero)}
-          suffix={monthsSuffix}
-          strong={strong}
-          muted={muted}
-          photoBackground={photoBackground}
-        />
-      );
-    }
-    if (unitMode === 'weeks') {
-      return (
-        <HeroStatInline
-          value={String(weeksHero)}
-          suffix={weeksSuffix}
-          strong={strong}
-          muted={muted}
-          photoBackground={photoBackground}
-        />
-      );
-    }
-    return (
-      <HeroStatInline
-        value={String(weeksHero)}
-        suffix={weeksSuffix}
-        strong={strong}
-        muted={muted}
-        photoBackground={photoBackground}
-      />
-    );
-  };
-
-  const renderRightCol = () => {
-    if (isPercentPlaque) {
-      return (
-        <>
-          <Text style={[styles.metaBoldSans, strong, photoBackground && styles.photoText]}>
-            {daysHero}
-            {daysSuffix}
-          </Text>
-          <Text style={[styles.metaLine, muted]}>{endLabel}</Text>
-        </>
-      );
-    }
-    return (
-      <>
-        <Text style={[styles.metaStrong, strong]}>{progressPercentLabel}</Text>
-        <Text style={[styles.metaLine, muted]}>{endLabel}</Text>
-      </>
-    );
-  };
+  const barTrackColor = timerVizUnpassedColor(
+    theme.overlay.muted,
+    theme.text.secondary,
+    appTheme.scheme,
+    photoBackground,
+  );
 
   return (
-    <View style={cardStyle}>
-      <View style={styles.rowTop}>
-        <View style={styles.heroCol}>
-          {upcomingHeadline ? (
-            <Text style={[styles.upcomingInCard, muted]} numberOfLines={2}>
-              {upcomingHeadline}
-            </Text>
-          ) : null}
-          {renderLeftCol()}
+    <View style={styles.wrapper}>
+      {onCenterDisplayChange ? (
+        <View style={styles.toggleRow}>
+          <CenterDisplayToggle
+            value={centerDisplay}
+            onChange={onCenterDisplayChange}
+            photoBackground={photoBackground}
+          />
         </View>
-        <View style={styles.metaCol}>{renderRightCol()}</View>
-      </View>
+      ) : null}
 
-      <View style={[styles.barTrack, photoBackground && styles.barTrackPhoto]}>
-        <View
-          style={[
-            styles.barFill,
-            { width: barWidth as `${number}%`, backgroundColor: barFillColor },
-          ]}
-        />
+      <View style={cardStyle}>
+        <View style={styles.rowTop}>
+          <View style={styles.heroCol}>
+            {upcomingHeadline ? (
+              <Text style={[styles.upcomingInCard, muted]} numberOfLines={2}>
+                {upcomingHeadline}
+              </Text>
+            ) : null}
+            <HeroStatInline
+              value={copy.heroValue}
+              suffix={copy.heroSuffix}
+              strong={strong}
+              muted={muted}
+              photoBackground={photoBackground}
+              valueIncludesPercent={copy.heroIncludesPercent}
+            />
+          </View>
+          <View style={styles.metaCol}>
+            <Text
+              style={[
+                isPercentPlaque ? styles.metaBoldSans : styles.metaStrong,
+                strong,
+                photoBackground && styles.photoText,
+              ]}
+            >
+              {copy.metaPrimary}
+            </Text>
+            <Text style={[styles.metaLine, muted]}>{endLabel}</Text>
+          </View>
+        </View>
+
+        <View style={[styles.barTrack, { backgroundColor: barTrackColor }]}>
+          <View
+            style={[
+              styles.barFill,
+              { width: barWidth as `${number}%`, backgroundColor: barFillColor },
+            ]}
+          />
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    width: '100%',
+  },
+  toggleRow: {
+    width: '100%',
+    marginBottom: 8,
+  },
   card: {
     width: '100%',
     borderRadius: layout.cardBorderRadius,
@@ -340,11 +260,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     height: 6,
     borderRadius: 99,
-    backgroundColor: 'rgba(167, 154, 138, 0.28)',
     overflow: 'hidden',
-  },
-  barTrackPhoto: {
-    backgroundColor: 'rgba(242, 240, 236, 0.22)',
   },
   barFill: {
     height: '100%',

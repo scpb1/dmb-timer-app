@@ -1,5 +1,6 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { PositionedCoverImage } from '@/components/common/PositionedCoverImage';
 import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { ArmyEventsChecklistColumns } from '@/components/timer/milestones/ArmyEventsChecklistColumns';
 import { useAppTheme } from '@/theme';
@@ -12,7 +13,10 @@ import { typography } from '@/theme/typography';
 interface ArmyEventsChecklistShareCardProps {
   width: number;
   height: number;
-  settings: Pick<TimerSettings, 'backgroundImageUri' | 'backgroundDim'>;
+  settings: Pick<
+    TimerSettings,
+    'backgroundImageUri' | 'backgroundDim' | 'backgroundFocusX' | 'backgroundFocusY'
+  >;
   items: EventsTimelineItem[];
   showEventDates?: boolean;
 }
@@ -33,10 +37,13 @@ export function ArmyEventsChecklistShareCard({
     <View style={[styles.card, { width, height }]} collapsable={false}>
       {settings.backgroundImageUri ? (
         <>
-          <Image
-            source={{ uri: settings.backgroundImageUri }}
+          <PositionedCoverImage
+            uri={settings.backgroundImageUri}
+            focusX={settings.backgroundFocusX}
+            focusY={settings.backgroundFocusY}
+            width={width}
+            height={height}
             style={StyleSheet.absoluteFill}
-            resizeMode="cover"
           />
           <View
             style={[

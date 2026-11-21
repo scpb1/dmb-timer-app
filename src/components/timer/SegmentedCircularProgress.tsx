@@ -211,6 +211,7 @@ export function SegmentedCircularProgress({
 const styles = StyleSheet.create({
   block: {
     alignItems: 'center',
+    alignSelf: 'center',
   },
   toggleRow: {
     width: '100%',

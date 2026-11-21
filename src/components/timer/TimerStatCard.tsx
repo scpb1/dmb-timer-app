@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import {
+  solidWhiteStatCard,
+  solidWhiteStatCardColors,
   elapsedRemainingLabel,
   isElapsedRemainingLabel,
   statCardUnitText,
@@ -15,6 +17,7 @@ interface TimerStatCardProps {
   display: StatCardDisplay | undefined;
   photoBackground?: boolean;
   showBorder?: boolean;
+  solidWhite?: boolean;
 }
 
 export function TimerStatCard({
@@ -22,6 +25,7 @@ export function TimerStatCard({
   display,
   photoBackground = false,
   showBorder = true,
+  solidWhite = false,
 }: TimerStatCardProps) {
   const theme = useAppTheme();
   if (!display) {
@@ -29,6 +33,9 @@ export function TimerStatCard({
   }
 
   const microCaps = isElapsedRemainingLabel(title);
+  const onPhoto = photoBackground && !solidWhite;
+  const mutedColor = solidWhite ? solidWhiteStatCardColors.muted : theme.text.secondary;
+  const inkColor = solidWhite ? solidWhiteStatCardColors.ink : theme.text.primary;
 
   return (
     <View
@@ -38,15 +45,16 @@ export function TimerStatCard({
           backgroundColor: theme.overlay.fill,
           borderColor: theme.overlay.border,
         },
-        photoBackground && styles.photoCard,
+        onPhoto && styles.photoCard,
         !showBorder && styles.borderless,
+        solidWhite && solidWhiteStatCard.card,
       ]}
     >
       <Text
         style={[
           microCaps ? elapsedRemainingLabel.label : styles.phaseTitle,
-          { color: theme.text.secondary },
-          photoBackground && styles.photoText,
+          { color: solidWhite && !microCaps ? inkColor : mutedColor },
+          onPhoto && styles.photoText,
         ]}
       >
         {title}
@@ -56,8 +64,8 @@ export function TimerStatCard({
         <Text
           style={[
             styles.primaryValue,
-            { color: theme.text.primary },
-            photoBackground && timerPhotoTextStyles.heroNumber,
+            { color: inkColor },
+            onPhoto && timerPhotoTextStyles.heroNumber,
           ]}
         >
           {display.primaryValue}
@@ -65,28 +73,30 @@ export function TimerStatCard({
         <Text
           style={[
             styles.unitLabel,
-            { color: theme.text.secondary },
-            photoBackground && styles.photoText,
+            { color: mutedColor },
+            onPhoto && styles.photoText,
           ]}
         >
           {display.unitLabel}
         </Text>
       </View>
 
-      <View style={styles.detailBlock}>
-        {display.detailLines.map((line, index) => (
-          <Text
-            key={index}
-            style={[
-              styles.detailLine,
-              { color: theme.text.secondary },
-              photoBackground && styles.photoText,
-            ]}
-          >
-            {line}
-          </Text>
-        ))}
-      </View>
+      {display.detailLines.length > 0 ? (
+        <View style={styles.detailBlock}>
+          {display.detailLines.map((line, index) => (
+            <Text
+              key={index}
+              style={[
+                styles.detailLine,
+                { color: mutedColor },
+                onPhoto && styles.photoText,
+              ]}
+            >
+              {line}
+            </Text>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }

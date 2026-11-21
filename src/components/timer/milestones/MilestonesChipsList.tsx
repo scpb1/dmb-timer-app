@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { EventsTimelineItem } from '@/utils/eventsTimeline';
 import {
   getEventsTimelineEventPosition,
-  getEventsTimelineFillRatio,
+  getEventsTimelineVisualFillRatio,
 } from '@/utils/eventsTimeline';
 import { layout } from '@/theme';
 import { typography } from '@/theme/typography';
@@ -25,7 +25,7 @@ export function MilestonesChipsList({ items, photoBackground = false }: Mileston
     () => items.map((item) => getEventsTimelineEventPosition(items, item)),
     [items],
   );
-  const fillRatio = getEventsTimelineFillRatio(items);
+  const fillRatio = getEventsTimelineVisualFillRatio(items);
   const hereIndex = items.findIndex((item) => item.state === 'here');
   const scrollIndex =
     hereIndex >= 0 ? hereIndex : items.findIndex((item) => item.state === 'future');
@@ -41,7 +41,7 @@ export function MilestonesChipsList({ items, photoBackground = false }: Mileston
   return (
     <View style={styles.wrap}>
       <View style={styles.trackRow} accessibilityElementsHidden>
-        <View style={styles.track}>
+        <View style={[styles.track, { backgroundColor: colors.unpassedFill }]}>
           <View
             style={[
               styles.trackFill,
@@ -59,7 +59,7 @@ export function MilestonesChipsList({ items, photoBackground = false }: Mileston
                   { left: `${positions[index] * 100}%` },
                   {
                     borderColor: colors.nodeBorder,
-                    backgroundColor: photoBackground ? 'transparent' : colors.cardFill,
+                    backgroundColor: photoBackground ? 'transparent' : colors.unpassedFill,
                   },
                   (isPast || isHere) && {
                     backgroundColor: colors.accent,
@@ -150,7 +150,6 @@ const styles = StyleSheet.create({
     height: 10,
     position: 'relative',
     justifyContent: 'center',
-    backgroundColor: 'rgba(167, 154, 138, 0.28)',
     borderRadius: 99,
   },
   trackFill: {

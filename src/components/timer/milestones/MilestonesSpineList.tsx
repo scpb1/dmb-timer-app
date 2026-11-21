@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import type { EventsTimelineItem } from '@/utils/eventsTimeline';
 import { getEventsTimelineVisualFillRatio } from '@/utils/eventsTimeline';
@@ -8,6 +8,8 @@ import { typography } from '@/theme/typography';
 import { useMilestoneVizColors } from './useMilestoneVizColors';
 
 const ITEM_MIN_HEIGHT = 48;
+const VIRTUAL_ROW_HEIGHT = 58;
+const VIRTUAL_LIST_THRESHOLD = 32;
 const WRAP_PADDING_V = 4;
 const DOT_SIZE = 12;
 const ROW_PADDING_V = 9;
@@ -24,17 +26,80 @@ interface MilestonesSpineListProps {
   photoBackground?: boolean;
 }
 
-export function MilestonesSpineList({ items, photoBackground = false }: MilestonesSpineListProps) {
+function milestonesLayoutKey(items: EventsTimelineItem[]): string {
+  return items.map((item) => `${item.id}:${item.state}`).join('|');
+}
+
+const MilestoneFlatRow = memo(function MilestoneFlatRow({
+  item,
+  index,
+  count,
+  fillRatio,
+  photoBackground,
+}: {
+  item: EventsTimelineItem;
+  index: number;
+  count: number;
+  fillRatio: number;
+  photoBackground: boolean;
+}) {
+  const colors = useMilestoneVizColors(photoBackground);
+  const isHere = item.state === 'here';
+  const isPast = item.state === 'past';
+  const lineColor =
+    count <= 1 || index / Math.max(1, count - 1) <= fillRatio ? colors.accent : colors.unpassedFill;
+
+  return (
+    <View style={styles.flatRow}>
+      <View style={[styles.flatLine, { backgroundColor: lineColor }]} />
+      <View
+        style={[
+          styles.dot,
+          styles.flatDot,
+          {
+            borderColor: isHere ? colors.primary : isPast ? colors.accent : colors.nodeBorder,
+            backgroundColor:
+              isPast || isHere ? colors.accent : photoBackground ? 'transparent' : colors.cardFill,
+          },
+          isHere && styles.dotHere,
+          !isPast && !isHere && styles.dotFuture,
+        ]}
+      />
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.title,
+          { color: colors.primary },
+          photoBackground && styles.photoText,
+          !isPast && !isHere && styles.titleFuture,
+        ]}
+      >
+        {item.title}
+      </Text>
+      <Text numberOfLines={1} style={[styles.sub, { color: colors.muted }]}>
+        {item.subtitle}
+      </Text>
+    </View>
+  );
+});
+
+export const MilestonesSpineList = memo(function MilestonesSpineList({
+  items,
+  photoBackground = false,
+}: MilestonesSpineListProps) {
   const colors = useMilestoneVizColors(photoBackground);
   const fillRatio = getEventsTimelineVisualFillRatio(items);
   const timelineHeight = Math.max(120, items.length * ITEM_MIN_HEIGHT);
   const [spineMetrics, setSpineMetrics] = useState<{ top: number; height: number } | null>(null);
   const rowLayoutsRef = useRef<Map<number, number>>(new Map());
+  const itemsLayoutKey = useMemo(() => milestonesLayoutKey(items), [items]);
+  const [measureGeneration, setMeasureGeneration] = useState(0);
 
   useEffect(() => {
     rowLayoutsRef.current.clear();
     setSpineMetrics(null);
-  }, [items]);
+    setMeasureGeneration((generation) => generation + 1);
+  }, [itemsLayoutKey]);
 
   const syncSpineFromRows = useCallback(() => {
     if (items.length === 0) {
@@ -62,8 +127,41 @@ export function MilestonesSpineList({ items, photoBackground = false }: Mileston
     [syncSpineFromRows],
   );
 
+  const renderFlatRow = useCallback(
+    ({ item, index }: { item: EventsTimelineItem; index: number }) => (
+      <MilestoneFlatRow
+        item={item}
+        index={index}
+        count={items.length}
+        fillRatio={fillRatio}
+        photoBackground={photoBackground}
+      />
+    ),
+    [fillRatio, items.length, photoBackground],
+  );
+
+  if (items.length >= VIRTUAL_LIST_THRESHOLD) {
+    return (
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.id}
+        renderItem={renderFlatRow}
+        style={styles.flatList}
+        getItemLayout={(_data, index) => ({
+          length: VIRTUAL_ROW_HEIGHT,
+          offset: VIRTUAL_ROW_HEIGHT * index,
+          index,
+        })}
+        initialNumToRender={12}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews
+      />
+    );
+  }
+
   return (
-    <View style={[styles.wrap, { minHeight: timelineHeight }]}>
+    <View key={measureGeneration} style={[styles.wrap, { minHeight: timelineHeight }]}>
       {spineMetrics ? (
         <View
           style={[
@@ -71,6 +169,7 @@ export function MilestonesSpineList({ items, photoBackground = false }: Mileston
             {
               top: spineMetrics.top,
               height: spineMetrics.height,
+              backgroundColor: colors.unpassedFill,
             },
           ]}
         >
@@ -96,7 +195,11 @@ export function MilestonesSpineList({ items, photoBackground = false }: Mileston
               style={[
                 styles.dot,
                 {
-                  borderColor: isHere ? colors.primary : isPast ? colors.accent : colors.nodeBorder,
+                  borderColor: isHere
+                    ? colors.primary
+                    : isPast
+                      ? colors.accent
+                      : colors.nodeBorder,
                   backgroundColor:
                     isPast || isHere
                       ? colors.accent
@@ -124,7 +227,7 @@ export function MilestonesSpineList({ items, photoBackground = false }: Mileston
       })}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: {
@@ -138,7 +241,6 @@ const styles = StyleSheet.create({
     left: 10,
     width: 3,
     borderRadius: 99,
-    backgroundColor: 'rgba(167, 154, 138, 0.28)',
     overflow: 'hidden',
   },
   spineFill: {
@@ -187,6 +289,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
     lineHeight: 16,
+  },
+  flatList: {
+    width: '100%',
+    maxHeight: 520,
+  },
+  flatRow: {
+    height: VIRTUAL_ROW_HEIGHT,
+    paddingLeft: 42,
+    justifyContent: 'center',
+  },
+  flatLine: {
+    position: 'absolute',
+    left: 15,
+    top: 0,
+    bottom: 0,
+    width: 3,
+  },
+  flatDot: {
+    left: 10,
+    top: 21,
   },
   photoText: {
     color: '#F2F0EC',

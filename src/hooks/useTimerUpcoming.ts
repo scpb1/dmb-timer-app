@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { parseISO } from 'date-fns';
 
 import { CONFIG_KEYS } from '@/types/config';
 import type { DisplayEvent } from '@/types/events';
@@ -26,6 +25,7 @@ import {
   type TimerUpcomingItem,
   type TimerUpcomingRef,
 } from '@/utils/timerUpcoming';
+import { loadTimerRecords } from '@/utils/timerRecords';
 import { logger } from '@/utils/logger';
 
 export interface TimerUpcomingPinOption {
@@ -64,43 +64,43 @@ export function useTimerUpcoming(
 
   const reload = useCallback(async () => {
     try {
-      const [enlistmentRaw, demobilizationRaw, eventsRaw, holidaysRaw] = await Promise.all([
-        getConfig(CONFIG_KEYS.ENLISTMENT_DATE),
-        getConfig(CONFIG_KEYS.DEMOBILIZATION_DATE),
+      const [eventsRaw, holidaysRaw, timerRecords] = await Promise.all([
         getConfig(CONFIG_KEYS.EVENTS_DATA),
         getConfig(CONFIG_KEYS.HOLIDAYS_DATA),
+        loadTimerRecords(),
       ]);
 
-      if (!enlistmentRaw || !demobilizationRaw) {
+      if (!timerRecords.activeTimer) {
         setEvents([]);
         setHolidays([]);
         setDefaultListEventIds([]);
         return;
       }
 
-      const enlistmentDate = parseISO(enlistmentRaw);
-      const demobilizationDate = parseISO(demobilizationRaw);
-      const serviceRange = { start: enlistmentDate, end: demobilizationDate };
+      const range = {
+        start: timerRecords.activeTimer.startDate,
+        end: timerRecords.activeTimer.endDate,
+      };
       const now = new Date();
 
       let eventsStorage = parseEventsStorage(eventsRaw);
-      const migration = migrateEventsStorageDefaultList(
-        eventsStorage,
-        enlistmentDate,
-        demobilizationDate,
-      );
-      eventsStorage = migration.storage;
-      if (migration.changed) {
-        await setConfig(CONFIG_KEYS.EVENTS_DATA, JSON.stringify(eventsStorage));
+      if (timerRecords.enlistmentDate && timerRecords.demobilizationDate) {
+        const migration = migrateEventsStorageDefaultList(
+          eventsStorage,
+          timerRecords.enlistmentDate,
+          timerRecords.demobilizationDate,
+        );
+        eventsStorage = migration.storage;
+        if (migration.changed) {
+          await setConfig(CONFIG_KEYS.EVENTS_DATA, JSON.stringify(eventsStorage));
+        }
       }
 
       setDefaultListEventIds(
-        getDefaultEventListIds(eventsStorage, enlistmentDate, demobilizationDate),
+        getDefaultEventListIds(eventsStorage, range.start, range.end),
       );
-      setEvents(buildDisplayEvents(enlistmentDate, demobilizationDate, eventsStorage, now));
-      setHolidays(
-        buildDisplayHolidays(parseHolidaysStorage(holidaysRaw), now, serviceRange),
-      );
+      setEvents(buildDisplayEvents(range.start, range.end, eventsStorage, now));
+      setHolidays(buildDisplayHolidays(parseHolidaysStorage(holidaysRaw), now, range));
     } catch (error) {
       logger.error('Ошибка загрузки ближайшего события для таймера', error);
       setEvents([]);

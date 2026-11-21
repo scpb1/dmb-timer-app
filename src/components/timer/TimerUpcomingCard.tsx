@@ -2,7 +2,13 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { EventGlyphBadge } from '@/components/events/EventGlyphBadge';
 import { timerEventGlyphColorOverride } from '@/components/timer/timerEventGlyphColor';
+import { solidWhiteStatCard, solidWhiteStatCardColors } from '@/components/timer/timerStatCardStyles';
 import type { EventGlyph } from '@/utils/eventGlyphs';
+import { resolveHolidayCardStyle } from '@/utils/cardHighlight';
+import {
+  BOUNDARY_GLYPH_ON_FILL,
+  resolveEventCardStyle,
+} from '@/utils/serviceBoundaryEvents';
 import { layout, useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 import {
@@ -19,6 +25,8 @@ interface TimerUpcomingCardProps {
   photoBackground?: boolean;
   showBorder?: boolean;
   omitDemobilizationCountdown?: boolean;
+  /** Белая карточка для PNG. «Выделение строки» остаётся цветным. */
+  solidWhite?: boolean;
 }
 
 export function TimerUpcomingCard({
@@ -27,35 +35,74 @@ export function TimerUpcomingCard({
   photoBackground = false,
   showBorder = true,
   omitDemobilizationCountdown = false,
+  solidWhite = false,
 }: TimerUpcomingCardProps) {
   const theme = useAppTheme();
   const isPast = item.kind === 'event' ? item.event.isPast : item.holiday.isPast;
   const dateText =
     item.kind === 'event' ? formatEventDate(item.event.date) : formatHolidayDate(item.holiday);
   const subtitle = formatTimerUpcomingCountdown(item, new Date(), omitDemobilizationCountdown);
-  const iconOpacity = photoBackground ? undefined : isPast ? 0.72 : undefined;
+  const boundaryStyle =
+    item.kind === 'holiday'
+      ? resolveHolidayCardStyle(item.holiday, theme.text.primary)
+      : resolveEventCardStyle(item.event, theme.text.primary);
+  const rowAccent = boundaryStyle?.rowAccent ?? null;
+  const isAccentRow = rowAccent != null && rowAccent.length > 0;
+  const isWhiteSheet = solidWhite && !isAccentRow;
+  const onPhoto = photoBackground && !solidWhite;
+  const iconOpacity = onPhoto ? undefined : isPast ? 0.72 : undefined;
+  const nameColor = isAccentRow
+    ? BOUNDARY_GLYPH_ON_FILL
+    : isWhiteSheet
+      ? solidWhiteStatCardColors.ink
+      : isPast
+        ? theme.text.secondary
+        : theme.text.primary;
+  const secondaryColor = isAccentRow
+    ? 'rgba(255, 255, 255, 0.88)'
+    : isWhiteSheet
+      ? solidWhiteStatCardColors.muted
+      : theme.text.secondary;
+
+  const accentRowStyle =
+    isAccentRow && rowAccent
+      ? {
+          backgroundColor: rowAccent,
+          borderColor: 'rgba(255, 255, 255, 0.28)',
+          overflow: 'hidden' as const,
+        }
+      : null;
 
   const cardStyle = [
     styles.card,
-    photoBackground
+    onPhoto
       ? styles.photoCard
       : {
           backgroundColor: theme.overlay.fill,
           borderColor: theme.overlay.border,
         },
-    !showBorder && styles.borderless,
-    !photoBackground && isPast && styles.cardPast,
+    !showBorder && !solidWhite && styles.borderless,
+    !onPhoto && !solidWhite && isPast && styles.cardPast,
+    isWhiteSheet && solidWhiteStatCard.card,
+    accentRowStyle,
   ];
 
   return (
     <View style={cardStyle}>
       <EventGlyphBadge
         glyph={glyph}
-        color={timerEventGlyphColorOverride(glyph, photoBackground)}
+        color={
+          isAccentRow
+            ? boundaryStyle?.glyphOnFill
+              ? BOUNDARY_GLYPH_ON_FILL
+              : boundaryStyle?.glyphColor
+            : timerEventGlyphColorOverride(glyph, onPhoto)
+        }
+        backgroundColor={isAccentRow ? boundaryStyle?.badgeFill : undefined}
         opacity={iconOpacity}
       />
       <View style={styles.content}>
-        {photoBackground ? (
+        {onPhoto ? (
           <>
             <Text style={[styles.name, styles.photoText]} numberOfLines={2}>
               {timerUpcomingDisplayName(item)}
@@ -67,15 +114,12 @@ export function TimerUpcomingCard({
           </>
         ) : (
           <>
-            <Text
-              style={[styles.name, { color: isPast ? theme.text.secondary : theme.text.primary }]}
-              numberOfLines={2}
-            >
+            <Text style={[styles.name, { color: nameColor }]} numberOfLines={2}>
               {timerUpcomingDisplayName(item)}
             </Text>
-            <Text style={[styles.date, { color: theme.text.secondary }]}>{dateText}</Text>
+            <Text style={[styles.date, { color: secondaryColor }]}>{dateText}</Text>
             {subtitle ? (
-              <Text style={[styles.subtitle, { color: theme.text.secondary }]}>{subtitle}</Text>
+              <Text style={[styles.subtitle, { color: secondaryColor }]}>{subtitle}</Text>
             ) : null}
           </>
         )}

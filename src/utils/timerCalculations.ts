@@ -1,6 +1,13 @@
 import { formatCount, inflect, type InflectableNoun } from '@/utils/inflection';
 
-import { addDays, differenceInCalendarDays, format, startOfDay } from 'date-fns';
+import {
+  addDays,
+  addMonths,
+  differenceInCalendarDays,
+  differenceInMonths,
+  format,
+  startOfDay,
+} from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 import type { ProgressBarMode, StatCardMode, TimerCenterDisplay, TimerPhase } from '@/types/timer';
@@ -28,10 +35,47 @@ export interface ServiceProgress {
   monthsLeft: number;
   weeksPassed: number;
   monthsPassed: number;
+  /** Дни после целых календарных месяцев «прошло» */
+  monthDaysPassed: number;
+  /** Дни после целых календарных месяцев «осталось» */
+  monthDaysLeft: number;
 }
 
 function clampRatio(ratio: number): number {
   return Math.min(1, Math.max(0, ratio));
+}
+
+/** Целые календарные месяцы и оставшиеся дни между полуночами двух дат. */
+export function calendarMonthParts(from: Date, to: Date): { months: number; days: number } {
+  const start = startOfDay(from);
+  const end = startOfDay(to);
+  if (end.getTime() <= start.getTime()) {
+    return { months: 0, days: 0 };
+  }
+  const months = Math.max(0, differenceInMonths(end, start));
+  const days = Math.max(0, differenceInCalendarDays(end, addMonths(start, months)));
+  return { months, days };
+}
+
+/** Доля срока по прошедшему времени (мс), не по календарным дням. */
+function serviceElapsedProgressRatio(
+  phase: TimerPhase,
+  enlistmentStart: Date,
+  demobilizationStart: Date,
+  now: Date,
+): number {
+  if (phase === 'before') {
+    return 0;
+  }
+  if (phase === 'after') {
+    return 1;
+  }
+  const totalMs = demobilizationStart.getTime() - enlistmentStart.getTime();
+  if (totalMs <= 0) {
+    return 0;
+  }
+  const elapsedMs = Math.max(0, now.getTime() - enlistmentStart.getTime());
+  return clampRatio(elapsedMs / totalMs);
 }
 
 /** Разбивает интервал времени на дни, часы, минуты и секунды */
@@ -103,7 +147,11 @@ export function getServiceTimeBreakdowns(
 const PROGRESS_BAR_MODES: ProgressBarMode[] = ['percent', 'days', 'weeks', 'months'];
 
 /** Сегменты прогресс-бара: проценты и «дни» — 100 долей, недели и месяцы — только целые единицы срока. */
-export function getProgressBarSegmentCount(mode: ProgressBarMode, totalDays: number): number {
+export function getProgressBarSegmentCount(
+  mode: ProgressBarMode,
+  totalDays: number,
+  range?: { start: Date; end: Date },
+): number {
   const days = Math.max(0, totalDays);
 
   switch (mode) {
@@ -113,6 +161,12 @@ export function getProgressBarSegmentCount(mode: ProgressBarMode, totalDays: num
     case 'weeks':
       return Math.max(1, Math.floor(days / 7));
     case 'months':
+      if (range) {
+        return Math.max(
+          1,
+          differenceInMonths(startOfDay(range.end), startOfDay(range.start)),
+        );
+      }
       return Math.max(1, Math.floor(days / 30));
   }
 }
@@ -134,24 +188,43 @@ export function calculateServiceProgress(
   const daysAfterEnd = Math.max(0, differenceInCalendarDays(today, demobilization));
   const daysPassed = phase === 'after' ? totalDays : Math.min(rawDaysPassed, totalDays);
   const daysLeft = phase === 'after' ? 0 : Math.max(0, differenceInCalendarDays(demobilization, today));
-  const progressRatio =
-    phase === 'before' ? 0 : phase === 'after' ? 1 : totalDays > 0 ? clampRatio(daysPassed / totalDays) : 0;
+  const progressRatio = serviceElapsedProgressRatio(phase, enlistment, demobilization, now);
   const progressPercent = progressRatio * 100;
 
   const segmentCounts = {} as Record<ProgressBarMode, number>;
   const filledSegments = {} as Record<ProgressBarMode, number>;
+  const passedMonths =
+    phase === 'before'
+      ? { months: 0, days: 0 }
+      : phase === 'after'
+        ? calendarMonthParts(demobilization, today)
+        : calendarMonthParts(enlistment, today);
+  const leftMonths =
+    phase === 'after'
+      ? { months: 0, days: 0 }
+      : phase === 'before'
+        ? calendarMonthParts(today, enlistment)
+        : calendarMonthParts(today, demobilization);
 
   for (const mode of PROGRESS_BAR_MODES) {
-    const count = getProgressBarSegmentCount(mode, totalDays);
+    const count = getProgressBarSegmentCount(mode, totalDays, {
+      start: enlistment,
+      end: demobilization,
+    });
     segmentCounts[mode] = count;
     if (phase === 'before') {
       filledSegments[mode] = 0;
     } else if (phase === 'after') {
       filledSegments[mode] = count;
+    } else if (mode === 'months') {
+      filledSegments[mode] = Math.min(count, passedMonths.months);
     } else {
       filledSegments[mode] = getCompletedUnits(mode, daysPassed, progressPercent, count);
     }
   }
+
+  const weeksPassed = Math.floor(daysPassed / 7);
+  const wholeWeeks = Math.floor(totalDays / 7);
 
   return {
     phase,
@@ -164,10 +237,12 @@ export function calculateServiceProgress(
     progressPercent,
     filledSegments,
     segmentCounts,
-    weeksLeft: daysLeft > 0 ? Math.ceil(daysLeft / 7) : 0,
-    monthsLeft: daysLeft > 0 ? Math.ceil(daysLeft / 30) : 0,
-    weeksPassed: Math.floor(daysPassed / 7),
-    monthsPassed: Math.floor(daysPassed / 30),
+    weeksLeft: Math.max(0, wholeWeeks - weeksPassed),
+    monthsLeft: leftMonths.months,
+    weeksPassed,
+    monthsPassed: passedMonths.months,
+    monthDaysPassed: passedMonths.days,
+    monthDaysLeft: leftMonths.days,
   };
 }
 
@@ -189,9 +264,33 @@ function getCompletedUnits(
   }
 }
 
+/** Усечение доли процента вниз (не математическое округление). */
+export function truncatePercentValue(value: number, decimalPlaces: number): number {
+  const clampedDecimals = Math.min(6, Math.max(0, decimalPlaces));
+  const factor = 10 ** clampedDecimals;
+  const safe = Math.max(0, value);
+  return Math.floor(safe * factor + 1e-9) / factor;
+}
+
+/** Прошло / осталось для UI: осталось всегда 100 − усечённое прошло. */
+export function getServiceDisplayPercents(
+  progress: ServiceProgress,
+  decimalPlaces: number,
+): { passed: number; remaining: number } {
+  if (progress.phase === 'before') {
+    return { passed: 0, remaining: 100 };
+  }
+  if (progress.phase === 'after') {
+    return { passed: 100, remaining: 0 };
+  }
+  const passed = truncatePercentValue(progress.progressPercent, decimalPlaces);
+  return { passed, remaining: 100 - passed };
+}
+
 export function formatProgressPercent(value: number, decimalPlaces: number): string {
   const clampedDecimals = Math.min(6, Math.max(0, decimalPlaces));
-  return value.toFixed(clampedDecimals);
+  const truncated = truncatePercentValue(value, decimalPlaces);
+  return truncated.toFixed(clampedDecimals);
 }
 
 export interface CenterDisplayValues {
@@ -270,7 +369,7 @@ export function getCenterDisplayValues(
   if (progress.phase === 'before') {
     const days = progress.daysUntilStart;
     const weeks = days > 0 ? Math.ceil(days / 7) : 0;
-    const months = days > 0 ? Math.ceil(days / 30) : 0;
+    const months = progress.monthsLeft;
     const { kind } = labels;
 
     if (mode === 'weeks') {
@@ -305,7 +404,7 @@ export function getCenterDisplayValues(
   if (progress.phase === 'after') {
     const days = progress.daysAfterEnd;
     const weeks = Math.floor(days / 7);
-    const months = Math.floor(days / 30);
+    const months = progress.monthsPassed;
     const { kind } = labels;
 
     if (mode === 'weeks') {
@@ -341,9 +440,8 @@ export function getCenterDisplayValues(
   const days = useRemaining ? progress.daysLeft : progress.daysPassed;
   const weeks = useRemaining ? progress.weeksLeft : progress.weeksPassed;
   const months = useRemaining ? progress.monthsLeft : progress.monthsPassed;
-  const percentValue = useRemaining
-    ? (1 - progress.progressRatio) * 100
-    : progress.progressPercent;
+  const displayPercents = getServiceDisplayPercents(progress, decimalPlaces);
+  const percentValue = useRemaining ? displayPercents.remaining : displayPercents.passed;
 
   switch (mode) {
     case 'percent':
@@ -391,6 +489,68 @@ export interface StatCardDisplay {
 export interface StatCardDisplayOptions {
   phase?: TimerPhase;
   kind?: 'service' | 'custom';
+  progress?: Pick<
+    ServiceProgress,
+    'monthsPassed' | 'monthDaysPassed' | 'monthsLeft' | 'monthDaysLeft'
+  >;
+}
+
+function statCardFromUnits(
+  units: number,
+  remainderDays: number,
+  noun: 'week' | 'month',
+): StatCardDisplay {
+  return {
+    primaryValue: units,
+    unitLabel: inflect(units, noun),
+    detailLines: remainderDays > 0 ? [formatCount(remainderDays, 'day')] : [],
+  };
+}
+
+function statCardFromCalendarDays(days: number): StatCardDisplay {
+  const safeDays = Math.max(0, days);
+  return statCardFromUnits(Math.floor(safeDays / 7), safeDays % 7, 'week');
+}
+
+/**
+ * Плашки «прошло | осталось» во время срока.
+ * Недели делят календарные дни срока; месяцы — календарные месяцы от дат призыва и дембеля.
+ */
+export function getServiceStatCardPair(
+  progress: Pick<
+    ServiceProgress,
+    | 'phase'
+    | 'daysPassed'
+    | 'daysLeft'
+    | 'monthsPassed'
+    | 'monthDaysPassed'
+    | 'monthsLeft'
+    | 'monthDaysLeft'
+  >,
+  passed: TimeBreakdown,
+  remaining: TimeBreakdown,
+  mode: StatCardMode | undefined,
+): { elapsed: StatCardDisplay; remaining: StatCardDisplay } {
+  const safeMode = mode ?? 'days';
+
+  if (progress.phase === 'active' && safeMode === 'weeks') {
+    return {
+      elapsed: statCardFromCalendarDays(progress.daysPassed),
+      remaining: statCardFromCalendarDays(progress.daysLeft),
+    };
+  }
+
+  if (progress.phase === 'active' && safeMode === 'months') {
+    return {
+      elapsed: statCardFromUnits(progress.monthsPassed, progress.monthDaysPassed, 'month'),
+      remaining: statCardFromUnits(progress.monthsLeft, progress.monthDaysLeft, 'month'),
+    };
+  }
+
+  return {
+    elapsed: getStatCardDisplay(passed, safeMode, { progress }),
+    remaining: getStatCardDisplay(remaining, safeMode, { progress }),
+  };
 }
 
 export function getStatCardDisplay(
@@ -421,7 +581,7 @@ export function getStatCardDisplay(
       const display = {
         primaryValue: weeks,
         unitLabel: inflect(weeks, 'week'),
-        detailLines: [formatCount(remainderDays, 'day')],
+        detailLines: remainderDays > 0 ? [formatCount(remainderDays, 'day')] : [],
       };
       if (usePhaseLabel) {
         display.unitLabel = getPhaseUnitLabel(weeks, 'week', phase, kind);
@@ -429,15 +589,28 @@ export function getStatCardDisplay(
       return display;
     }
     case 'months': {
-      const months = Math.floor(breakdown.days / 30);
-      const remainderDays = breakdown.days % 30;
+      const fromProgress = options?.progress
+        ? phase === 'after'
+          ? {
+              months: options.progress.monthsPassed,
+              days: options.progress.monthDaysPassed,
+            }
+          : {
+              months: options.progress.monthsLeft,
+              days: options.progress.monthDaysLeft,
+            }
+        : {
+            months: Math.floor(breakdown.days / 30),
+            days: breakdown.days % 30,
+          };
       const display = {
-        primaryValue: months,
-        unitLabel: inflect(months, 'month'),
-        detailLines: [formatCount(remainderDays, 'day')],
+        primaryValue: fromProgress.months,
+        unitLabel: inflect(fromProgress.months, 'month'),
+        detailLines:
+          fromProgress.days > 0 ? [formatCount(fromProgress.days, 'day')] : [],
       };
       if (usePhaseLabel) {
-        display.unitLabel = getPhaseUnitLabel(months, 'month', phase, kind);
+        display.unitLabel = getPhaseUnitLabel(fromProgress.months, 'month', phase, kind);
       }
       return display;
     }
@@ -522,6 +695,15 @@ export function getDotGridUnitsLeft(
   return Math.max(0, total - passed);
 }
 
+/** Сколько единиц сетки уже прошло (для режима «прошло» на плашке). */
+export function getDotGridUnitsPassed(
+  mode: 'weeks' | 'months',
+  progress: Pick<ServiceProgress, 'phase' | 'totalDays' | 'daysPassed'>,
+): number {
+  const total = getDotGridUnitTotal(mode, progress.totalDays);
+  return getDotGridPassedUnits(total, progress.totalDays, progress.daysPassed, progress.phase);
+}
+
 /** Число колонок сетки по режиму */
 export function getDotGridColumnCount(mode: ProgressBarMode, total: number): number {
   switch (mode) {
@@ -539,7 +721,7 @@ export function getDotGridColumnCount(mode: ProgressBarMode, total: number): num
 
 export function getDotGridMetrics(
   mode: ProgressBarMode,
-  progress: ServiceProgress,
+  progress: Pick<ServiceProgress, 'phase' | 'totalDays' | 'daysPassed' | 'progressPercent'>,
 ): DotGridMetrics {
   const totalDays = Math.max(1, progress.totalDays);
   let total: number;
@@ -600,6 +782,113 @@ export function getDotGridMetrics(
   return { total, passed, remaining, columns, title };
 }
 
+export interface TimerVizSummaryCopy {
+  heroValue: string;
+  heroSuffix: string;
+  heroIncludesPercent: boolean;
+  metaPrimary: string;
+}
+
+/** Текст плашки сетки дней / ленты событий: «прошло» или «осталось». */
+export function getTimerVizSummaryCopy(
+  progress: ServiceProgress,
+  unitMode: ProgressBarMode | undefined,
+  decimalPlaces: number,
+  centerDisplay: TimerCenterDisplay,
+  timerKind: 'service' | 'custom' = 'service',
+): TimerVizSummaryCopy {
+  const displayPercents = getServiceDisplayPercents(progress, decimalPlaces);
+  const passedPercentLabel = `${formatProgressPercent(displayPercents.passed, decimalPlaces)}%`;
+  const remainingPercentLabel = `${formatProgressPercent(displayPercents.remaining, decimalPlaces)}%`;
+  const useDotGridCounts = unitMode === 'weeks' || unitMode === 'months';
+  const isActive = progress.phase === 'active';
+  const useRemaining = !isActive || centerDisplay === 'remaining';
+  const offPhase: 'before' | 'after' = progress.phase === 'before' ? 'before' : 'after';
+
+  const daysHero = !isActive
+    ? progress.phase === 'before'
+      ? progress.daysUntilStart
+      : progress.daysAfterEnd
+    : useRemaining
+      ? progress.daysLeft
+      : progress.daysPassed;
+
+  const daysSuffix = !isActive
+    ? ` ${getPhaseUnitLabel(daysHero, 'day', offPhase, timerKind)}`
+    : useRemaining
+      ? ' ддд'
+      : ' дпп';
+
+  const weeksHero = useDotGridCounts
+    ? useRemaining
+      ? getDotGridUnitsLeft('weeks', progress)
+      : getDotGridUnitsPassed('weeks', progress)
+    : !isActive
+      ? progress.phase === 'before'
+        ? Math.ceil(progress.daysUntilStart / 7)
+        : 0
+      : useRemaining
+        ? progress.weeksLeft
+        : progress.weeksPassed;
+
+  const monthsHero = useDotGridCounts
+    ? useRemaining
+      ? getDotGridUnitsLeft('months', progress)
+      : getDotGridUnitsPassed('months', progress)
+    : !isActive
+      ? progress.phase === 'before'
+        ? progress.monthsLeft
+        : progress.monthsPassed
+      : useRemaining
+        ? progress.monthsLeft
+        : progress.monthsPassed;
+
+  const weeksSuffix = !isActive
+    ? ` ${getPhaseUnitLabel(weeksHero, 'week', offPhase, timerKind)}`
+    : ` ${inflect(weeksHero, 'week')} ${useRemaining ? 'осталось' : 'прошло'}`;
+
+  const monthsSuffix = !isActive
+    ? ` ${getPhaseUnitLabel(monthsHero, 'month', offPhase, timerKind)}`
+    : ` ${inflect(monthsHero, 'month')} ${useRemaining ? 'осталось' : 'прошло'}`;
+
+  const complementaryPercent = useRemaining ? passedPercentLabel : remainingPercentLabel;
+
+  if (unitMode === 'percent') {
+    const percentValue = useRemaining ? displayPercents.remaining : displayPercents.passed;
+    return {
+      heroValue: formatProgressPercent(percentValue, decimalPlaces),
+      heroSuffix: useRemaining ? ' осталось' : ' прошло',
+      heroIncludesPercent: true,
+      metaPrimary: `${daysHero}${daysSuffix}`,
+    };
+  }
+
+  if (unitMode === 'days') {
+    return {
+      heroValue: String(daysHero),
+      heroSuffix: daysSuffix,
+      heroIncludesPercent: false,
+      metaPrimary: complementaryPercent,
+    };
+  }
+
+  if (unitMode === 'months') {
+    return {
+      heroValue: String(monthsHero),
+      heroSuffix: monthsSuffix,
+      heroIncludesPercent: false,
+      metaPrimary: complementaryPercent,
+    };
+  }
+
+  return {
+    heroValue: String(weeksHero),
+    heroSuffix: weeksSuffix,
+    heroIncludesPercent: false,
+    metaPrimary: complementaryPercent,
+  };
+}
+
 /** Дробь «1/5 службы» по прогрессу (знаменатель 5) */
 export function getServiceProgressFraction(progress: ServiceProgress): string {
   if (progress.phase === 'before') {
@@ -643,14 +932,8 @@ export function getLinearDisplayValues(
   const useRemaining = centerDisplay === 'remaining';
 
   if (mode === 'percent') {
-    const percentValue =
-      progress.phase === 'before'
-        ? 0
-        : progress.phase === 'after'
-          ? 100
-          : useRemaining
-            ? (1 - progress.progressRatio) * 100
-            : progress.progressPercent;
+    const displayPercents = getServiceDisplayPercents(progress, decimalPlaces);
+    const percentValue = useRemaining ? displayPercents.remaining : displayPercents.passed;
 
     return {
       mode: 'percent',

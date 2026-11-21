@@ -3,11 +3,8 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  Image,
   Pressable,
-  ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,24 +12,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { StackScreenProps } from '@react-navigation/stack';
 
-import { ExtraTimerFormModal } from '@/components/timer/ExtraTimerFormModal';
-import { FramedTimerDisplay } from '@/components/timer/FramedTimerDisplay';
-import { SegmentedCircularProgress } from '@/components/timer/SegmentedCircularProgress';
-import { SegmentedLinearProgress } from '@/components/timer/SegmentedLinearProgress';
-import { TimerDotGridDisplay } from '@/components/timer/TimerDotGridDisplay';
-import { TimerMilestonesTimelineDisplay } from '@/components/timer/TimerMilestonesTimelineDisplay';
 import { TimerUpcomingCard } from '@/components/timer/TimerUpcomingCard';
-import { ServiceSummaryModal } from '@/components/timer/ServiceSummaryModal';
-import { LetterBookExportModal } from '@/components/diary/LetterBookExportModal';
-import { ArmyEventsChecklistShareCard } from '@/components/timer/ArmyEventsChecklistShareCard';
-import { TimerShareCard } from '@/components/timer/TimerShareCard';
-import { TimerStatCard } from '@/components/timer/TimerStatCard';
-import { TimerUnifiedStatCard } from '@/components/timer/TimerUnifiedStatCard';
+import { TimerLiveStatCards } from '@/components/timer/TimerLiveStatCards';
 import { TimerSwitcher } from '@/components/timer/TimerSwitcher';
+import { PositionedCoverImage } from '@/components/common/PositionedCoverImage';
 import { ScreenBackground } from '@/components/common/ScreenBackground';
 import { SandboxModeBanner } from '@/components/common/SandboxModeBanner';
 import { useServiceSummaryAutoOpen } from '@/hooks/useServiceSummaryAutoOpen';
 import { useServiceTimer } from '@/hooks/useServiceTimer';
+import { warmProfileSnapshot } from '@/hooks/useProfile';
 import { useTimerUpcoming } from '@/hooks/useTimerUpcoming';
 import { useDatabaseProfile } from '@/hooks/useDatabaseProfile';
 import type { HomeStackParamList } from '@/types/navigation';
@@ -47,8 +35,6 @@ import {
   getCenterDisplayLabels,
   getFrameDisplayValues,
   getLinearDisplayValues,
-  getPhaseCardTitle,
-  getStatCardDisplay,
 } from '@/utils/timerCalculations';
 import { getEventGlyph, getHolidayGlyph } from '@/utils/eventGlyphs';
 import {
@@ -59,6 +45,8 @@ import { buildDefaultEventsChecklistItems } from '@/utils/eventsTimeline';
 import { shareTimerImage } from '@/utils/shareTimerImage';
 import { incrementTimerVisitCount } from '@/utils/timerVisitCount';
 import { isViewShotAvailable } from '@/utils/nativeAvailability';
+import { HomeScreenOverlays } from '@/screens/home/HomeScreenOverlays';
+import { HomeTimerStage } from '@/screens/home/HomeTimerStage';
 import { useAppTheme } from '@/theme';
 import { typography } from '@/theme/typography';
 import { getBackgroundScrimColor } from '@/utils/timerBackground';
@@ -76,6 +64,7 @@ export function HomeScreen({ navigation }: Props) {
     passedBreakdown,
     remainingBreakdown,
     customTimers,
+    notificationDisabledIds,
     activeTimer,
     partnerName,
     enlistmentDate,
@@ -83,19 +72,22 @@ export function HomeScreen({ navigation }: Props) {
     reload,
     updateSettings,
     setActiveTimerId,
+    setTimerNotificationsEnabled,
     addCustomTimer,
     updateCustomTimer,
     deleteCustomTimer,
   } = useServiceTimer();
   const databaseProfile = useDatabaseProfile();
   const timerUpcoming = useTimerUpcoming(settings);
+  const reloadUpcoming = timerUpcoming.reload;
 
   useFocusEffect(
     useCallback(() => {
       reload();
-      void timerUpcoming.reload();
+      void reloadUpcoming();
       void incrementTimerVisitCount();
-    }, [reload, timerUpcoming.reload]),
+      void warmProfileSnapshot();
+    }, [reload, reloadUpcoming]),
   );
 
   const [showStats, setShowStats] = useState(true);
@@ -152,16 +144,24 @@ export function HomeScreen({ navigation }: Props) {
     settings.progressBarMode,
     statCardMode,
   );
-  const vizUpcomingHeadline =
-    isVizTimer &&
-    settings.timerUpcomingPreview !== 'off' &&
-    timerUpcoming.item
-      ? formatTimerVizUpcomingHeadline(
-          timerUpcoming.item,
-          new Date(),
-          omitDemobilizationCountdown,
-        )
-      : null;
+  const headlineClock = `${progress?.phase ?? ''}:${progress?.daysPassed ?? ''}`;
+  const vizUpcomingHeadline = useMemo(() => {
+    if (!isVizTimer || settings.timerUpcomingPreview === 'off' || !timerUpcoming.item) {
+      return null;
+    }
+    const headlineAt = new Date(headlineClock ? Date.now() : Date.now());
+    return formatTimerVizUpcomingHeadline(
+      timerUpcoming.item,
+      headlineAt,
+      omitDemobilizationCountdown,
+    );
+  }, [
+    headlineClock,
+    isVizTimer,
+    omitDemobilizationCountdown,
+    settings.timerUpcomingPreview,
+    timerUpcoming.item,
+  ]);
   const showServiceSummaryButton = Boolean(
     enlistmentDate &&
       demobilizationDate &&
@@ -274,10 +274,6 @@ export function HomeScreen({ navigation }: Props) {
         )
       : null;
 
-  const phaseCardTitle = activeTimer
-    ? getPhaseCardTitle(phase, activeTimer.kind)
-    : 'осталось';
-  const phaseBreakdown = phase === 'before' ? remainingBreakdown : passedBreakdown;
   const frameDisplay =
     progress && activeTimer
       ? getFrameDisplayValues(
@@ -298,29 +294,18 @@ export function HomeScreen({ navigation }: Props) {
       />
     ) : null;
 
-  const statCards =
-    showStatCards && phase !== 'active' && phaseBreakdown ? (
-      <View style={styles.statsRow}>
-        <TimerStatCard
-          title={phaseCardTitle}
-          display={getStatCardDisplay(phaseBreakdown, statCardMode, {
-            phase,
-            kind: activeTimer?.kind ?? 'service',
-          })}
-          photoBackground={hasPhotoBackground}
-          showBorder={showPhotoStatBorder}
-        />
-      </View>
-    ) : showStatCards && phase === 'active' && passedBreakdown && remainingBreakdown ? (
-      <View style={styles.statsRow}>
-        <TimerUnifiedStatCard
-          elapsed={getStatCardDisplay(passedBreakdown, statCardMode)}
-          remaining={getStatCardDisplay(remainingBreakdown, statCardMode)}
-          photoBackground={hasPhotoBackground}
-          showBorder={showPhotoStatBorder}
-        />
-      </View>
-    ) : null;
+  const statCards = showStatCards ? (
+    <TimerLiveStatCards
+      startDate={activeTimer?.startDate ?? null}
+      endDate={activeTimer?.endDate ?? null}
+      progress={progress}
+      phase={phase}
+      statCardMode={statCardMode}
+      timerKind={activeTimer?.kind ?? 'service'}
+      photoBackground={hasPhotoBackground}
+      showBorder={showPhotoStatBorder}
+    />
+  ) : null;
 
   const upcomingAndStatCards =
     upcomingCard && statCards ? (
@@ -339,10 +324,12 @@ export function HomeScreen({ navigation }: Props) {
     <View style={styles.root}>
       {settings.backgroundImageUri ? (
         <>
-          <Image
-            source={{ uri: settings.backgroundImageUri }}
+          <PositionedCoverImage
+            uri={settings.backgroundImageUri}
+            focusX={settings.backgroundFocusX}
+            focusY={settings.backgroundFocusY}
             style={styles.backgroundImage}
-            resizeMode="cover"
+            cached
           />
           <View
             style={[
@@ -367,8 +354,14 @@ export function HomeScreen({ navigation }: Props) {
               activeTimer={activeTimer}
               serviceTimerName={partnerName.trim() || 'Служба'}
               customTimers={customTimers}
+              notificationDisabledIds={notificationDisabledIds}
               photoBackground={hasPhotoBackground}
-              onSelect={(id) => void setActiveTimerId(id)}
+              onSelect={(id) => {
+                void (async () => {
+                  await setActiveTimerId(id);
+                  void timerUpcoming.reload();
+                })();
+              }}
               onAdd={() => {
                 setEditingTimer(null);
                 setTimerModalVisible(true);
@@ -376,6 +369,9 @@ export function HomeScreen({ navigation }: Props) {
               onEdit={(timer) => {
                 setEditingTimer(timer);
                 setTimerModalVisible(true);
+              }}
+              onToggleNotifications={(id, enabled) => {
+                void setTimerNotificationsEnabled(id, enabled);
               }}
             />
           </View>
@@ -431,223 +427,95 @@ export function HomeScreen({ navigation }: Props) {
           ) : null}
         </View>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={[
-            styles.scrollContent,
-            isMilestonesTimer && styles.scrollContentViz,
-            isDotGridTimer && styles.scrollContentDotGrid,
-          ]}
-          showsVerticalScrollIndicator={false}
-        >
-          {settings.timerType === 'circular' && centerDisplay && progress ? (
-            <SegmentedCircularProgress
-              key={activeTimer?.id ?? 'circular'}
-              segmentCount={segmentCount}
-              filledCount={filledCount}
-              primaryValue={centerDisplay.primaryValue}
-              secondaryValue={centerDisplay.secondaryValue}
-              unitLabel={centerDisplay.unitLabel}
-              progressBarMode={settings.progressBarMode}
-              percentDecimalPlaces={settings.percentDecimalPlaces}
-              photoBackground={hasPhotoBackground}
-              centerDisplay={settings.centerDisplay}
-              onCenterDisplayChange={
-                canSwitchCenterDisplay
-                  ? (nextDisplay) => updateSettings({ centerDisplay: nextDisplay })
-                  : undefined
-              }
-            />
-          ) : null}
-
-          {settings.timerType === 'linear' && linearDisplay && progress ? (
-            <SegmentedLinearProgress
-              key={activeTimer?.id ?? 'linear'}
-              mode={settings.progressBarMode}
-              segmentCount={segmentCount}
-              filledCount={filledCount}
-              display={linearDisplay}
-              centerDisplay={settings.centerDisplay}
-              onCenterDisplayChange={
-                canSwitchCenterDisplay
-                  ? (centerDisplayValue) => updateSettings({ centerDisplay: centerDisplayValue })
-                  : undefined
-              }
-              photoBackground={hasPhotoBackground}
-            />
-          ) : null}
-
-          {isDotGridTimer && activeTimer && progress ? (
-            <TimerDotGridDisplay
-              key={activeTimer.id ?? 'dotGrid'}
-              mode={settings.progressBarMode}
-              progress={progress}
-              endDate={activeTimer.endDate}
-              decimalPlaces={settings.percentDecimalPlaces}
-              timerKind={activeTimer.kind}
-              cellShape={settings.dotGridCellShape}
-              photoBackground={hasPhotoBackground}
-              upcomingHeadline={vizUpcomingHeadline}
-            />
-          ) : null}
-
-          {isMilestonesTimer && activeTimer && progress ? (
-            <TimerMilestonesTimelineDisplay
-              key={activeTimer.id ?? 'milestones'}
-              progress={progress}
-              startDate={activeTimer.startDate}
-              endDate={activeTimer.endDate}
-              decimalPlaces={settings.percentDecimalPlaces}
-              timerKind={activeTimer.kind}
-              photoBackground={hasPhotoBackground}
-              upcomingHeadline={vizUpcomingHeadline}
-              events={timerUpcoming.events}
-              holidays={timerUpcoming.holidays}
-              defaultListEventIds={timerUpcoming.defaultListEventIds}
-              layout={settings.milestonesLayout}
-              onDownloadArmyChecklist={
-                settings.milestonesLayout === 'checklist'
-                  ? handleDownloadArmyChecklist
-                  : undefined
-              }
-              isDownloadingArmyChecklist={isSharingArmyChecklist}
-            />
-          ) : null}
-
-          {isFrameTimer && frameDisplay && progress ? (
-            <FramedTimerDisplay
-              key={activeTimer?.id ?? 'frame'}
-              primaryValue={frameDisplay.primaryValue}
-              unitLabel={frameDisplay.unitLabel}
-              upcoming={frameUpcoming}
-              glyph={frameUpcomingGlyph}
-              photoBackground={hasPhotoBackground}
-              centerDisplay={settings.centerDisplay}
-              onCenterDisplayChange={
-                canSwitchCenterDisplay && frameDisplay.allowCenterToggle
-                  ? (centerDisplayValue) => updateSettings({ centerDisplay: centerDisplayValue })
-                  : undefined
-              }
-              omitDemobilizationCountdown={omitDemobilizationCountdown}
-            />
-          ) : null}
-
-          {upcomingAndStatCards}
-
-          {showServiceSummaryButton ? (
-            <Pressable
-              style={[styles.summaryButton, hasPhotoBackground && styles.summaryButtonPhoto]}
-              onPress={() => setSummaryVisible(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Итоги службы"
-            >
-              <MaterialCommunityIcons
-                name="chart-box-outline"
-                size={22}
-                color={foregroundColor}
-              />
-              <Text
-                style={[
-                  styles.summaryButtonText,
-                  { color: theme.text.primary },
-                  hasPhotoBackground && styles.summaryButtonPhotoText,
-                ]}
-              >
-                Итоги
-              </Text>
-            </Pressable>
-          ) : null}
-        </ScrollView>
+        <HomeTimerStage
+          styles={styles}
+          theme={theme}
+          settings={settings}
+          activeTimer={activeTimer}
+          progress={progress}
+          centerDisplay={centerDisplay}
+          linearDisplay={linearDisplay}
+          frameDisplay={frameDisplay}
+          segmentCount={segmentCount}
+          filledCount={filledCount}
+          hasPhotoBackground={hasPhotoBackground}
+          canSwitchCenterDisplay={canSwitchCenterDisplay}
+          isDotGridTimer={isDotGridTimer}
+          isMilestonesTimer={isMilestonesTimer}
+          isFrameTimer={isFrameTimer}
+          vizUpcomingHeadline={vizUpcomingHeadline}
+          frameUpcoming={frameUpcoming}
+          frameUpcomingGlyph={frameUpcomingGlyph}
+          omitDemobilizationCountdown={omitDemobilizationCountdown}
+          events={timerUpcoming.events}
+          holidays={timerUpcoming.holidays}
+          defaultListEventIds={timerUpcoming.defaultListEventIds}
+          isSharingArmyChecklist={isSharingArmyChecklist}
+          foregroundColor={foregroundColor}
+          belowTimer={upcomingAndStatCards}
+          showServiceSummaryButton={showServiceSummaryButton}
+          onCenterDisplayChange={(nextDisplay) => updateSettings({ centerDisplay: nextDisplay })}
+          onDownloadArmyChecklist={handleDownloadArmyChecklist}
+          onOpenSummary={() => setSummaryVisible(true)}
+        />
       </SafeAreaView>
 
-      <ExtraTimerFormModal
-        visible={timerModalVisible}
-        timer={editingTimer}
-        onClose={() => setTimerModalVisible(false)}
-        onSave={(input) =>
-          editingTimer ? updateCustomTimer(editingTimer.id, input) : addCustomTimer(input)
-        }
-        onDelete={
+      <HomeScreenOverlays
+        timerModalVisible={timerModalVisible}
+        editingTimer={editingTimer}
+        onCloseTimerModal={() => setTimerModalVisible(false)}
+        onSaveTimer={async (input) => {
+          const ok = editingTimer
+            ? await updateCustomTimer(editingTimer.id, input)
+            : await addCustomTimer(input);
+          if (ok) {
+            void timerUpcoming.reload();
+          }
+          return ok;
+        }}
+        onDeleteTimer={
           editingTimer
-            ? () => deleteCustomTimer(editingTimer.id)
+            ? async () => {
+                await deleteCustomTimer(editingTimer.id);
+                void timerUpcoming.reload();
+              }
             : undefined
         }
-      />
-
-      <ServiceSummaryModal
-        visible={summaryVisible}
+        summaryVisible={summaryVisible}
         partnerName={partnerName}
         enlistmentDate={enlistmentDate}
         demobilizationDate={demobilizationDate}
-        onClose={() => setSummaryVisible(false)}
+        onCloseSummary={() => setSummaryVisible(false)}
         onOpenLetterBook={() => {
           setSummaryVisible(false);
           setLetterBookVisible(true);
         }}
+        letterBookVisible={letterBookVisible}
+        onCloseLetterBook={() => setLetterBookVisible(false)}
+        isSharingArmyChecklist={isSharingArmyChecklist}
+        armyChecklistShareItems={armyChecklistShareItems}
+        shareWidth={shareWidth}
+        shareHeight={shareHeight}
+        armyChecklistShareRef={armyChecklistShareRef}
+        settings={settings}
+        armyChecklistShowDates={armyChecklistShowDates}
+        isSharing={isSharing}
+        activeTimer={activeTimer}
+        progress={progress}
+        centerDisplay={centerDisplay}
+        passedBreakdown={passedBreakdown}
+        remainingBreakdown={remainingBreakdown}
+        shareRef={shareRef}
+        frameUpcoming={frameUpcoming}
+        frameUpcomingGlyph={frameUpcomingGlyph}
+        upcoming={showUpcomingCard ? timerUpcoming.item : null}
+        upcomingGlyph={showUpcomingCard ? upcomingGlyph : null}
+        showStatCards={showStatCards}
+        timelineEvents={timerUpcoming.events}
+        timelineHolidays={timerUpcoming.holidays}
+        timelineDefaultListEventIds={timerUpcoming.defaultListEventIds}
+        timelineUpcoming={timerUpcoming.item}
       />
-
-      <LetterBookExportModal
-        visible={letterBookVisible}
-        onClose={() => setLetterBookVisible(false)}
-      />
-
-      {isSharingArmyChecklist && armyChecklistShareItems.length > 0 ? (
-        <View
-          pointerEvents="none"
-          style={[styles.sharePoster, { width: shareWidth, height: shareHeight }]}
-          collapsable={false}
-        >
-          <View
-            ref={armyChecklistShareRef}
-            collapsable={false}
-            style={{ width: shareWidth, height: shareHeight }}
-          >
-            <ArmyEventsChecklistShareCard
-              width={shareWidth}
-              height={shareHeight}
-              settings={settings}
-              items={armyChecklistShareItems}
-              showEventDates={armyChecklistShowDates}
-            />
-          </View>
-        </View>
-      ) : null}
-
-      {isSharing &&
-      activeTimer &&
-      progress &&
-      centerDisplay &&
-      passedBreakdown &&
-      remainingBreakdown ? (
-        <View
-          pointerEvents="none"
-          style={[styles.sharePoster, { width: shareWidth, height: shareHeight }]}
-          collapsable={false}
-        >
-          <View
-            ref={shareRef}
-            collapsable={false}
-            style={{ width: shareWidth, height: shareHeight }}
-          >
-            <TimerShareCard
-              width={shareWidth}
-              height={shareHeight}
-              settings={settings}
-              activeTimer={activeTimer}
-              progress={progress}
-              centerDisplay={centerDisplay}
-              passedBreakdown={passedBreakdown}
-              remainingBreakdown={remainingBreakdown}
-              frameUpcoming={frameUpcoming}
-              frameUpcomingGlyph={frameUpcomingGlyph}
-              timelineEvents={timerUpcoming.events}
-              timelineHolidays={timerUpcoming.holidays}
-              timelineDefaultListEventIds={timerUpcoming.defaultListEventIds}
-              timelineUpcoming={timerUpcoming.item}
-            />
-          </View>
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -714,7 +582,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'center',
     paddingHorizontal: 24,
     paddingTop: 8,
@@ -730,13 +598,9 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   upcomingStatsGroup: {
-    width: '100%',
+    alignSelf: 'stretch',
+    flexShrink: 0,
     gap: 16,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
   },
   summaryButton: {
     width: '100%',
@@ -763,11 +627,5 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.48)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
-  },
-  sharePoster: {
-    position: 'absolute',
-    top: 0,
-    left: -100000,
-    zIndex: -1,
   },
 });

@@ -3,6 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { StatCardDisplay } from '@/utils/timerCalculations';
 import { timerPhotoTextStyles } from '@/components/timer/timerPhotoStyles';
 import {
+  solidWhiteStatCard,
+  solidWhiteStatCardColors,
   elapsedRemainingLabel,
   statCardUnitText,
 } from '@/components/timer/timerStatCardStyles';
@@ -14,26 +16,32 @@ interface TimerUnifiedStatCardProps {
   remaining: StatCardDisplay;
   photoBackground?: boolean;
   showBorder?: boolean;
+  solidWhite?: boolean;
 }
 
 function StatColumn({
   title,
   display,
   photoBackground,
+  solidWhite,
 }: {
   title: string;
   display: StatCardDisplay;
   photoBackground: boolean;
+  solidWhite: boolean;
 }) {
   const theme = useAppTheme();
+  const onPhoto = photoBackground && !solidWhite;
+  const mutedColor = solidWhite ? solidWhiteStatCardColors.muted : theme.text.secondary;
+  const inkColor = solidWhite ? solidWhiteStatCardColors.ink : theme.text.primary;
 
   return (
     <View style={styles.column}>
       <Text
         style={[
           elapsedRemainingLabel.label,
-          { color: theme.text.secondary },
-          photoBackground && styles.photoText,
+          { color: mutedColor },
+          onPhoto && styles.photoText,
         ]}
       >
         {title}
@@ -43,8 +51,8 @@ function StatColumn({
         <Text
           style={[
             styles.primaryValue,
-            { color: theme.text.primary },
-            photoBackground && timerPhotoTextStyles.heroNumber,
+            { color: inkColor },
+            onPhoto && timerPhotoTextStyles.heroNumber,
           ]}
         >
           {display.primaryValue}
@@ -52,28 +60,30 @@ function StatColumn({
         <Text
           style={[
             styles.unitLabel,
-            { color: theme.text.secondary },
-            photoBackground && styles.photoText,
+            { color: mutedColor },
+            onPhoto && styles.photoText,
           ]}
         >
           {display.unitLabel}
         </Text>
       </View>
 
-      <View style={styles.detailBlock}>
-        {display.detailLines.map((line, index) => (
-          <Text
-            key={index}
-            style={[
-              styles.detailLine,
-              { color: theme.text.secondary },
-              photoBackground && styles.photoText,
-            ]}
-          >
-            {line}
-          </Text>
-        ))}
-      </View>
+      {display.detailLines.length > 0 ? (
+        <View style={styles.detailBlock}>
+          {display.detailLines.map((line, index) => (
+            <Text
+              key={index}
+              style={[
+                styles.detailLine,
+                { color: mutedColor },
+                onPhoto && styles.photoText,
+              ]}
+            >
+              {line}
+            </Text>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -84,11 +94,15 @@ export function TimerUnifiedStatCard({
   remaining,
   photoBackground = false,
   showBorder = true,
+  solidWhite = false,
 }: TimerUnifiedStatCardProps) {
   const theme = useAppTheme();
-  const dividerColor = photoBackground
-    ? 'rgba(242, 240, 236, 0.38)'
-    : theme.overlay.border;
+  const onPhoto = photoBackground && !solidWhite;
+  const dividerColor = solidWhite
+    ? 'rgba(28, 25, 23, 0.12)'
+    : onPhoto
+      ? 'rgba(242, 240, 236, 0.38)'
+      : theme.overlay.border;
 
   return (
     <View
@@ -98,13 +112,24 @@ export function TimerUnifiedStatCard({
           backgroundColor: theme.overlay.fill,
           borderColor: theme.overlay.border,
         },
-        photoBackground && styles.photoCard,
+        onPhoto && styles.photoCard,
         !showBorder && styles.borderless,
+        solidWhite && solidWhiteStatCard.card,
       ]}
     >
-      <StatColumn title="прошло" display={elapsed} photoBackground={photoBackground} />
+      <StatColumn
+        title="прошло"
+        display={elapsed}
+        photoBackground={photoBackground}
+        solidWhite={solidWhite}
+      />
       <View style={[styles.divider, { backgroundColor: dividerColor }]} />
-      <StatColumn title="осталось" display={remaining} photoBackground={photoBackground} />
+      <StatColumn
+        title="осталось"
+        display={remaining}
+        photoBackground={photoBackground}
+        solidWhite={solidWhite}
+      />
     </View>
   );
 }

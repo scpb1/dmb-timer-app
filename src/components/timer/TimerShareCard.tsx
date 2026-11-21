@@ -1,4 +1,5 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { FramedTimerDisplay } from '@/components/timer/FramedTimerDisplay';
 import { SegmentedCircularProgress } from '@/components/timer/SegmentedCircularProgress';
@@ -7,6 +8,8 @@ import { TimerDotGridDisplay } from '@/components/timer/TimerDotGridDisplay';
 import { TimerMilestonesTimelineDisplay } from '@/components/timer/TimerMilestonesTimelineDisplay';
 import { TimerStatCard } from '@/components/timer/TimerStatCard';
 import { TimerUnifiedStatCard } from '@/components/timer/TimerUnifiedStatCard';
+import { TimerUpcomingCard } from '@/components/timer/TimerUpcomingCard';
+import { PositionedCoverImage } from '@/components/common/PositionedCoverImage';
 import { ScreenBackground } from '@/components/common/ScreenBackground';
 import type { ActiveTimer, TimerSettings } from '@/types/timer';
 import { FEATURES } from '@/constants';
@@ -19,6 +22,7 @@ import {
   getFrameDisplayValues,
   getLinearDisplayValues,
   getPhaseCardTitle,
+  getServiceStatCardPair,
   getStatCardDisplay,
   type CenterDisplayValues,
   type ServiceProgress,
@@ -47,6 +51,9 @@ interface TimerShareCardProps {
   remainingBreakdown: TimeBreakdown;
   frameUpcoming?: TimerUpcomingItem | null;
   frameUpcomingGlyph?: EventGlyph | null;
+  upcoming?: TimerUpcomingItem | null;
+  upcomingGlyph?: EventGlyph | null;
+  showStatCards?: boolean;
   timelineEvents?: DisplayEvent[];
   timelineHolidays?: DisplayHoliday[];
   timelineDefaultListEventIds?: string[];
@@ -65,6 +72,9 @@ export function TimerShareCard({
   remainingBreakdown,
   frameUpcoming = null,
   frameUpcomingGlyph = null,
+  upcoming = null,
+  upcomingGlyph = null,
+  showStatCards = true,
   timelineEvents = [],
   timelineHolidays = [],
   timelineDefaultListEventIds = [],
@@ -108,15 +118,52 @@ export function TimerShareCard({
     settings.progressBarMode,
     statCardMode,
   );
+  const photoUpcomingCardBorder = FEATURES.showPhotoElementBorderSwitches
+    ? settings.photoUpcomingCardBorder
+    : PHOTO_ELEMENT_BORDER_WHEN_SWITCHES_HIDDEN.photoUpcomingCardBorder;
+  const showPhotoUpcomingBorder = !hasPhotoBackground || photoUpcomingCardBorder;
+  const showUpcomingCard =
+    !isFrameTimer &&
+    !isDotGridTimer &&
+    !isMilestonesTimer &&
+    settings.timerUpcomingPreview !== 'off' &&
+    upcoming != null &&
+    upcomingGlyph != null;
+  const vizUpcomingHeadline =
+    (isDotGridTimer || isMilestonesTimer) &&
+    settings.timerUpcomingPreview !== 'off' &&
+    timelineUpcoming
+      ? formatTimerVizUpcomingHeadline(
+          timelineUpcoming,
+          new Date(),
+          omitDemobilizationCountdown,
+        )
+      : null;
+  const showPhaseStat = showStatCards && !isFrameTimer && phase !== 'active' && phaseBreakdown != null;
+  const showActiveStat =
+    showStatCards && !isFrameTimer && phase === 'active' && !hideActiveUnifiedStats;
+  const activeStatCards = showActiveStat
+    ? getServiceStatCardPair(progress, passedBreakdown, remainingBreakdown, statCardMode)
+    : null;
+  const plaqueEstimate =
+    (showUpcomingCard ? 120 : 0) +
+    (showPhaseStat || showActiveStat ? 200 : 0) +
+    (showUpcomingCard && (showPhaseStat || showActiveStat) ? 16 : 0);
+  const circularSize = Math.round(Math.min(280, Math.max(148, height - 174 - plaqueEstimate)));
+  const [contentHeight, setContentHeight] = useState(0);
+  const posterScale = contentHeight > height && height > 0 ? height / contentHeight : 1;
 
   return (
     <View style={[styles.card, { width, height }]} collapsable={false}>
       {settings.backgroundImageUri ? (
         <>
-          <Image
-            source={{ uri: settings.backgroundImageUri }}
+          <PositionedCoverImage
+            uri={settings.backgroundImageUri}
+            focusX={settings.backgroundFocusX}
+            focusY={settings.backgroundFocusY}
+            width={width}
+            height={height}
             style={StyleSheet.absoluteFill}
-            resizeMode="cover"
           />
           <View
             style={[
@@ -129,7 +176,17 @@ export function TimerShareCard({
         <ScreenBackground />
       )}
 
-      <View style={styles.content}>
+      <View style={styles.fit} collapsable={false}>
+      <View
+        style={[styles.content, posterScale < 1 && { transform: [{ scale: posterScale }] }]}
+        collapsable={false}
+        onLayout={(event) => {
+          const nextHeight = event.nativeEvent.layout.height;
+          if (nextHeight > 0 && Math.abs(nextHeight - contentHeight) > 1) {
+            setContentHeight(nextHeight);
+          }
+        }}
+      >
         <Text style={[styles.timerName, hasPhotoBackground && styles.photoText]}>
           {activeTimer.name}
         </Text>
@@ -144,6 +201,7 @@ export function TimerShareCard({
             progressBarMode={settings.progressBarMode}
             percentDecimalPlaces={settings.percentDecimalPlaces}
             photoBackground={hasPhotoBackground}
+            size={circularSize}
           />
         ) : linearDisplay ? (
           <SegmentedLinearProgress
@@ -162,6 +220,8 @@ export function TimerShareCard({
             timerKind={activeTimer.kind}
             cellShape={settings.dotGridCellShape}
             photoBackground={hasPhotoBackground}
+            upcomingHeadline={vizUpcomingHeadline}
+            centerDisplay={settings.centerDisplay}
           />
         ) : isMilestonesTimer ? (
           <TimerMilestonesTimelineDisplay
@@ -171,19 +231,12 @@ export function TimerShareCard({
             decimalPlaces={settings.percentDecimalPlaces}
             timerKind={activeTimer.kind}
             photoBackground={hasPhotoBackground}
-            upcomingHeadline={
-              timelineUpcoming
-                ? formatTimerVizUpcomingHeadline(
-                    timelineUpcoming,
-                    new Date(),
-                    omitDemobilizationCountdown,
-                  )
-                : null
-            }
+            upcomingHeadline={vizUpcomingHeadline}
             events={timelineEvents}
             holidays={timelineHolidays}
             defaultListEventIds={timelineDefaultListEventIds}
             layout={settings.milestonesLayout ?? DEFAULT_TIMER_SETTINGS.milestonesLayout}
+            centerDisplay={settings.centerDisplay}
           />
         ) : frameDisplay ? (
           <FramedTimerDisplay
@@ -196,30 +249,46 @@ export function TimerShareCard({
           />
         ) : null}
 
-        {!isFrameTimer && phase !== 'active' && phaseBreakdown ? (
-          <View style={styles.statsRow}>
-            <TimerStatCard
-              title={phaseCardTitle}
-              display={getStatCardDisplay(phaseBreakdown, statCardMode, {
-                phase,
-                kind: activeTimer.kind,
-              })}
-              photoBackground={hasPhotoBackground}
-              showBorder={showPhotoStatBorder}
-            />
-          </View>
-        ) : null}
+        {showUpcomingCard || showPhaseStat || showActiveStat ? (
+          <View style={styles.plaques}>
+            {showUpcomingCard && upcoming && upcomingGlyph ? (
+              <TimerUpcomingCard
+                item={upcoming}
+                glyph={upcomingGlyph}
+                photoBackground={hasPhotoBackground}
+                showBorder={showPhotoUpcomingBorder}
+                omitDemobilizationCountdown={omitDemobilizationCountdown}
+              />
+            ) : null}
 
-        {!isFrameTimer && phase === 'active' && !hideActiveUnifiedStats ? (
-          <View style={styles.statsRow}>
-            <TimerUnifiedStatCard
-              elapsed={getStatCardDisplay(passedBreakdown, statCardMode)}
-              remaining={getStatCardDisplay(remainingBreakdown, statCardMode)}
-              photoBackground={hasPhotoBackground}
-              showBorder={showPhotoStatBorder}
-            />
+            {showPhaseStat && phaseBreakdown ? (
+              <View style={styles.statsRow}>
+                <TimerStatCard
+                  title={phaseCardTitle}
+                  display={getStatCardDisplay(phaseBreakdown, statCardMode, {
+                    phase,
+                    kind: activeTimer.kind,
+                    progress,
+                  })}
+                  photoBackground={hasPhotoBackground}
+                  showBorder={showPhotoStatBorder}
+                />
+              </View>
+            ) : null}
+
+            {activeStatCards ? (
+              <View style={styles.statsRow}>
+                <TimerUnifiedStatCard
+                  elapsed={activeStatCards.elapsed}
+                  remaining={activeStatCards.remaining}
+                  photoBackground={hasPhotoBackground}
+                  showBorder={showPhotoStatBorder}
+                />
+              </View>
+            ) : null}
           </View>
         ) : null}
+      </View>
       </View>
     </View>
   );
@@ -230,14 +299,24 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.light.background.start,
   },
-  content: {
+  fit: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  content: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
     paddingHorizontal: 24,
     paddingTop: 48,
     paddingBottom: 48,
     gap: 28,
+  },
+  plaques: {
+    alignSelf: 'stretch',
+    flexShrink: 0,
+    gap: 16,
   },
   timerName: {
     fontFamily: typography.fontFamily.sansBold,
