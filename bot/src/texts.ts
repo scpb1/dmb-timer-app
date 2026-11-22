@@ -173,10 +173,34 @@ function timeBlock(label: string, breakdown: TimeBreakdown): string[] {
   return [`${boldText(label)}: ${formatDays(breakdown.days)}`, '', ...formatClockLines(breakdown)];
 }
 
-export function formatNextEventTeaser(event: DisplayEvent, today: Date): string {
+function formatNextEventNameAndTiming(event: DisplayEvent, today: Date): {
+  name: string;
+  date: string;
+  delta: number;
+} {
   const name = escapeHtml(event.name.trim() || event.name);
   const date = escapeHtml(format(event.date, 'd MMMM yyyy', { locale: ru }));
   const delta = differenceInCalendarDays(startOfDay(event.date), startOfDay(today));
+  return { name, date, delta };
+}
+
+/** Строка события для списка участников (без подписи «Ближайшее»). */
+function formatNextEventListItem(event: DisplayEvent, today: Date): string {
+  const { name, date, delta } = formatNextEventNameAndTiming(event, today);
+  if (delta === 0) {
+    return `<b>${name}</b> (сегодня, ${date})`;
+  }
+  if (delta === 1) {
+    return `<b>${name}</b> (завтра, ${date})`;
+  }
+  if (delta > 1) {
+    return `<b>${name}</b> – через ${formatDays(delta)} (${date})`;
+  }
+  return `<b>${name}</b> (${date})`;
+}
+
+export function formatNextEventTeaser(event: DisplayEvent, today: Date): string {
+  const { name, date, delta } = formatNextEventNameAndTiming(event, today);
   if (delta === 0) {
     return `📍 Сегодня: <b>${name}</b> (${date})`;
   }
@@ -184,9 +208,9 @@ export function formatNextEventTeaser(event: DisplayEvent, today: Date): string 
     return `📍 Завтра: <b>${name}</b> (${date})`;
   }
   if (delta > 1) {
-    return `📍 Ближайшее: <b>${name}</b> — через ${formatDays(delta)} (${date})`;
+    return `📍 Ближайшее событие: <b>${name}</b> – через ${formatDays(delta)} (${date})`;
   }
-  return `📍 Ближайшее: <b>${name}</b> (${date})`;
+  return `📍 Ближайшее событие: <b>${name}</b> (${date})`;
 }
 
 function appendNextEventLine(lines: string[], user: UserRecord, today: Date): void {
@@ -217,7 +241,7 @@ export function termMessage(user: UserRecord, now = moscowNow()): string {
     progress.phase,
   );
   const percent =
-    progress.phase === 'before' ? 0 : progress.phase === 'after' ? 100 : Math.floor(progress.progressPercent);
+    progress.phase === 'before' ? 0 : progress.phase === 'after' ? 100 : progress.progressPercent;
   const dates = `${formatDotDate(enlistment)} – ${formatDotDate(demobilization)}`;
 
   if (progress.phase === 'before') {
@@ -706,14 +730,19 @@ export function nearestEventForPersonMessage(user: UserRecord, today = moscowCal
 }
 
 export function groupNearestEventsMessage(users: UserRecord[], today = moscowCalendarToday()): string[] {
-  const lines: string[] = [`📍 ${boldText('Ближайшие события')}`, ''];
+  const lines: string[] = [`📍 ${boldText('Ближайшие события участников чата')}`, ''];
   const rows: string[] = [];
   for (const user of users) {
-    const line = nearestEventMessage(user, today);
-    if (!line) {
+    if (!user.enlistmentDate || !user.demobilizationDate) {
       continue;
     }
-    rows.push(`${coupleHtml(user)}: ${line.replace(/^📍\s*/, '')}`);
+    const enlistment = fromIsoDay(user.enlistmentDate);
+    const demobilization = fromIsoDay(user.demobilizationDate);
+    const next = findNextUpcomingEvent(user.events, enlistment, demobilization, today);
+    if (!next) {
+      continue;
+    }
+    rows.push(`${coupleHtml(user)}: ${formatNextEventListItem(next, today)}`);
   }
   rows.sort((a, b) => a.localeCompare(b, 'ru'));
   if (rows.length === 0) {
@@ -728,46 +757,61 @@ function calendarMonthTitle(monthAnchor: Date): string {
   return format(monthAnchor, 'LLLL yyyy', { locale: ru });
 }
 
-function calendarLinesForUser(user: UserRecord, monthAnchor: Date, today: Date): string[] {
+function coupleBoldUnderlineHtml(user: { userName: string; partnerName: string; firstName: string }): string {
+  return `<b><u>${coupleHtml(user)}</u></b>`;
+}
+
+function calendarMonthEventsForUser(user: UserRecord, monthAnchor: Date, today: Date): DisplayEvent[] {
   if (!user.enlistmentDate || !user.demobilizationDate) {
     return [];
   }
   const enlistment = fromIsoDay(user.enlistmentDate);
   const demobilization = fromIsoDay(user.demobilizationDate);
-  const events = eventsInCalendarMonth(user.events, enlistment, demobilization, monthAnchor, today);
+  return eventsInCalendarMonth(user.events, enlistment, demobilization, monthAnchor, today);
+}
+
+function formatCalendarMonthEventLine(event: DisplayEvent, today: Date): string {
+  const when = escapeHtml(format(event.date, 'd MMMM', { locale: ru }));
+  const title = escapeHtml(event.name.trim() || event.name);
+  const past = startOfDay(event.date).getTime() < startOfDay(today).getTime();
+  const check = past ? ' ✅' : '';
+  return `${when} – ${title}${check}`;
+}
+
+function calendarGroupBlockForUser(user: UserRecord, monthAnchor: Date, today: Date): string[] {
+  const events = calendarMonthEventsForUser(user, monthAnchor, today);
   if (events.length === 0) {
     return [];
   }
   const head = `${coupleHtml(user)}:`;
-  const body = events.map((event) => {
-    const title = escapeHtml(event.name.trim() || event.name);
-    const when = escapeHtml(format(event.date, 'd MMM', { locale: ru }));
-    return `  ${when} — <b>${title}</b>`;
-  });
+  const body = events.map((event) => `  ${formatCalendarMonthEventLine(event, today)}`);
   return [head, ...body, ''];
 }
 
 export function calendarMonthForPersonMessage(user: UserRecord, today = moscowCalendarToday()): string {
   const monthTitle = calendarMonthTitle(today);
-  const lines = [`📅 ${boldText('Календарь')} — ${escapeHtml(monthTitle)}`, ''];
+  const monthEsc = escapeHtml(monthTitle);
+  const header = `🪖 События пары ${coupleBoldUnderlineHtml(user)} на ${monthEsc}:`;
   if (!user.enlistmentDate || !user.demobilizationDate) {
-    return lines.concat('Сначала поставь даты службы в личке').join('\n');
+    return `${header}\n\nСначала поставь даты службы в личке`;
   }
-  const block = calendarLinesForUser(user, today, today);
-  if (block.length === 0) {
+  const events = calendarMonthEventsForUser(user, today, today);
+  const lines = [header, ''];
+  if (events.length === 0) {
     lines.push(`В ${monthTitle.toLocaleLowerCase('ru')} событий нет`);
   } else {
-    lines.push(...block);
+    lines.push(...events.map((event) => formatCalendarMonthEventLine(event, today)));
   }
   return lines.join('\n').trimEnd();
 }
 
 export function groupCalendarMonthMessage(users: UserRecord[], today = moscowCalendarToday()): string[] {
   const monthTitle = calendarMonthTitle(today);
-  const lines: string[] = [`📅 ${boldText('Календарь')} — ${escapeHtml(monthTitle)}`, ''];
+  const monthEsc = escapeHtml(monthTitle);
+  const lines: string[] = [`🪖 События участников чата на ${monthEsc}:`, ''];
   const blocks: string[][] = [];
   for (const user of users) {
-    const block = calendarLinesForUser(user, today, today);
+    const block = calendarGroupBlockForUser(user, today, today);
     if (block.length === 0) {
       continue;
     }
@@ -813,8 +857,10 @@ export function groupHello(): string {
     `Я могу подсказать ${boldText('каждой')} из вас:`,
     `– срок службы (команда ${codeText('ддд')} или /mydmb);`,
     `– ближайшее событие (${codeText('ближайшее')} или /next_event, ${codeText('ближайшие')} или /list_next_events);`,
-    `– календарь на месяц (${codeText('календарь')} или /calendar);`,
+    `– события на месяц (${codeText('календарь')} или /list_month_events, /month_events);`,
     `– дембеля в чате (${codeText('Сводка')} или /list_dmb);`,
+    `– действующие призывы (${codeText('список участников чата')} или /list_members);`,
+    `– все пары сводки (${codeText('список всех участников чата')} или /list_all_members);`,
     `– события на сегодня (${codeText('События')} или /list_events)`,
     '',
     `✍🏻 Сводку ддд присылаю в настраиваемый час (по умолчанию ${digestTime}). О вехах на завтра напомню вечером около ${tomorrowTime}. Поздравляю с событиями в день!`,

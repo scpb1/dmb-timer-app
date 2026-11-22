@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 
 import { channelChatId, config } from './config';
 import { deliverChatDigest, deliverChatHolidays, presentChatUsers } from './digest';
+import { buildActiveRosterMessages, buildAllRosterMessages } from './roster';
 import {
   EVENT_NAME_MAX_LENGTH,
   buildDisplayEvents,
@@ -39,6 +40,8 @@ import {
   askFromReply,
   CALENDAR_WORD,
   isExactWord,
+  isActiveRosterPhrase,
+  isAllRosterPhrase,
   isGroupEventsWord,
   isLeaveDigestPhrase,
   isNewTimerWord,
@@ -699,6 +702,14 @@ export function createBot(): Bot<BotContext> {
     await showGroupSummary(ctx);
   });
 
+  bot.command('list_members', async (ctx) => {
+    await showGroupActiveRoster(ctx);
+  });
+
+  bot.command('list_all_members', async (ctx) => {
+    await showGroupAllRoster(ctx);
+  });
+
   bot.command('list_events', async (ctx) => {
     await showGroupHolidays(ctx);
   });
@@ -719,8 +730,16 @@ export function createBot(): Bot<BotContext> {
     await showGroupNearestAll(ctx);
   });
 
-  bot.command('calendar', async (ctx) => {
+  bot.command(['list_month_events', 'calendar'], async (ctx) => {
     await showGroupCalendarAll(ctx);
+  });
+
+  bot.command('month_events', async (ctx) => {
+    if (ctx.chat?.type === 'private') {
+      await ctx.reply(copy.groupFeatureOnly());
+      return;
+    }
+    await replyGroupCalendar(ctx, { kind: 'self' });
   });
 
   bot.command('out_dmb', async (ctx) => {
@@ -1097,6 +1116,16 @@ export function createBot(): Bot<BotContext> {
 
     if (isGroupEventsWord(text)) {
       await showGroupHolidays(ctx);
+      return;
+    }
+
+    if (isActiveRosterPhrase(text)) {
+      await showGroupActiveRoster(ctx);
+      return;
+    }
+
+    if (isAllRosterPhrase(text)) {
+      await showGroupAllRoster(ctx);
       return;
     }
 
@@ -1593,6 +1622,13 @@ async function replyGroupCalendar(ctx: BotContext, ask: TimerAsk = { kind: 'self
   if (!target) {
     return;
   }
+  if (!hasDates(target)) {
+    await replyHere(
+      ctx,
+      target.telegramId === user.telegramId ? copy.groupNeedDates() : copy.groupTimerNoDates(),
+    );
+    return;
+  }
   await replyHere(ctx, copy.calendarMonthForPersonMessage(target), { parse_mode: 'HTML' });
 }
 
@@ -1636,6 +1672,34 @@ async function showGroupHolidays(ctx: BotContext): Promise<void> {
     return;
   }
   await deliverChatHolidays(ctx.api, ctx.chat.id, ctx.msg?.message_id, true);
+}
+
+async function showGroupRoster(
+  ctx: BotContext,
+  build: typeof buildActiveRosterMessages,
+): Promise<void> {
+  if (ctx.chat?.type === 'private') {
+    await ctx.reply(copy.groupFeatureOnly());
+    return;
+  }
+  const connected = await connectGroupUser(ctx);
+  if (!connected || !ctx.chat) {
+    return;
+  }
+  const present = await presentChatUsers(ctx.api, ctx.chat.id);
+  const users = present?.users ?? [];
+  const parts = build(users);
+  for (const part of parts) {
+    await replyHere(ctx, part, { parse_mode: 'HTML' });
+  }
+}
+
+async function showGroupActiveRoster(ctx: BotContext): Promise<void> {
+  await showGroupRoster(ctx, buildActiveRosterMessages);
+}
+
+async function showGroupAllRoster(ctx: BotContext): Promise<void> {
+  await showGroupRoster(ctx, buildAllRosterMessages);
 }
 
 async function showTerm(ctx: BotContext): Promise<void> {

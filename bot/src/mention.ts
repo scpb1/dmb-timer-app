@@ -134,6 +134,17 @@ export function isSummaryWord(text: string): boolean {
   return text.trim().toLocaleLowerCase('ru') === 'сводка';
 }
 
+const ACTIVE_ROSTER_PHRASE = 'список участников чата';
+const ALL_ROSTER_PHRASE = 'список всех участников чата';
+
+export function isActiveRosterPhrase(text: string): boolean {
+  return text.trim().toLocaleLowerCase('ru') === ACTIVE_ROSTER_PHRASE;
+}
+
+export function isAllRosterPhrase(text: string): boolean {
+  return text.trim().toLocaleLowerCase('ru') === ALL_ROSTER_PHRASE;
+}
+
 const GROUP_EVENTS_WORD = 'события';
 
 export function isGroupEventsWord(text: string): boolean {
