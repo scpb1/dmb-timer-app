@@ -31,6 +31,7 @@ export const config = {
   adminChatId: optional('ADMIN_CHAT_ID') ? Number(optional('ADMIN_CHAT_ID')) : undefined,
   timezone: optional('TZ') ?? 'Europe/Moscow',
   dataFile: path.resolve(__dirname, '..', 'data', 'store.json'),
+  databaseUrl: required('DATABASE_URL'),
   subscriptionRequired,
 };
 

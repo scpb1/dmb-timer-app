@@ -48,7 +48,9 @@ import {
   isSummaryWord,
   NEAREST_EVENT_WORD,
   NEAREST_EVENTS_WORD,
-  parseCalendarAsk,
+  defaultMonthAnchor,
+  parseCalendarChatAsk,
+  parseCalendarPersonAsk,
   parseDigestHourAsk,
   parseFrequencyAsk,
   parseNearestEventAsk,
@@ -119,19 +121,20 @@ function displayName(ctx: BotContext): string {
   return ctx.from?.first_name?.trim() || 'друг';
 }
 
-function currentUser(ctx: BotContext): UserRecord | undefined {
-  return ctx.from ? getUser(ctx.from.id) : undefined;
+async function currentUser(ctx: BotContext): Promise<UserRecord | undefined> {
+  return ctx.from ? await getUser(ctx.from.id) : undefined;
 }
 
-function girlName(ctx: BotContext): string {
-  return currentUser(ctx)?.userName?.trim() ?? '';
+async function girlName(ctx: BotContext): Promise<string> {
+  const user = await currentUser(ctx);
+  return user?.userName?.trim() ?? '';
 }
 
-function touchUser(ctx: BotContext): UserRecord | undefined {
+async function touchUser(ctx: BotContext): Promise<UserRecord | undefined> {
   if (!ctx.from) {
     return undefined;
   }
-  return upsertUser({
+  return await upsertUser({
     telegramId: ctx.from.id,
     username: ctx.from.username ?? null,
     firstName: ctx.from.first_name,
@@ -160,7 +163,7 @@ function needsNames(user: UserRecord): boolean {
 
 async function promptServiceDates(ctx: BotContext): Promise<void> {
   ctx.session.step = 'service_dates';
-  await ctx.reply(copy.askServiceDates(girlName(ctx)), {
+  await ctx.reply(copy.askServiceDates(await girlName(ctx)), {
     parse_mode: 'HTML',
     reply_markup: settingsBackKeyboard(),
   });
@@ -168,14 +171,14 @@ async function promptServiceDates(ctx: BotContext): Promise<void> {
 
 async function promptNames(ctx: BotContext): Promise<void> {
   ctx.session.step = 'names';
-  await ctx.reply(copy.askNames(girlName(ctx)), {
+  await ctx.reply(copy.askNames(await girlName(ctx)), {
     parse_mode: 'HTML',
     reply_markup: settingsBackKeyboard(),
   });
 }
 
 async function continueSubOnboarding(ctx: BotContext): Promise<void> {
-  const user = currentUser(ctx);
+  const user = await currentUser(ctx);
   if (!user) {
     return;
   }
@@ -220,7 +223,7 @@ async function rememberAdmin(ctx: BotContext): Promise<void> {
     return;
   }
 
-  const pending = setAdminChatId(from.id);
+  const pending = await setAdminChatId(from.id);
   if (pending.length === 0 || ctx.chat?.type !== 'private') {
     return;
   }
@@ -233,15 +236,15 @@ async function rememberAdmin(ctx: BotContext): Promise<void> {
       });
     } catch (error) {
       console.error('Не удалось дослать отзыв админу', error);
-      addPendingFeedback(item);
+      await addPendingFeedback(item);
     }
   }
 }
 
 async function deliverFeedback(ctx: BotContext, feedback: PendingFeedback): Promise<'sent' | 'queued'> {
-  const adminId = getAdminChatId();
+  const adminId = await getAdminChatId();
   if (!adminId) {
-    addPendingFeedback(feedback);
+    await addPendingFeedback(feedback);
     console.warn(`Нет чата админа @${config.adminUsername}. Пусть напишет боту /start.`);
     return 'queued';
   }
@@ -254,7 +257,7 @@ async function deliverFeedback(ctx: BotContext, feedback: PendingFeedback): Prom
     return 'sent';
   } catch (error) {
     console.error('Не удалось отправить отзыв админу', error);
-    addPendingFeedback(feedback);
+    await addPendingFeedback(feedback);
     return 'queued';
   }
 }
@@ -274,7 +277,7 @@ async function replyTerm(
   if (!hasDates(user)) {
     ctx.session.step = 'enlistment';
     ctx.session.pendingEnlistment = undefined;
-    await ctx.reply(copy.askEnlistment(girlName(ctx)), { reply_markup: mainKeyboard() });
+    await ctx.reply(copy.askEnlistment(await girlName(ctx)), { reply_markup: mainKeyboard() });
     return;
   }
   await ctx.reply(copy.termMessage(user), {
@@ -332,7 +335,7 @@ async function showDeleteList(ctx: BotContext, user: UserRecord): Promise<void> 
     if (ctx.session.step === 'event_delete') {
       resetStep(ctx);
     }
-    await ctx.reply(copy.nothingToDelete(girlName(ctx)));
+    await ctx.reply(copy.nothingToDelete(await girlName(ctx)));
     return;
   }
   await forgetDeleteList(ctx);
@@ -371,12 +374,12 @@ function sameEventName(left: string, right: string): boolean {
 async function addKnownEvent(ctx: BotContext, user: UserRecord, rawName: string): Promise<void> {
   const known = findKnownEvent(rawName);
   if (!known) {
-    await ctx.reply(copy.unknownEvent(girlName(ctx)), { reply_markup: unknownEventKeyboard() });
+    await ctx.reply(copy.unknownEvent(await girlName(ctx)), { reply_markup: unknownEventKeyboard() });
     return;
   }
   if (!hasDates(user)) {
     resetStep(ctx);
-    await ctx.reply(copy.needServiceDates(girlName(ctx)), { reply_markup: mainKeyboard() });
+    await ctx.reply(copy.needServiceDates(await girlName(ctx)), { reply_markup: mainKeyboard() });
     return;
   }
 
@@ -401,11 +404,11 @@ async function addKnownEvent(ctx: BotContext, user: UserRecord, rawName: string)
 
   const date = catalogDate(known, enlistment, demobilization);
   if (!date || !isBetweenService(date, enlistment, demobilization)) {
-    await ctx.reply(copy.eventOutsideService(girlName(ctx)));
+    await ctx.reply(copy.eventOutsideService(await girlName(ctx)));
     return;
   }
 
-  const next = saveUser({
+  const next = await saveUser({
     ...user,
     events: {
       ...user.events,
@@ -425,7 +428,7 @@ async function storeSavedEvent(
 ): Promise<void> {
   if (!hasDates(user)) {
     resetStep(ctx);
-    await ctx.reply(copy.needServiceDates(girlName(ctx)), { reply_markup: mainKeyboard() });
+    await ctx.reply(copy.needServiceDates(await girlName(ctx)), { reply_markup: mainKeyboard() });
     return;
   }
 
@@ -440,11 +443,11 @@ async function storeSavedEvent(
   };
   const date = savedEventDate(saved, enlistment, demobilization);
   if (!date || !isBetweenService(date, enlistment, demobilization)) {
-    await ctx.reply(copy.eventOutsideService(girlName(ctx)), { reply_markup: eventBackKeyboard() });
+    await ctx.reply(copy.eventOutsideService(await girlName(ctx)), { reply_markup: eventBackKeyboard() });
     return;
   }
 
-  const next = saveUser({
+  const next = await saveUser({
     ...user,
     events: {
       ...user.events,
@@ -471,7 +474,7 @@ async function saveCustomEvent(ctx: BotContext, user: UserRecord, text: string):
   const name = lines[0];
   const when = parseEventWhen(lines.slice(1).join(' '));
   if (!name || name.length > EVENT_NAME_MAX_LENGTH || !when) {
-    await ctx.reply(copy.badEventInput(girlName(ctx)), { reply_markup: eventBackKeyboard() });
+    await ctx.reply(copy.badEventInput(await girlName(ctx)), { reply_markup: eventBackKeyboard() });
     return;
   }
   await storeSavedEvent(ctx, user, name, when);
@@ -481,7 +484,7 @@ async function saveKnownDate(ctx: BotContext, user: UserRecord, text: string): P
   const name = ctx.session.pendingEventName?.trim();
   const when = parseEventWhen(text);
   if (!name || name.length > EVENT_NAME_MAX_LENGTH || !when) {
-    await ctx.reply(copy.badEventInput(girlName(ctx)), { reply_markup: eventBackKeyboard() });
+    await ctx.reply(copy.badEventInput(await girlName(ctx)), { reply_markup: eventBackKeyboard() });
     return;
   }
   await storeSavedEvent(ctx, user, name, when);
@@ -489,14 +492,14 @@ async function saveKnownDate(ctx: BotContext, user: UserRecord, text: string): P
 
 async function replySettings(ctx: BotContext): Promise<void> {
   resetStep(ctx);
-  await ctx.reply(copy.settingsMessage(currentUser(ctx)), {
+  await ctx.reply(copy.settingsMessage(await currentUser(ctx)), {
     parse_mode: 'HTML',
     reply_markup: settingsKeyboard(),
   });
 }
 
-function saveDates(user: UserRecord, enlistment: Date, demobilization: Date): UserRecord {
-  return saveUser({
+async function saveDates(user: UserRecord, enlistment: Date, demobilization: Date): Promise<UserRecord> {
+  return await saveUser({
     ...user,
     enlistmentDate: toIsoDay(enlistment),
     demobilizationDate: toIsoDay(demobilization),
@@ -506,19 +509,19 @@ function saveDates(user: UserRecord, enlistment: Date, demobilization: Date): Us
 async function handleNamesInput(ctx: BotContext, user: UserRecord, text: string): Promise<void> {
   const pair = copy.splitSlashPair(text);
   if (!pair) {
-    await ctx.reply(copy.badNames(girlName(ctx)), { reply_markup: settingsBackKeyboard() });
+    await ctx.reply(copy.badNames(await girlName(ctx)), { reply_markup: settingsBackKeyboard() });
     return;
   }
   if (!pair.left || !pair.right) {
-    await ctx.reply(copy.namesIncomplete(girlName(ctx)), { reply_markup: settingsBackKeyboard() });
+    await ctx.reply(copy.namesIncomplete(await girlName(ctx)), { reply_markup: settingsBackKeyboard() });
     return;
   }
   if (pair.left.length > copy.NAME_MAX_LENGTH || pair.right.length > copy.NAME_MAX_LENGTH) {
-    await ctx.reply(copy.namesTooLong(girlName(ctx)), { reply_markup: settingsBackKeyboard() });
+    await ctx.reply(copy.namesTooLong(await girlName(ctx)), { reply_markup: settingsBackKeyboard() });
     return;
   }
 
-  saveUser({
+  await saveUser({
     ...user,
     userName: pair.left,
     partnerName: pair.right,
@@ -534,22 +537,22 @@ async function handleNamesInput(ctx: BotContext, user: UserRecord, text: string)
 async function handleServiceDatesInput(ctx: BotContext, user: UserRecord, text: string): Promise<void> {
   const pair = copy.splitSlashPair(text);
   if (!pair) {
-    await ctx.reply(copy.badServiceDates(girlName(ctx)), { reply_markup: settingsBackKeyboard() });
+    await ctx.reply(copy.badServiceDates(await girlName(ctx)), { reply_markup: settingsBackKeyboard() });
     return;
   }
 
   const enlistment = parseFullDate(pair.left);
   const demobilization = parseFullDate(pair.right);
   if (!enlistment || !demobilization) {
-    await ctx.reply(copy.badServiceDates(girlName(ctx)), { reply_markup: settingsBackKeyboard() });
+    await ctx.reply(copy.badServiceDates(await girlName(ctx)), { reply_markup: settingsBackKeyboard() });
     return;
   }
   if (demobilization <= enlistment) {
-    await ctx.reply(copy.demobilizationBeforeEnlistment(girlName(ctx)), { reply_markup: settingsBackKeyboard() });
+    await ctx.reply(copy.demobilizationBeforeEnlistment(await girlName(ctx)), { reply_markup: settingsBackKeyboard() });
     return;
   }
 
-  const next = saveDates(user, enlistment, demobilization);
+  const next = await saveDates(user, enlistment, demobilization);
   const fromSubOnboarding = ctx.session.subOnboarding;
   const keyboard = fromSubOnboarding ? mainKeyboard() : settingsKeyboard();
   if (fromSubOnboarding && needsNames(next)) {
@@ -602,7 +605,7 @@ export function createBot(): Bot<BotContext> {
       return;
     }
 
-    touchUser(ctx);
+    await touchUser(ctx);
     await forgetDeleteList(ctx);
     resetStep(ctx);
     await sendGreeting(ctx);
@@ -611,7 +614,7 @@ export function createBot(): Bot<BotContext> {
     }
     const subscribed = await isSubscribed(ctx, ctx.from.id);
     if (subscribed === 'error') {
-      await ctx.reply(copy.subscriptionCheckLater(girlName(ctx)));
+      await ctx.reply(copy.subscriptionCheckLater(await girlName(ctx)));
       return;
     }
     if (subscribed === 'no') {
@@ -626,18 +629,18 @@ export function createBot(): Bot<BotContext> {
       return;
     }
 
-    touchUser(ctx);
+    await touchUser(ctx);
     const subscribed = await isSubscribed(ctx, ctx.from.id);
     if (subscribed === 'error') {
-      await ctx.reply(copy.subscriptionCheckLater(girlName(ctx)));
+      await ctx.reply(copy.subscriptionCheckLater(await girlName(ctx)));
       return;
     }
     if (subscribed === 'no') {
-      await ctx.reply(copy.needSubscription(girlName(ctx)), { reply_markup: subscribeKeyboard() });
+      await ctx.reply(copy.needSubscription(await girlName(ctx)), { reply_markup: subscribeKeyboard() });
       return;
     }
 
-    await ctx.reply(copy.subscriptionOk(girlName(ctx)), { reply_markup: mainKeyboard() });
+    await ctx.reply(copy.subscriptionOk(await girlName(ctx)), { reply_markup: mainKeyboard() });
     await continueSubOnboarding(ctx);
   });
 
@@ -651,7 +654,7 @@ export function createBot(): Bot<BotContext> {
     if (status !== 'member' && status !== 'administrator') {
       return;
     }
-    ensureChat(ctx.chat.id, chatTitle(ctx));
+    await ensureChat(ctx.chat.id, chatTitle(ctx));
     const joined = previous === 'left' || previous === 'kicked';
     if (joined) {
       await ctx.reply(copy.groupHello(), { parse_mode: 'HTML' });
@@ -676,14 +679,14 @@ export function createBot(): Bot<BotContext> {
       if (ctx.callbackQuery) {
         await ctx.answerCallbackQuery();
       }
-      await ctx.reply(copy.subscriptionCheckNeedsAdmin(girlName(ctx)));
+      await ctx.reply(copy.subscriptionCheckNeedsAdmin(await girlName(ctx)));
       return;
     }
     if (subscribed === 'no') {
       if (ctx.callbackQuery) {
         await ctx.answerCallbackQuery({ text: 'Сначала подписка на канал', show_alert: true });
       }
-      await ctx.reply(copy.needSubscription(girlName(ctx)), { reply_markup: subscribeKeyboard() });
+      await ctx.reply(copy.needSubscription(await girlName(ctx)), { reply_markup: subscribeKeyboard() });
       return;
     }
 
@@ -766,7 +769,7 @@ export function createBot(): Bot<BotContext> {
       return;
     }
     const title = 'title' in ctx.chat ? ctx.chat.title ?? '' : '';
-    const chat = setChatDigest(ctx.chat.id, title, mode as DigestMode);
+    const chat = await setChatDigest(ctx.chat.id, title, mode as DigestMode);
     await ctx.reply(
       copy.digestSaved(chat.mode, copy.digestIntervalPhrase(chat.mode, chat.customDays), chat.digestHour),
     );
@@ -789,7 +792,7 @@ export function createBot(): Bot<BotContext> {
     }
     await ctx.answerCallbackQuery();
     const title = 'title' in ctx.chat ? ctx.chat.title ?? '' : '';
-    const chat = setChatDigestHour(ctx.chat.id, title, hour);
+    const chat = await setChatDigestHour(ctx.chat.id, title, hour);
     await ctx.reply(copy.listDmbHourSaved(chat.digestHour));
   });
 
@@ -805,7 +808,7 @@ export function createBot(): Bot<BotContext> {
     }
     await ctx.answerCallbackQuery();
     const title = 'title' in ctx.chat ? ctx.chat.title ?? '' : '';
-    const chat = ensureChat(ctx.chat.id, title);
+    const chat = await ensureChat(ctx.chat.id, title);
     if (action === 'dmb_hour') {
       await ctx.reply(copy.listDmbHourSettingsText(chat.digestHour), {
         parse_mode: 'HTML',
@@ -838,7 +841,7 @@ export function createBot(): Bot<BotContext> {
     }
     await ctx.answerCallbackQuery();
     const title = 'title' in ctx.chat ? ctx.chat.title ?? '' : '';
-    const chat = setChatEventsHour(ctx.chat.id, title, hour);
+    const chat = await setChatEventsHour(ctx.chat.id, title, hour);
     await ctx.reply(copy.listEventsHourSaved(chat.eventsHour));
   });
 
@@ -848,7 +851,7 @@ export function createBot(): Bot<BotContext> {
     }
     await forgetDeleteList(ctx);
     resetStep(ctx);
-    await replyEvents(ctx, currentUser(ctx));
+    await replyEvents(ctx, await currentUser(ctx));
   });
 
   bot.command('author', async (ctx) => {
@@ -857,7 +860,7 @@ export function createBot(): Bot<BotContext> {
     }
     await forgetDeleteList(ctx);
     resetStep(ctx);
-    await ctx.reply(copy.askFeedbackKind(girlName(ctx)), {
+    await ctx.reply(copy.askFeedbackKind(await girlName(ctx)), {
       parse_mode: 'HTML',
       reply_markup: feedbackKindKeyboard(),
     });
@@ -880,7 +883,7 @@ export function createBot(): Bot<BotContext> {
     }
     ctx.session.step = 'feedback_text';
     ctx.session.feedbackKind = kind as FeedbackKind;
-    await ctx.reply(copy.askFeedbackText(girlName(ctx)), { reply_markup: mainKeyboard() });
+    await ctx.reply(copy.askFeedbackText(await girlName(ctx)), { reply_markup: mainKeyboard() });
   });
 
   bot.callbackQuery('event:add', async (ctx) => {
@@ -929,7 +932,7 @@ export function createBot(): Bot<BotContext> {
     }
     await forgetDeleteList(ctx);
     resetStep(ctx);
-    await ctx.reply(copy.deleteAllDataConfirm(girlName(ctx)), {
+    await ctx.reply(copy.deleteAllDataConfirm(await girlName(ctx)), {
       reply_markup: settingsDeleteConfirmKeyboard(),
     });
   });
@@ -941,7 +944,7 @@ export function createBot(): Bot<BotContext> {
     }
     await forgetDeleteList(ctx);
     resetStep(ctx);
-    clearUserData(ctx.from.id);
+    await clearUserData(ctx.from.id);
     await ctx.reply(copy.deleteAllDataDone(), { reply_markup: mainKeyboard() });
   });
 
@@ -958,13 +961,13 @@ export function createBot(): Bot<BotContext> {
     if (ctx.chat?.type !== 'private') {
       return;
     }
-    const user = currentUser(ctx);
+    const user = await currentUser(ctx);
     if (!user) {
       return;
     }
     if (!hasDates(user)) {
       resetStep(ctx);
-      await ctx.reply(copy.needServiceDates(girlName(ctx)), { reply_markup: mainKeyboard() });
+      await ctx.reply(copy.needServiceDates(await girlName(ctx)), { reply_markup: mainKeyboard() });
       return;
     }
 
@@ -1000,7 +1003,7 @@ export function createBot(): Bot<BotContext> {
       return;
     }
 
-    const next = saveUser({
+    const next = await saveUser({
       ...user,
       events: {
         ...user.events,
@@ -1017,7 +1020,7 @@ export function createBot(): Bot<BotContext> {
     if (ctx.chat?.type !== 'private') {
       return;
     }
-    const user = currentUser(ctx);
+    const user = await currentUser(ctx);
     if (!user) {
       return;
     }
@@ -1031,7 +1034,7 @@ export function createBot(): Bot<BotContext> {
     }
     await forgetDeleteList(ctx);
     resetStep(ctx);
-    await replyEvents(ctx, currentUser(ctx));
+    await replyEvents(ctx, await currentUser(ctx));
   });
 
   bot.on('message:text', async (ctx) => {
@@ -1076,19 +1079,28 @@ export function createBot(): Bot<BotContext> {
       return;
     }
 
-    const calendarAsk =
-      (replyUserId ? askFromReply(text, [CALENDAR_WORD], replyUserId) : null) ??
-      parseCalendarAsk(ctx.message.text, ctx.message.entities);
-    if (calendarAsk) {
+    const calendarToday = moscowCalendarToday();
+    if (ctx.chat.type !== 'private') {
+      const chatCalendar = parseCalendarChatAsk(text, calendarToday);
+      if (chatCalendar) {
+        await showGroupCalendarAll(ctx, chatCalendar.monthAnchor);
+        return;
+      }
+    }
+
+    const calendarParsed = (() => {
+      const fromReply = replyUserId ? askFromReply(text, [CALENDAR_WORD], replyUserId) : null;
+      if (fromReply) {
+        return { ask: fromReply, monthAnchor: defaultMonthAnchor(calendarToday) };
+      }
+      return parseCalendarPersonAsk(ctx.message.text, ctx.message.entities, calendarToday);
+    })();
+    if (calendarParsed) {
       if (ctx.chat.type === 'private') {
         await ctx.reply(copy.groupFeatureOnly());
         return;
       }
-      if (calendarAsk.kind === 'self' && isExactWord(text, CALENDAR_WORD)) {
-        await showGroupCalendarAll(ctx);
-        return;
-      }
-      await replyGroupCalendar(ctx, calendarAsk);
+      await replyGroupCalendar(ctx, calendarParsed.ask, calendarParsed.monthAnchor);
       return;
     }
 
@@ -1144,7 +1156,7 @@ export function createBot(): Bot<BotContext> {
     if (ctx.chat.type !== 'private') {
       return;
     }
-    const user = touchUser(ctx);
+    const user = await touchUser(ctx);
     if (!user) {
       return;
     }
@@ -1164,12 +1176,12 @@ export function createBot(): Bot<BotContext> {
     if (ctx.session.step === 'enlistment') {
       const date = parseFullDate(text);
       if (!date) {
-        await ctx.reply(copy.badDate(girlName(ctx)));
+        await ctx.reply(copy.badDate(await girlName(ctx)));
         return;
       }
       ctx.session.pendingEnlistment = toIsoDay(date);
       ctx.session.step = 'demobilization';
-      await ctx.reply(copy.askDemobilization(girlName(ctx)), { reply_markup: demobilizationKeyboard() });
+      await ctx.reply(copy.askDemobilization(await girlName(ctx)), { reply_markup: demobilizationKeyboard() });
       return;
     }
 
@@ -1222,7 +1234,7 @@ export function createBot(): Bot<BotContext> {
       return;
     }
     if (text === BTN.author) {
-      await ctx.reply(copy.askFeedbackKind(girlName(ctx)), {
+      await ctx.reply(copy.askFeedbackKind(await girlName(ctx)), {
         parse_mode: 'HTML',
         reply_markup: feedbackKindKeyboard(),
       });
@@ -1253,13 +1265,13 @@ async function handleDeleteChoice(ctx: BotContext, user: UserRecord, text: strin
   const events = removableEvents(user);
   const numbers = copy.parseEventNumbers(text);
   if (!numbers || events.length === 0 || numbers.some((number) => number > events.length)) {
-    await ctx.reply(copy.badEventNumbers(girlName(ctx)));
+    await ctx.reply(copy.badEventNumbers(await girlName(ctx)));
     return;
   }
 
   const chosen = numbers.map((number) => events[number - 1]);
   const ids = new Set(chosen.map((event) => event.id));
-  const next = saveUser({
+  const next = await saveUser({
     ...user,
     events: {
       addedCatalogIds: user.events.addedCatalogIds.filter((id) => !ids.has(id)),
@@ -1283,7 +1295,7 @@ async function handleDemobilizationInput(
   const enlistmentIso = ctx.session.pendingEnlistment;
   if (!enlistmentIso) {
     ctx.session.step = 'enlistment';
-    await ctx.reply(copy.askEnlistment(girlName(ctx)), { reply_markup: mainKeyboard() });
+    await ctx.reply(copy.askEnlistment(await girlName(ctx)), { reply_markup: mainKeyboard() });
     return;
   }
 
@@ -1299,15 +1311,15 @@ async function handleDemobilizationInput(
   }
 
   if (!demobilization) {
-    await ctx.reply(copy.badDate(girlName(ctx)));
+    await ctx.reply(copy.badDate(await girlName(ctx)));
     return;
   }
   if (demobilization <= enlistment) {
-    await ctx.reply(copy.demobilizationBeforeEnlistment(girlName(ctx)));
+    await ctx.reply(copy.demobilizationBeforeEnlistment(await girlName(ctx)));
     return;
   }
 
-  const next = saveDates(user, enlistment, demobilization);
+  const next = await saveDates(user, enlistment, demobilization);
   resetStep(ctx);
   await replyTerm(ctx, next);
 }
@@ -1315,18 +1327,18 @@ async function handleDemobilizationInput(
 async function handleFeedbackText(ctx: BotContext, user: UserRecord, text: string): Promise<void> {
   const kind = ctx.session.feedbackKind;
   if (!kind || !FEEDBACK_KINDS.includes(kind)) {
-    await ctx.reply(copy.askFeedbackKind(girlName(ctx)), {
+    await ctx.reply(copy.askFeedbackKind(await girlName(ctx)), {
       parse_mode: 'HTML',
       reply_markup: feedbackKindKeyboard(),
     });
     return;
   }
   if (!text) {
-    await ctx.reply(copy.askFeedbackText(girlName(ctx)));
+    await ctx.reply(copy.askFeedbackText(await girlName(ctx)));
     return;
   }
   if (text.length > copy.FEEDBACK_TEXT_LIMIT) {
-    await ctx.reply(copy.feedbackTooLong(girlName(ctx)));
+    await ctx.reply(copy.feedbackTooLong(await girlName(ctx)));
     return;
   }
   await deliverFeedback(ctx, {
@@ -1338,7 +1350,7 @@ async function handleFeedbackText(ctx: BotContext, user: UserRecord, text: strin
     createdAt: new Date().toISOString(),
   });
   resetStep(ctx);
-  await ctx.reply(copy.feedbackReply(kind, girlName(ctx)), {
+  await ctx.reply(copy.feedbackReply(kind, await girlName(ctx)), {
     reply_markup: mainKeyboard(),
   });
 }
@@ -1384,13 +1396,13 @@ async function connectGroupUser(ctx: BotContext): Promise<UserRecord | undefined
     return undefined;
   }
 
-  const existing = getUser(ctx.from.id);
+  const existing = await getUser(ctx.from.id);
   if (!existing) {
     await replyHere(ctx, copy.groupNeedPrivate());
     return undefined;
   }
 
-  return upsertUser({
+  return await upsertUser({
     telegramId: ctx.from.id,
     username: ctx.from.username ?? null,
     firstName: ctx.from.first_name,
@@ -1406,8 +1418,9 @@ async function registerGroupMember(ctx: BotContext): Promise<void> {
   if (!user || !ctx.chat) {
     return;
   }
-  const wasRegistered = getChat(ctx.chat.id)?.memberIds.includes(user.telegramId) ?? false;
-  addChatMember(ctx.chat.id, chatTitle(ctx), user.telegramId);
+  const chatBefore = await getChat(ctx.chat.id);
+  const wasRegistered = chatBefore?.memberIds.includes(user.telegramId) ?? false;
+  await addChatMember(ctx.chat.id, chatTitle(ctx), user.telegramId);
   if (wasRegistered) {
     await replyHere(ctx, copy.groupAlreadyInDigest());
     return;
@@ -1465,12 +1478,12 @@ async function showListsSettings(ctx: BotContext, raw = ''): Promise<void> {
       await ctx.reply(copy.listHourCustomHint());
       return;
     }
-    const chat = setChatDigestHour(ctx.chat.id, title, hour);
+    const chat = await setChatDigestHour(ctx.chat.id, title, hour);
     await ctx.reply(copy.listDmbHourSaved(chat.digestHour));
     return;
   }
   if (/^(?:dmb|list_dmb)$/i.test(trimmed)) {
-    const chat = ensureChat(ctx.chat.id, title);
+    const chat = await ensureChat(ctx.chat.id, title);
     await ctx.reply(copy.listDmbHourSettingsText(chat.digestHour), {
       parse_mode: 'HTML',
       reply_markup: listHourKeyboard('digest_hour'),
@@ -1485,12 +1498,12 @@ async function showListsSettings(ctx: BotContext, raw = ''): Promise<void> {
       await ctx.reply(copy.listHourCustomHint());
       return;
     }
-    const chat = setChatEventsHour(ctx.chat.id, title, hour);
+    const chat = await setChatEventsHour(ctx.chat.id, title, hour);
     await ctx.reply(copy.listEventsHourSaved(chat.eventsHour));
     return;
   }
   if (/^(?:events|list_events)$/i.test(trimmed)) {
-    const chat = ensureChat(ctx.chat.id, title);
+    const chat = await ensureChat(ctx.chat.id, title);
     await ctx.reply(copy.listEventsHourSettingsText(chat.eventsHour), {
       parse_mode: 'HTML',
       reply_markup: listHourKeyboard('events_hour'),
@@ -1499,7 +1512,7 @@ async function showListsSettings(ctx: BotContext, raw = ''): Promise<void> {
   }
 
   if (lower === 'никогда') {
-    const chat = setChatDigest(ctx.chat.id, title, 'never');
+    const chat = await setChatDigest(ctx.chat.id, title, 'never');
     await ctx.reply(
       copy.digestSaved(chat.mode, copy.digestIntervalPhrase(chat.mode, chat.customDays), chat.digestHour),
     );
@@ -1512,20 +1525,20 @@ async function showListsSettings(ctx: BotContext, raw = ''): Promise<void> {
       return;
     }
     if (days === 0) {
-      const chat = setChatDigest(ctx.chat.id, title, 'never');
+      const chat = await setChatDigest(ctx.chat.id, title, 'never');
       await ctx.reply(
         copy.digestSaved(chat.mode, copy.digestIntervalPhrase(chat.mode, chat.customDays), chat.digestHour),
       );
       return;
     }
-    const chat = setChatDigest(ctx.chat.id, title, 'custom', days);
+    const chat = await setChatDigest(ctx.chat.id, title, 'custom', days);
     await ctx.reply(
       copy.digestSaved(chat.mode, copy.digestIntervalPhrase(chat.mode, chat.customDays), chat.digestHour),
     );
     return;
   }
 
-  const chat = ensureChat(ctx.chat.id, title);
+  const chat = await ensureChat(ctx.chat.id, title);
   await ctx.reply(
     copy.listsSettingsText(
       chat.mode,
@@ -1541,9 +1554,9 @@ async function showListsSettings(ctx: BotContext, raw = ''): Promise<void> {
 }
 
 async function showPrivateNearest(ctx: BotContext): Promise<void> {
-  const user = currentUser(ctx);
+  const user = await currentUser(ctx);
   if (!user || !hasDates(user)) {
-    await ctx.reply(copy.needDates(girlName(ctx)), { reply_markup: mainKeyboard() });
+    await ctx.reply(copy.needDates(await girlName(ctx)), { reply_markup: mainKeyboard() });
     return;
   }
   const line = copy.nearestEventMessage(user);
@@ -1595,7 +1608,10 @@ async function replyGroupNearest(ctx: BotContext, ask: TimerAsk = { kind: 'self'
   await replyHere(ctx, copy.nearestEventForPersonMessage(target), { parse_mode: 'HTML' });
 }
 
-async function showGroupCalendarAll(ctx: BotContext): Promise<void> {
+async function showGroupCalendarAll(
+  ctx: BotContext,
+  monthAnchor = moscowCalendarToday(),
+): Promise<void> {
   if (ctx.chat?.type === 'private') {
     await ctx.reply(copy.groupFeatureOnly());
     return;
@@ -1606,13 +1622,18 @@ async function showGroupCalendarAll(ctx: BotContext): Promise<void> {
   }
   const present = await presentChatUsers(ctx.api, ctx.chat.id);
   const users = present?.users ?? [];
-  const parts = copy.groupCalendarMonthMessage(users);
+  const today = moscowCalendarToday();
+  const parts = copy.groupCalendarMonthMessage(users, today, monthAnchor);
   for (const part of parts) {
     await replyHere(ctx, part, { parse_mode: 'HTML' });
   }
 }
 
-async function replyGroupCalendar(ctx: BotContext, ask: TimerAsk = { kind: 'self' }): Promise<void> {
+async function replyGroupCalendar(
+  ctx: BotContext,
+  ask: TimerAsk = { kind: 'self' },
+  monthAnchor = moscowCalendarToday(),
+): Promise<void> {
   const user = await connectGroupUser(ctx);
   if (!user || !ctx.chat) {
     return;
@@ -1629,7 +1650,8 @@ async function replyGroupCalendar(ctx: BotContext, ask: TimerAsk = { kind: 'self
     );
     return;
   }
-  await replyHere(ctx, copy.calendarMonthForPersonMessage(target), { parse_mode: 'HTML' });
+  const today = moscowCalendarToday();
+  await replyHere(ctx, copy.calendarMonthForPersonMessage(target, today, monthAnchor), { parse_mode: 'HTML' });
 }
 
 async function leaveGroupDigest(ctx: BotContext): Promise<void> {
@@ -1641,12 +1663,12 @@ async function leaveGroupDigest(ctx: BotContext): Promise<void> {
   if (!user || !ctx.chat) {
     return;
   }
-  const chat = getChat(ctx.chat.id);
+  const chat = await getChat(ctx.chat.id);
   if (!chat?.memberIds.includes(user.telegramId)) {
     await replyHere(ctx, copy.groupNotInDigest());
     return;
   }
-  removeChatMembers(ctx.chat.id, [user.telegramId]);
+  await removeChatMembers(ctx.chat.id, [user.telegramId]);
   await replyHere(ctx, copy.groupLeftDigest(user));
 }
 
@@ -1709,7 +1731,7 @@ async function showTerm(ctx: BotContext): Promise<void> {
   }
   await forgetDeleteList(ctx);
   resetStep(ctx);
-  await replyTerm(ctx, currentUser(ctx));
+  await replyTerm(ctx, await currentUser(ctx));
 }
 
 async function replyGroupTerm(ctx: BotContext, ask: TimerAsk = { kind: 'self' }): Promise<void> {
@@ -1744,7 +1766,7 @@ async function resolveTimerTarget(
     return sender;
   }
 
-  const found = ask.kind === 'id' ? getUser(ask.telegramId) : findUserByUsername(ask.username);
+  const found = ask.kind === 'id' ? await getUser(ask.telegramId) : await findUserByUsername(ask.username);
   if (!found) {
     await replyHere(ctx, copy.groupTimerUnknown());
     return undefined;

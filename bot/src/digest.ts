@@ -70,12 +70,12 @@ function supergroupMigrateId(error: unknown): number | null {
   return typeof id === 'number' ? id : null;
 }
 
-function applyChatMigration(oldId: number, error: unknown): number | null {
+async function applyChatMigration(oldId: number, error: unknown): Promise<number | null> {
   const nextId = supergroupMigrateId(error);
   if (nextId === null) {
     return null;
   }
-  migrateChatId(oldId, nextId);
+  await migrateChatId(oldId, nextId);
   console.log(`Чат ${oldId} мигрировал в супергруппу ${nextId}, id в хранилище обновлён.`);
   return nextId;
 }
@@ -350,7 +350,7 @@ async function presentUsers(
   let chatId = chat.chatId;
 
   for (const telegramId of chat.memberIds) {
-    const user = getUser(telegramId);
+    const user = await getUser(telegramId);
     if (!user) {
       gone.push(telegramId);
       continue;
@@ -367,7 +367,7 @@ async function presentUsers(
       if (isChatGone(error)) {
         throw error;
       }
-      const migrated = applyChatMigration(chatId, error);
+      const migrated = await applyChatMigration(chatId, error);
       if (migrated !== null) {
         chatId = migrated;
         try {
@@ -391,7 +391,7 @@ async function presentUsers(
     users.push(user);
   }
 
-  removeChatMembers(chatId, gone);
+  await removeChatMembers(chatId, gone);
   return { users, chatId };
 }
 
@@ -415,7 +415,7 @@ async function sendHtml(
   try {
     await queuedSendMessage(api, chatId, text, opts);
   } catch (error) {
-    const migrated = applyChatMigration(chatId, error);
+    const migrated = await applyChatMigration(chatId, error);
     if (migrated === null) {
       throw error;
     }
@@ -427,7 +427,7 @@ async function chatUsersForDelivery(
   api: Api,
   chatId: number,
 ): Promise<{ users: UserRecord[]; chatId: number } | null> {
-  const chat = getChat(chatId);
+  const chat = await getChat(chatId);
   if (!chat) {
     return null;
   }
@@ -494,8 +494,8 @@ async function runTick(api: Api): Promise<void> {
   const todayKey = moscowDayKey(now);
   const today = moscowCalendarToday(now);
 
-  for (const listed of listChats()) {
-    const chat = getChat(listed.chatId) ?? listed;
+  for (const listed of await listChats()) {
+    const chat = await getChat(listed.chatId) ?? listed;
     if (chat.mode === 'never') {
       continue;
     }
@@ -507,12 +507,12 @@ async function runTick(api: Api): Promise<void> {
           await sendHtml(api, effectiveId, message);
         }
         if (users.length > 0) {
-          markChatMilestone(effectiveId, todayKey);
+          await markChatMilestone(effectiveId, todayKey);
         }
       } catch (error) {
         console.error(`Вехи в чате ${chat.chatId} не отправились`, error);
         if (isChatGone(error)) {
-          markChatMilestone(chat.chatId, todayKey);
+          await markChatMilestone(chat.chatId, todayKey);
         }
       }
     }
@@ -528,11 +528,11 @@ async function runTick(api: Api): Promise<void> {
         for (const message of preview) {
           await sendHtml(api, effectiveId, message);
         }
-        markChatTomorrow(effectiveId, todayKey);
+        await markChatTomorrow(effectiveId, todayKey);
       } catch (error) {
         console.error(`Напоминание «завтра» в чате ${chat.chatId} не отправилось`, error);
         if (isChatGone(error)) {
-          markChatTomorrow(chat.chatId, todayKey);
+          await markChatTomorrow(chat.chatId, todayKey);
         }
       }
     }
@@ -545,17 +545,17 @@ async function runTick(api: Api): Promise<void> {
           await sendHtml(api, effectiveId, message);
         }
         if (users.length > 0) {
-          markChatHoliday(effectiveId, todayKey);
+          await markChatHoliday(effectiveId, todayKey);
         }
       } catch (error) {
         console.error(`Праздники в чате ${chat.chatId} не отправились`, error);
         if (isChatGone(error)) {
-          markChatHoliday(chat.chatId, todayKey);
+          await markChatHoliday(chat.chatId, todayKey);
         }
       }
     }
 
-    const fresh = getChat(chat.chatId) ?? chat;
+    const fresh = await getChat(chat.chatId) ?? chat;
     if (hourNow < digestHour) {
       continue;
     }
@@ -568,16 +568,16 @@ async function runTick(api: Api): Promise<void> {
       const digest = buildDigestText(users, today);
       if (!digest) {
         if (users.length > 0) {
-          markChatDigest(effectiveId, todayKey);
+          await markChatDigest(effectiveId, todayKey);
         }
         continue;
       }
       await sendHtml(api, effectiveId, digest);
-      markChatDigest(effectiveId, todayKey);
+      await markChatDigest(effectiveId, todayKey);
     } catch (error) {
       console.error(`Сводка в чате ${fresh.chatId} не отправилась`, error);
       if (isChatGone(error)) {
-        markChatDigest(fresh.chatId, todayKey);
+        await markChatDigest(fresh.chatId, todayKey);
       }
     }
   }

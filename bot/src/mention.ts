@@ -1,3 +1,5 @@
+import { startOfMonth } from 'date-fns';
+
 export function escapeHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -40,9 +42,49 @@ export type TimerAsk =
   | { kind: 'id'; telegramId: number };
 
 export const TIMER_WORD = 'ддд';
-export const NEAREST_EVENT_WORD = 'ближайшее';
-export const NEAREST_EVENTS_WORD = 'ближайшие';
+export const NEAREST_EVENT_WORD = 'ближайшее событие';
+export const NEAREST_EVENTS_WORD = 'ближайшие события';
 export const CALENDAR_WORD = 'календарь';
+export const CALENDAR_CHAT_WORD = 'календарь чата';
+
+const MONTH_BY_NAME: Record<string, number> = {
+  январь: 1,
+  января: 1,
+  февраль: 2,
+  февраля: 2,
+  март: 3,
+  марта: 3,
+  апрель: 4,
+  апреля: 4,
+  май: 5,
+  мая: 5,
+  июнь: 6,
+  июня: 6,
+  июль: 7,
+  июля: 7,
+  август: 8,
+  августа: 8,
+  сентябрь: 9,
+  сентября: 9,
+  октябрь: 10,
+  октября: 10,
+  ноябрь: 11,
+  ноября: 11,
+  декабрь: 12,
+  декабря: 12,
+};
+
+export function parseRussianMonthName(token: string, today: Date): Date | null {
+  const month = MONTH_BY_NAME[token.trim().toLocaleLowerCase('ru')];
+  if (!month) {
+    return null;
+  }
+  return startOfMonth(new Date(today.getFullYear(), month - 1, 1));
+}
+
+export function defaultMonthAnchor(today: Date): Date {
+  return startOfMonth(today);
+}
 export const LEAVE_DIGEST_WORDS = ['убрать меня', 'выйти из сводки'] as const;
 export const HOUR_WORD = 'время';
 
@@ -116,8 +158,62 @@ export function parseNearestEventAsk(text: string, entities?: readonly TimerMent
   return parseMentionAsk(NEAREST_EVENT_WORD, text, entities);
 }
 
-export function parseCalendarAsk(text: string, entities?: readonly TimerMentionEntity[]): TimerAsk | null {
-  return parseMentionAsk(CALENDAR_WORD, text, entities);
+export function parseCalendarPersonAsk(
+  text: string,
+  entities: readonly TimerMentionEntity[] | undefined,
+  today: Date,
+): { ask: TimerAsk; monthAnchor: Date } | null {
+  const mention = parseMentionAsk(CALENDAR_WORD, text, entities);
+  if (mention) {
+    return { ask: mention, monthAnchor: defaultMonthAnchor(today) };
+  }
+
+  const trimmed = text.trim();
+  const lower = trimmed.toLocaleLowerCase('ru');
+  const wordLower = CALENDAR_WORD.toLocaleLowerCase('ru');
+  if (lower === wordLower) {
+    return { ask: { kind: 'self' }, monthAnchor: defaultMonthAnchor(today) };
+  }
+
+  const prefix = new RegExp(`^${escapeRegex(CALENDAR_WORD)}\\s+(.+)$`, 'iu');
+  const restMatch = trimmed.match(prefix);
+  if (!restMatch?.[1]) {
+    return null;
+  }
+  const tail = restMatch[1].trim();
+  if (tail.startsWith('@')) {
+    return null;
+  }
+  const monthAnchor = parseRussianMonthName(tail, today);
+  if (!monthAnchor) {
+    return null;
+  }
+  return { ask: { kind: 'self' }, monthAnchor };
+}
+
+export function parseCalendarChatAsk(text: string, today: Date): { monthAnchor: Date } | null {
+  const trimmed = text.trim();
+  const lower = trimmed.toLocaleLowerCase('ru');
+  const prefixLower = CALENDAR_CHAT_WORD.toLocaleLowerCase('ru');
+  if (lower === prefixLower) {
+    return { monthAnchor: defaultMonthAnchor(today) };
+  }
+  if (!lower.startsWith(`${prefixLower} `)) {
+    return null;
+  }
+  const tail = trimmed.slice(CALENDAR_CHAT_WORD.length).trim();
+  if (tail === '') {
+    return { monthAnchor: defaultMonthAnchor(today) };
+  }
+  const monthAnchor = parseRussianMonthName(tail, today);
+  if (!monthAnchor) {
+    return null;
+  }
+  return { monthAnchor };
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export function askFromReply(text: string, triggerWords: string[], replyUserId: number): TimerAsk | null {

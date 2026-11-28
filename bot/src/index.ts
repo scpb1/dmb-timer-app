@@ -1,11 +1,13 @@
 import { createBot } from './bot';
 import { config } from './config';
+import { ensureDatabase } from './db';
 import { digestFitEstimate, startGroupScheduler } from './digest';
 import { seedKnownEvents } from './store';
 import { DIGEST_HOUR } from './time';
 
 async function main(): Promise<void> {
-  seedKnownEvents();
+  await ensureDatabase();
+  await seedKnownEvents();
   const bot = createBot();
 
   await bot.api.setMyCommands(

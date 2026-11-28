@@ -47,7 +47,9 @@ bash ~/girly-ddd-bot/scripts/server-update.sh
 - делает `git pull` в `~/dmb-timer-app`;
 - копирует `bot/` в `~/girly-ddd-bot` (не затирает `.env` и `data/`);
 - запускает `npm ci`;
-- перезапускает `systemctl --user restart girly-ddd-bot`.
+- при первом таком деплое ставит PostgreSQL, если его ещё нет и есть `sudo` без пароля, создаёт базу и один раз переносит `data/store.json`;
+- следующие деплои перенос пропускают;
+- останавливает бота на время переноса и снова запускает `girly-ddd-bot`.
 
 Подожди 1–2 минуты, пока идёт `npm ci`.
 
@@ -128,4 +130,4 @@ systemctl --user restart girly-ddd-bot
 ## Нельзя
 
 - Лезть в `/opt/carwash`, останавливать контейнеры carwash.
-- Удалять на сервере `~/girly-ddd-bot/.env` и папку `~/girly-ddd-bot/data/` (там пользователи бота).
+- Удалять на сервере `~/girly-ddd-bot/.env` (там токен и `DATABASE_URL`) и папку `~/girly-ddd-bot/data/` (копия до переноса в Postgres).

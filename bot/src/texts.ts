@@ -788,14 +788,18 @@ function calendarGroupBlockForUser(user: UserRecord, monthAnchor: Date, today: D
   return [head, ...body, ''];
 }
 
-export function calendarMonthForPersonMessage(user: UserRecord, today = moscowCalendarToday()): string {
-  const monthTitle = calendarMonthTitle(today);
+export function calendarMonthForPersonMessage(
+  user: UserRecord,
+  today = moscowCalendarToday(),
+  monthAnchor: Date = today,
+): string {
+  const monthTitle = calendarMonthTitle(monthAnchor);
   const monthEsc = escapeHtml(monthTitle);
   const header = `🪖 События пары ${coupleBoldUnderlineHtml(user)} на ${monthEsc}:`;
   if (!user.enlistmentDate || !user.demobilizationDate) {
     return `${header}\n\nСначала поставь даты службы в личке`;
   }
-  const events = calendarMonthEventsForUser(user, today, today);
+  const events = calendarMonthEventsForUser(user, monthAnchor, today);
   const lines = [header, ''];
   if (events.length === 0) {
     lines.push(`В ${monthTitle.toLocaleLowerCase('ru')} событий нет`);
@@ -805,13 +809,17 @@ export function calendarMonthForPersonMessage(user: UserRecord, today = moscowCa
   return lines.join('\n').trimEnd();
 }
 
-export function groupCalendarMonthMessage(users: UserRecord[], today = moscowCalendarToday()): string[] {
-  const monthTitle = calendarMonthTitle(today);
+export function groupCalendarMonthMessage(
+  users: UserRecord[],
+  today = moscowCalendarToday(),
+  monthAnchor: Date = today,
+): string[] {
+  const monthTitle = calendarMonthTitle(monthAnchor);
   const monthEsc = escapeHtml(monthTitle);
   const lines: string[] = [`🪖 События участников чата на ${monthEsc}:`, ''];
   const blocks: string[][] = [];
   for (const user of users) {
-    const block = calendarGroupBlockForUser(user, today, today);
+    const block = calendarGroupBlockForUser(user, monthAnchor, today);
     if (block.length === 0) {
       continue;
     }
@@ -856,8 +864,8 @@ export function groupHello(): string {
     '',
     `Я могу подсказать ${boldText('каждой')} из вас:`,
     `– срок службы (команда ${codeText('ддд')} или /mydmb);`,
-    `– ближайшее событие (${codeText('ближайшее')} или /next_event, ${codeText('ближайшие')} или /list_next_events);`,
-    `– события на месяц (${codeText('календарь')} или /list_month_events, /month_events);`,
+    `– ближайшее событие (${codeText('ближайшее событие')} или /next_event, ${codeText('ближайшие события')} или /list_next_events);`,
+    `– события на месяц (${codeText('календарь чата')} или /list_month_events, ${codeText('календарь')} или /month_events; можно добавить месяц, например ${codeText('календарь октябрь')})`,
     `– дембеля в чате (${codeText('Сводка')} или /list_dmb);`,
     `– действующие призывы (${codeText('список участников чата')} или /list_members);`,
     `– все пары сводки (${codeText('список всех участников чата')} или /list_all_members);`,
@@ -1043,7 +1051,7 @@ export function groupTermForPerson(user: UserRecord, now = moscowNow()): string 
 }
 
 export function groupTimerOnlyInChat(): string {
-  return 'Чужой срок и события смотри в беседе: «ддд @имя», «ближайшее @имя» или ответь на сообщение этими словами';
+  return 'Чужой срок и события смотри в беседе: «ддд @имя», «ближайшее событие @имя» или ответь на сообщение этими словами';
 }
 
 export function groupTimerUnknown(): string {

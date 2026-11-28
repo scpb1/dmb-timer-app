@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Запуск только в PuTTY (на сервере под пользователем deploy).
 #
-#   bash ~/girly-ddd-bot/scripts/server-update.sh          — git pull + обновить код + npm ci + restart
+#   bash ~/girly-ddd-bot/scripts/server-update.sh          — git pull + обновить код + npm ci + postgres + restart
 #   bash ~/girly-ddd-bot/scripts/server-update.sh reload   — только npm ci + restart (после WinSCP)
 #   bash ~/girly-ddd-bot/scripts/server-update.sh setup-git — один раз: клон репозитория (только bot/)
 #

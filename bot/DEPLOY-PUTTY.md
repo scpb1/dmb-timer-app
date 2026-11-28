@@ -27,7 +27,7 @@ bash ~/girly-ddd-bot/scripts/server-update.sh setup-git
 bash ~/girly-ddd-bot/scripts/server-update.sh
 ```
 
-Скрипт сделает `git pull`, обновит файлы в `~/girly-ddd-bot`, `npm ci`, `systemctl --user restart girly-ddd-bot`.
+Скрипт сделает `git pull`, обновит файлы в `~/girly-ddd-bot`, `npm ci`. На первом деплое с этой версией сам создаст базу PostgreSQL и один раз перенесёт `data/store.json`. Дальше перенос пропускается. Потом бот запускается снова. Для установки PostgreSQL нужен `sudo` без пароля, если сервера базы ещё нет.
 
 Проверка:
 
